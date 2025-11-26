@@ -2,6 +2,7 @@ import flet as ft
 import json
 from wallet_service import WalletClient
 
+
 def main(page: ft.Page):
     page.title = "Google Wallet Verifier & Preview"
     page.window_width = 1000

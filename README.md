@@ -31,3 +31,4 @@ A simple Desktop GUI application to verify Google Wallet Classes by Pass ID (Obj
     - Enter the **Pass ID** (Object ID) in the input field.
     - Click **Verify**.
     - The application will fetch and display the details of the Wallet Object and its associated Class.
+

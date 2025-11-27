@@ -3,12 +3,7 @@ import os
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-
-# Issuer ID
-ISSUER_ID = "3388000000023033675"
-
-SCOPES = ['https://www.googleapis.com/auth/wallet_object.issuer']
-KEY_FILE_PATH = 'service_account.json' # Default key file name
+import configs
 
 class WalletClient:
     def __init__(self):
@@ -21,19 +16,17 @@ class WalletClient:
         Authenticates with Google using the service account file.
         Handles file path fallback if the default name is not found.
         """
-        # Correction: 'global' must be declared at the very beginning of the function
-        global KEY_FILE_PATH
         
         # Check if the key file exists at the default path
-        if not os.path.exists(KEY_FILE_PATH):
+        if not os.path.exists(configs.KEY_FILE_PATH):
             # Try the alternative file name commonly used in your project
-            if os.path.exists('wallet-pass-476608-e7bc0f55b858.json'):
-                 KEY_FILE_PATH = 'wallet-pass-476608-e7bc0f55b858.json'
+            if os.path.exists(configs.KEY_FILE_PATH):
+                configs.KEY_FILE_PATH = configs.KEY_FILE_PATH
             else:
-                raise FileNotFoundError(f"Credentials file not found: {KEY_FILE_PATH}")
+                raise FileNotFoundError(f"Credentials file not found: {configs.KEY_FILE_PATH}")
             
         self.credentials = service_account.Credentials.from_service_account_file(
-            KEY_FILE_PATH, scopes=SCOPES)
+            configs.KEY_FILE_PATH, scopes=configs.SCOPES)
         self.service = build('walletobjects', 'v1', credentials=self.credentials)
 
     def _prepare_ids_to_try(self, input_id):
@@ -45,13 +38,13 @@ class WalletClient:
         ids = []
 
         # 1. Ideal scenario: The input ID already starts with the Issuer ID
-        if clean_id.startswith(ISSUER_ID):
+        if clean_id.startswith(configs.ISSUER_ID):
             ids.append(clean_id)
         
         # 2. Common scenario: User entered only the Suffix (Name)
         else:
             # Priority 1: Try constructing the valid ID (Issuer.Suffix)
-            ids.append(f"{ISSUER_ID}.{clean_id}")
+            ids.append(f"{configs.ISSUER_ID}.{clean_id}")
             # Priority 2: Try the raw input just in case (fallback)
             ids.append(clean_id)
             

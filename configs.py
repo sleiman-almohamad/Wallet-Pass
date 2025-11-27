@@ -1,8 +1,8 @@
 # Issuer ID
-ISSUER_ID = "3388000000023033675"
+ISSUER_ID = ""
 
 # Default key file name
-KEY_FILE_PATH = 'wallet-pass-476608-7ebeb0e62984.json'
+KEY_FILE_PATH = ''
 
 # Default scopes
 SCOPES = ['https://www.googleapis.com/auth/wallet_object.issuer']

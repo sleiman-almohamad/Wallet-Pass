@@ -9,6 +9,7 @@ def main(page: ft.Page):
     page.window_height = 800
     page.padding = 20
     page.theme_mode = ft.ThemeMode.LIGHT
+    page.assets_dir = "assets"
 
     # --- Initialize Connection ---
     client = None
@@ -206,7 +207,10 @@ def main(page: ft.Page):
     search_btn = ft.ElevatedButton("Search", icon="search", on_click=run_search)
 
     page.add(
-        ft.Row([ft.Icon(name="wallet"), ft.Text("Wallet Previewer", size=20, weight="bold")]),
+        ft.Row([
+            ft.Image(src="B2F.png", width=150, height=150)
+            #ft.Text("Wallet Previewer", size=20, weight="bold")
+        ],),
         connection_status,
         search_type,
         ft.Row([id_input, search_btn]),

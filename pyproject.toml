@@ -16,4 +16,5 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.10.0",
     "email-validator>=2.2.0",
+    "requests>=2.32.0",
 ]

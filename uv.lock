@@ -1267,6 +1267,7 @@ dependencies = [
     { name = "google-auth-oauthlib" },
     { name = "mysql-connector-python" },
     { name = "pydantic" },
+    { name = "requests" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -1281,6 +1282,7 @@ requires-dist = [
     { name = "google-auth-oauthlib", specifier = ">=1.2.2" },
     { name = "mysql-connector-python", specifier = ">=9.1.0" },
     { name = "pydantic", specifier = ">=2.10.0" },
+    { name = "requests", specifier = ">=2.32.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
 ]
 

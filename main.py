@@ -1,6 +1,8 @@
 import flet as ft
 import json
 from wallet_service import WalletClient
+from api_client import APIClient
+from field_schemas import get_fields_for_class_type
 
 
 def main(page: ft.Page):
@@ -21,6 +23,19 @@ def main(page: ft.Page):
         client = None
         # FIX: Changed ft.colors.RED to "red"
         connection_status = ft.Text(f"❌ Service Error: {e}", color="red", size=12)
+    
+    # --- Initialize API Client ---
+    api_client = APIClient()
+    
+    # Check API health
+    try:
+        health = api_client.check_health()
+        if health.get("status") == "healthy":
+            api_status = ft.Text("✅ API Connected", color="green", size=12)
+        else:
+            api_status = ft.Text(f"⚠️ API: {health.get('database', 'unknown')}", color="orange", size=12)
+    except Exception as e:
+        api_status = ft.Text(f"❌ API Error: {e}", color="red", size=12)
 
     # --- Helper: Extract Visual Assets ---
     def parse_class_visuals(class_data):
@@ -143,9 +158,227 @@ def main(page: ft.Page):
         tabs=[
             ft.Tab(text="Visual Preview 🎨", content=ft.Container(padding=20)),
             ft.Tab(text="Raw JSON 📄", content=ft.Container(padding=20)),
+            ft.Tab(text="Create Pass ➕", content=ft.Container(padding=20)),
         ],
         expand=True
     )
+
+    # --- Create Pass Form Fields ---
+    class_dropdown = ft.Dropdown(
+        label="Select Class",
+        hint_text="Choose a pass class",
+        width=400,
+        options=[],
+        on_change=lambda e: on_class_change(e)
+    )
+    
+    object_id_field = ft.TextField(
+        label="Object ID",
+        hint_text="e.g., PASS_001",
+        width=400
+    )
+    
+    holder_name_field = ft.TextField(
+        label="Holder Name",
+        hint_text="e.g., John Doe",
+        width=400
+    )
+    
+    holder_email_field = ft.TextField(
+        label="Holder Email",
+        hint_text="e.g., john.doe@example.com",
+        width=400,
+        keyboard_type=ft.KeyboardType.EMAIL
+    )
+    
+    status_dropdown = ft.Dropdown(
+        label="Status",
+        value="Active",
+        width=400,
+        options=[
+            ft.dropdown.Option("Active"),
+            ft.dropdown.Option("Expired")
+        ]
+    )
+    
+    # Container for dynamic pass data fields
+    dynamic_fields_container = ft.Column([], spacing=10)
+    dynamic_field_refs = {}  # Store references to dynamic fields
+    
+    create_result = ft.Text("", size=14)
+    
+    def generate_dynamic_fields(class_type: str):
+        """Generate form fields based on class type"""
+        # Clear previous fields
+        dynamic_fields_container.controls.clear()
+        dynamic_field_refs.clear()
+        
+        # Get field schema for this class type
+        fields_schema = get_fields_for_class_type(class_type)
+        
+        # Add header
+        dynamic_fields_container.controls.append(
+            ft.Text("Pass Details", size=16, weight="bold", color="blue")
+        )
+        
+        # Generate fields based on schema
+        for field_def in fields_schema:
+            field_name = field_def["name"]
+            field_label = field_def["label"]
+            field_type = field_def["type"]
+            field_hint = field_def.get("hint", "")
+            
+            # Create appropriate field based on type
+            if field_type == "number":
+                field = ft.TextField(
+                    label=field_label,
+                    hint_text=field_hint,
+                    width=400,
+                    keyboard_type=ft.KeyboardType.NUMBER
+                )
+            elif field_type in ["date", "datetime"]:
+                field = ft.TextField(
+                    label=field_label,
+                    hint_text=field_hint,
+                    width=400,
+                    keyboard_type=ft.KeyboardType.DATETIME
+                )
+            else:  # text
+                field = ft.TextField(
+                    label=field_label,
+                    hint_text=field_hint,
+                    width=400
+                )
+            
+            # Store reference to field
+            dynamic_field_refs[field_name] = field
+            dynamic_fields_container.controls.append(field)
+        
+        page.update()
+    
+    def on_class_change(e):
+        """Handle class selection change"""
+        if not class_dropdown.value:
+            return
+        
+        try:
+            # Fetch class details
+            class_data = api_client.get_class(class_dropdown.value)
+            if class_data:
+                class_type = class_data.get("class_type", "Generic")
+                generate_dynamic_fields(class_type)
+        except Exception as ex:
+            create_result.value = f"❌ Error loading class: {ex}"
+            create_result.color = "red"
+            page.update()
+    
+    def load_classes():
+        """Load available classes from API"""
+        try:
+            classes = api_client.get_classes()
+            class_dropdown.options = [
+                ft.dropdown.Option(cls["class_id"]) 
+                for cls in classes
+            ]
+            if classes:
+                class_dropdown.value = classes[0]["class_id"]
+            page.update()
+        except Exception as e:
+            create_result.value = f"❌ Error loading classes: {e}"
+            create_result.color = "red"
+            page.update()
+    
+    def submit_pass(e):
+        """Submit new pass to API"""
+        # Validate required fields
+        if not all([class_dropdown.value, object_id_field.value, 
+                   holder_name_field.value, holder_email_field.value]):
+            create_result.value = "❌ Please fill in all required fields"
+            create_result.color = "red"
+            page.update()
+            return
+        
+        # Collect data from dynamic fields
+        pass_data = {}
+        for field_name, field_ref in dynamic_field_refs.items():
+            if field_ref.value and field_ref.value.strip():
+                # Try to convert numbers
+                value = field_ref.value.strip()
+                try:
+                    # Check if it's a number
+                    if value.replace('.', '', 1).isdigit():
+                        pass_data[field_name] = float(value) if '.' in value else int(value)
+                    else:
+                        pass_data[field_name] = value
+                except:
+                    pass_data[field_name] = value
+        
+        # Submit to API
+        try:
+            result = api_client.create_pass(
+                object_id=object_id_field.value.strip(),
+                class_id=class_dropdown.value,
+                holder_name=holder_name_field.value.strip(),
+                holder_email=holder_email_field.value.strip(),
+                status=status_dropdown.value,
+                pass_data=pass_data
+            )
+            
+            create_result.value = f"✅ {result.get('message', 'Pass created successfully!')}"
+            create_result.color = "green"
+            
+            # Clear form
+            object_id_field.value = ""
+            holder_name_field.value = ""
+            holder_email_field.value = ""
+            status_dropdown.value = "Active"
+            
+            # Clear dynamic fields
+            for field_ref in dynamic_field_refs.values():
+                field_ref.value = ""
+            
+        except Exception as ex:
+            create_result.value = f"❌ {str(ex)}"
+            create_result.color = "red"
+        
+        page.update()
+    
+    submit_btn = ft.ElevatedButton(
+        "Create Pass",
+        icon="add_circle",
+        on_click=submit_pass,
+        width=400
+    )
+    
+    refresh_classes_btn = ft.IconButton(
+        icon="refresh",
+        tooltip="Refresh class list",
+        on_click=lambda e: load_classes()
+    )
+    
+    # Build Create Pass Tab Content
+    tabs.tabs[2].content = ft.Container(
+        content=ft.Column([
+            ft.Text("Create New Pass", size=20, weight="bold"),
+            ft.Divider(),
+            ft.Row([class_dropdown, refresh_classes_btn], alignment=ft.MainAxisAlignment.START),
+            object_id_field,
+            holder_name_field,
+            holder_email_field,
+            status_dropdown,
+            ft.Divider(),
+            dynamic_fields_container,  # Dynamic fields based on class type
+            ft.Divider(),
+            submit_btn,
+            ft.Divider(),
+            create_result
+        ], scroll="auto", spacing=15),
+        padding=20
+    )
+    
+    # Load classes on startup
+    load_classes()
+
 
     def run_search(e):
         if not client: return
@@ -211,7 +444,7 @@ def main(page: ft.Page):
             ft.Image(src="B2F.png", width=150, height=150)
             #ft.Text("Wallet Previewer", size=20, weight="bold")
         ],),
-        connection_status,
+        ft.Row([connection_status, ft.Text(" | "), api_status]),
         search_type,
         ft.Row([id_input, search_btn]),
         ft.Divider(),

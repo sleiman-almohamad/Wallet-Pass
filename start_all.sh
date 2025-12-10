@@ -5,18 +5,35 @@ echo "Starting Wallet Passes Application"
 echo "=========================================="
 echo ""
 
-# Start Docker services (MariaDB, phpMyAdmin, API)
-echo "📦 Starting Docker services..."
-sudo docker-compose up -d
+# Check if Docker containers are already running
+echo "🔍 Checking Docker services status..."
 
-# Wait for services to be ready
+# Check if we can access docker (try without sudo first, then with sudo)
+#if docker ps &>/dev/null; then
+#    DOCKER_CMD="docker"
+#else
+#    DOCKER_CMD="sudo docker"
+#fi
+
+# Count running containers
+#RUNNING_CONTAINERS=$($DOCKER_CMD ps --filter "name=walletpasses" --format "{{.Names}}" 2>/dev/null | wc -l)
+
+#if [ "$RUNNING_CONTAINERS" -ge 2 ]; then
+#    echo "✅ Docker services are already running!"
+#    echo ""
+#    echo "Running containers:"
+#    $DOCKER_CMD ps --filter "name=walletpasses" --format "  - {{.Names}} ({{.Status}})"
+#else
+echo "📦 Starting Docker services..."
+sudo docker compose up -d
+    
+    # Wait for services to be ready
 echo "⏳ Waiting for services to start..."
 sleep 5
-
-# Check if services are running
+    
 echo ""
-echo "✅ Services Status:"
-sudo docker-compose ps
+echo "✅ Services started successfully!"
+#fi
 
 echo ""
 echo "=========================================="

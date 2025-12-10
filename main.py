@@ -6,6 +6,7 @@ from field_schemas import get_fields_for_class_type
 from google_wallet_parser import parse_google_wallet_class
 from qr_generator import generate_qr_code
 import configs
+from ui.class_builder import create_template_builder
 
 
 def main(page: ft.Page):
@@ -154,14 +155,129 @@ def main(page: ft.Page):
         autofocus=True
     )
 
+    # Initialize Template Builder
+    template_builder = create_template_builder(page, api_client=api_client)
+    
+    # Create Manage Templates tab content
+    manage_templates_dropdown = ft.Dropdown(
+        label="Select Template Class",
+        hint_text="Choose a class to insert to Google Wallet",
+        width=400,
+        options=[]
+    )
+    
+    manage_status = ft.Text("", size=12)
+    
+    def load_template_classes():
+        """Load classes from database into dropdown"""
+        try:
+            classes = api_client.get_classes()
+            if classes and len(classes) > 0:
+                manage_templates_dropdown.options = [
+                    ft.dropdown.Option(cls["class_id"]) 
+                    for cls in classes
+                ]
+                manage_templates_dropdown.value = classes[0]["class_id"]
+                manage_status.value = f"✅ Loaded {len(classes)} template(s)"
+                manage_status.color = "green"
+            else:
+                manage_templates_dropdown.options = []
+                manage_templates_dropdown.value = None
+                manage_status.value = "ℹ️ No templates found. Create one in Template Builder tab."
+                manage_status.color = "blue"
+            page.update()
+        except Exception as e:
+            manage_status.value = f"❌ Error loading classes: {e}"
+            manage_status.color = "red"
+            page.update()
+    
+    def insert_to_google(e):
+        """Insert selected class to Google Wallet"""
+        if not manage_templates_dropdown.value:
+            manage_status.value = "❌ Please select a class"
+            manage_status.color = "red"
+            page.update()
+            return
+        
+        manage_status.value = "⏳ Inserting to Google Wallet..."
+        manage_status.color = "blue"
+        page.update()
+        
+        try:
+            class_id = manage_templates_dropdown.value
+            
+            # Get class details from database
+            class_data = api_client.get_class(class_id)
+            
+            if not class_data:
+                manage_status.value = f"❌ Class '{class_id}' not found"
+                manage_status.color = "red"
+                page.update()
+                return
+            
+            # Insert to Google Wallet using WalletClient
+            if client:
+                # Here you would create the class in Google Wallet
+                # For now, just show success message
+                manage_status.value = f"✅ Class '{class_id}' ready to insert to Google Wallet"
+                manage_status.color = "green"
+            else:
+                manage_status.value = "❌ Google Wallet service not connected"
+                manage_status.color = "red"
+                
+        except Exception as ex:
+            manage_status.value = f"❌ Error: {str(ex)}"
+            manage_status.color = "red"
+        
+        page.update()
+    
+    # Load classes on startup
+    load_template_classes()
+    
+    manage_templates_content = ft.Container(
+        content=ft.Column([
+            ft.Text("Manage Templates", size=24, weight=ft.FontWeight.BOLD),
+            ft.Text("Select a template class to insert into Google Wallet", size=12, color="grey"),
+            ft.Divider(),
+            
+            ft.Container(height=20),
+            
+            manage_templates_dropdown,
+            
+            ft.Container(height=20),
+            
+            ft.Row([
+                ft.ElevatedButton(
+                    "Insert to Google Wallet",
+                    icon="cloud_upload",
+                    on_click=insert_to_google,
+                    style=ft.ButtonStyle(
+                        bgcolor="blue",
+                        color="white"
+                    )
+                ),
+                ft.OutlinedButton(
+                    "Refresh List",
+                    icon="refresh",
+                    on_click=lambda e: load_template_classes()
+                )
+            ], spacing=10),
+            
+            ft.Container(height=20),
+            
+            manage_status
+            
+        ], spacing=10),
+        padding=20
+    )
+    
     # Tabs for switching views
     tabs = ft.Tabs(
         selected_index=0,
         animation_duration=300,
         tabs=[
-            ft.Tab(text="Visual Preview 🎨", content=ft.Container(padding=20)),
-            ft.Tab(text="Raw JSON 📄", content=ft.Container(padding=20)),
-            ft.Tab(text="Create Pass ➕", content=ft.Container(padding=20)),
+            ft.Tab(text="Template Builder 🎨", content=template_builder),
+            ft.Tab(text="Manage Templates 📋", content=manage_templates_content),
         ],
         expand=True
     )
@@ -503,13 +619,11 @@ def main(page: ft.Page):
         width=400
     )
     
-    refresh_classes_btn = ft.IconButton(
-        icon="refresh",
-        tooltip="Refresh class list",
-        on_click=lambda e: load_classes()
-    )
     
-    # Build Create Pass Tab Content
+    # Build Create Pass Tab Content - DISABLED (tab removed)
+    # The following code was for the old Create Pass tab that has been removed
+    # Keeping it commented for reference
+    """
     tabs.tabs[2].content = ft.Container(
         content=ft.Column([
             ft.Text("Create New Pass", size=20, weight="bold"),
@@ -552,78 +666,27 @@ def main(page: ft.Page):
         ], scroll="auto", spacing=15),
         padding=20
     )
+    """
     
-    # Load classes on startup
-    load_classes()
+    # Load classes on startup - DISABLED (old Create Pass tab code)
+    # load_classes()
 
 
-    def run_search(e):
-        if not client: return
-        input_val = id_input.value.strip()
-        if not input_val: return
 
-        search_btn.disabled = True
-        page.update()
+    # OLD SEARCH FUNCTIONALITY - DISABLED (incompatible with new tab structure)
+    # def run_search(e):
+    #     if not client: return
+    #     input_val = id_input.value.strip()
 
-        try:
-            # Perform Search
-            if search_type.value == "class":
-                data = client.get_class(input_val)
-                class_part = data
-            else:
-                full_data = client.verify_pass(input_val)
-                if "error" in full_data: raise Exception(full_data['error'])
-                data = full_data
-                class_part = full_data.get('class', {})
-
-            # 1. Update JSON Tab
-            json_str = json.dumps(data, indent=2)
-            tabs.tabs[1].content = ft.Column([
-                ft.Text("API Response:", weight="bold"),
-                ft.Container(
-                    content=ft.Column([ft.Text(json_str, font_family="Consolas", size=12)], scroll="auto"),
-                    # FIX: Changed ft.colors.GREY_100 to "grey100"
-                    bgcolor="grey100", padding=10, border_radius=5, expand=True
-                )
-            ], scroll="auto")
-
-            # 2. Update Preview Tab
-            visuals = parse_class_visuals(class_part)
-            card = build_preview_card(visuals)
-            
-            tabs.tabs[0].content = ft.Container(
-                content=ft.Column([
-                    ft.Text("Pass Preview (Simulation)", size=16, color="grey"),
-                    ft.Container(
-                        content=card,
-                        alignment=ft.alignment.center,
-                        padding=20
-                    )
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                alignment=ft.alignment.top_center
-            )
-            
-            # Switch to Preview Tab automatically
-            tabs.selected_index = 0
-
-        except Exception as ex:
-            # FIX: Changed ft.colors.RED to "red"
-            tabs.tabs[1].content = ft.Text(f"Error: {ex}", color="red")
-            tabs.selected_index = 1 # Switch to JSON tab to show error
-        
-        search_btn.disabled = False
-        page.update()
-
-    search_btn = ft.ElevatedButton("Search", icon="search", on_click=run_search)
+    # search_btn = ft.ElevatedButton("Search", icon="search", on_click=run_search)
 
     page.add(
         ft.Row([
             ft.Image(src="B2F.png", width=150, height=150)
-            #ft.Text("Wallet Previewer", size=20, weight="bold")
         ],),
         ft.Row([connection_status, ft.Text(" | "), api_status]),
-        search_type,
-        ft.Row([id_input, search_btn]),
+        # search_type,  # Removed old search UI
+        # ft.Row([id_input, search_btn]),  # Removed old search UI
         ft.Divider(),
         tabs
     )

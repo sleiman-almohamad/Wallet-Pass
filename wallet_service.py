@@ -180,6 +180,52 @@ class WalletClient:
         except HttpError as e:
             raise Exception(f"Error creating pass object: {e}")
     
+    def create_pass_class(self, class_data, class_type="Generic"):
+        """
+        Create a pass class (template) in Google Wallet
+        
+        Args:
+            class_data: Dictionary with class data including:
+                - id: Class ID (with issuer prefix)
+                - issuerName: Name of the issuer
+                - reviewStatus: DRAFT or UNDER_REVIEW
+                - hexBackgroundColor: Background color
+                - logo: Logo image data (optional)
+                - heroImage: Hero image data (optional)
+            class_type: Type of class (Generic, EventTicket, LoyaltyCard, etc.)
+            
+        Returns:
+            Created class from Google Wallet API
+        """
+        try:
+            # Select appropriate resource based on class type
+            if class_type == "EventTicket":
+                resource = self.service.eventticketclass()
+            elif class_type == "LoyaltyCard":
+                resource = self.service.loyaltyclass()
+            elif class_type == "GiftCard":
+                resource = self.service.giftcardclass()
+            elif class_type == "TransitPass":
+                resource = self.service.transitclass()
+            else:
+                resource = self.service.genericclass()
+            
+            # Try to insert the class
+            return resource.insert(body=class_data).execute()
+        except HttpError as e:
+            # If class already exists, try to update it
+            if e.resp.status == 409:  # Conflict - class already exists
+                try:
+                    return resource.update(
+                        resourceId=class_data['id'],
+                        body=class_data
+                    ).execute()
+                except HttpError as update_error:
+                    raise Exception(f"Error updating existing class: {update_error}")
+            else:
+                raise Exception(f"Error creating pass class: {e}")
+    
+    
     def generate_save_link(self, object_id, class_type="EventTicket"):
         """
         Generate a "Save to Google Wallet" link with JWT token

@@ -210,16 +210,66 @@ def main(page: ft.Page):
             class_data = api_client.get_class(class_id)
             
             if not class_data:
-                manage_status.value = f"❌ Class '{class_id}' not found"
+                manage_status.value = f"❌ Class '{class_id}' not found in database"
                 manage_status.color = "red"
                 page.update()
                 return
             
             # Insert to Google Wallet using WalletClient
             if client:
-                # Here you would create the class in Google Wallet
-                # For now, just show success message
-                manage_status.value = f"✅ Class '{class_id}' ready to insert to Google Wallet"
+                # Build the Google Wallet class structure
+                class_type = class_data.get("class_type", "Generic")
+                
+                # Ensure class_id has issuer prefix
+                full_class_id = class_id if class_id.startswith(configs.ISSUER_ID) else f"{configs.ISSUER_ID}.{class_id}"
+                
+                # Build class data for Google Wallet API
+                google_class_data = {
+                    "id": full_class_id,
+                    "issuerName": class_data.get("issuer_name", "Your Business"),
+                    "reviewStatus": "UNDER_REVIEW",  # or "DRAFT"
+                }
+                
+                # Add background color if available
+                if class_data.get("base_color"):
+                    google_class_data["hexBackgroundColor"] = class_data["base_color"]
+                
+                # Add logo if available
+                if class_data.get("logo_url"):
+                    google_class_data["logo"] = {
+                        "sourceUri": {
+                            "uri": class_data["logo_url"]
+                        }
+                    }
+                
+                # Add type-specific fields
+                if class_type == "Generic":
+                    # For Generic passes, we need header field
+                    google_class_data["header"] = {
+                        "defaultValue": {
+                            "language": "en-US",
+                            "value": class_data.get("issuer_name", "Business Name")
+                        }
+                    }
+                elif class_type == "EventTicket":
+                    google_class_data["eventName"] = {
+                        "defaultValue": {
+                            "language": "en-US",
+                            "value": class_data.get("issuer_name", "Event Name")
+                        }
+                    }
+                elif class_type == "LoyaltyCard":
+                    google_class_data["programName"] = {
+                        "defaultValue": {
+                            "language": "en-US",
+                            "value": class_data.get("issuer_name", "Loyalty Program")
+                        }
+                    }
+                
+                # Create the class in Google Wallet
+                result = client.create_pass_class(google_class_data, class_type)
+                
+                manage_status.value = f"✅ Class '{class_id}' successfully inserted to Google Wallet!"
                 manage_status.color = "green"
             else:
                 manage_status.value = "❌ Google Wallet service not connected"

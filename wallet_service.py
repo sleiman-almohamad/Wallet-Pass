@@ -4,6 +4,8 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import configs
+import jwt
+from datetime import datetime, timedelta
 
 class WalletClient:
     def __init__(self):
@@ -149,3 +151,174 @@ class WalletClient:
             }
         except Exception as e:
             return {"error": str(e)}
+    
+    def create_pass_object(self, object_data, class_type="EventTicket"):
+        """
+        Create a pass object in Google Wallet
+        
+        Args:
+            object_data: Dictionary with pass object data
+            class_type: Type of pass (EventTicket, LoyaltyCard, etc.)
+            
+        Returns:
+            Created object from Google Wallet API
+        """
+        try:
+            # Select appropriate resource based on class type
+            if class_type == "EventTicket":
+                resource = self.service.eventticketobject()
+            elif class_type == "LoyaltyCard":
+                resource = self.service.loyaltyobject()
+            elif class_type == "GiftCard":
+                resource = self.service.giftcardobject()
+            elif class_type == "TransitPass":
+                resource = self.service.transitobject()
+            else:
+                resource = self.service.genericobject()
+            
+            return resource.insert(body=object_data).execute()
+        except HttpError as e:
+            raise Exception(f"Error creating pass object: {e}")
+    
+    def generate_save_link(self, object_id, class_type="EventTicket"):
+        """
+        Generate a "Save to Google Wallet" link with JWT token
+        
+        Args:
+            object_id: The pass object ID
+            class_type: Type of pass
+            
+        Returns:
+            URL that can be used to add pass to Google Wallet
+        """
+        # Determine the payload key based on class type
+        payload_key_map = {
+            "EventTicket": "eventTicketObjects",
+            "LoyaltyCard": "loyaltyObjects",
+            "GiftCard": "giftCardObjects",
+            "TransitPass": "transitObjects",
+            "Generic": "genericObjects"
+        }
+        
+        payload_key = payload_key_map.get(class_type, "genericObjects")
+        
+        # Create JWT claims
+        claims = {
+            "iss": self.credentials.service_account_email,
+            "aud": "google",
+            "origins": [],
+            "typ": "savetowallet",
+            "iat": datetime.utcnow(),
+            "payload": {
+                payload_key: [{
+                    "id": object_id
+                }]
+            }
+        }
+        
+        # Sign the JWT with the service account private key
+        token = jwt.encode(
+            claims,
+            self.credentials.signer.key_bytes,
+            algorithm='RS256'
+        )
+        
+        # Return the Save to Wallet URL
+        return f"https://pay.google.com/gp/v/save/{token}"
+    
+    def build_event_ticket_object(self, object_id, class_id, holder_name, holder_email, pass_data):
+        """
+        Build an EventTicket object structure for Google Wallet
+        
+        Args:
+            object_id: Unique object ID
+            class_id: Reference to class
+            holder_name: Holder's name
+            holder_email: Holder's email
+            pass_data: Dictionary with pass-specific data (seat, gate, etc.)
+            
+        Returns:
+            Dictionary formatted for Google Wallet API
+        """
+        obj = {
+            "id": object_id,
+            "classId": class_id,
+            "state": "ACTIVE",
+            "ticketHolderName": holder_name,
+            "reservationInfo": {
+                "confirmationCode": object_id.split('.')[-1] if '.' in object_id else object_id
+            }
+        }
+        
+        # Add seat information if available
+        if pass_data:
+            if "seat" in pass_data:
+                obj["seatInfo"] = {
+                    "seat": {
+                        "defaultValue": {
+                            "language": "en-US",
+                            "value": str(pass_data["seat"])
+                        }
+                    }
+                }
+            if "gate" in pass_data:
+                obj["seatInfo"] = obj.get("seatInfo", {})
+                obj["seatInfo"]["gate"] = {
+                    "defaultValue": {
+                        "language": "en-US",
+                        "value": str(pass_data["gate"])
+                    }
+                }
+            if "row" in pass_data:
+                obj["seatInfo"] = obj.get("seatInfo", {})
+                obj["seatInfo"]["row"] = {
+                    "defaultValue": {
+                        "language": "en-US",
+                        "value": str(pass_data["row"])
+                    }
+                }
+            if "section" in pass_data:
+                obj["seatInfo"] = obj.get("seatInfo", {})
+                obj["seatInfo"]["section"] = {
+                    "defaultValue": {
+                        "language": "en-US",
+                        "value": str(pass_data["section"])
+                    }
+                }
+        
+        return obj
+    
+    def build_loyalty_object(self, object_id, class_id, holder_name, holder_email, pass_data):
+        """Build a LoyaltyCard object structure"""
+        obj = {
+            "id": object_id,
+            "classId": class_id,
+            "state": "ACTIVE",
+            "accountName": holder_name,
+            "accountId": holder_email
+        }
+        
+        if pass_data and "points" in pass_data:
+            obj["loyaltyPoints"] = {
+                "balance": {
+                    "int": int(pass_data["points"])
+                }
+            }
+        
+        return obj
+    
+    def build_generic_object(self, object_id, class_id, holder_name, holder_email, pass_data):
+        """Build a Generic object structure"""
+        obj = {
+            "id": object_id,
+            "classId": class_id,
+            "state": "ACTIVE",
+            "cardTitle": {
+                "defaultValue": {
+                    "language": "en-US",
+                    "value": holder_name
+                }
+            }
+        }
+        
+        return obj

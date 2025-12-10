@@ -3,6 +3,9 @@ import json
 from wallet_service import WalletClient
 from api_client import APIClient
 from field_schemas import get_fields_for_class_type
+from google_wallet_parser import parse_google_wallet_class
+from qr_generator import generate_qr_code
+import configs
 
 
 def main(page: ft.Page):
@@ -163,6 +166,73 @@ def main(page: ft.Page):
         expand=True
     )
 
+    # --- Google Wallet Import Section ---
+    google_class_id_input = ft.TextField(
+        label="Google Wallet Class ID",
+        hint_text="e.g., 3388000000023033675.SeasonTicket2025",
+        width=400,
+        expand=True
+    )
+    
+    import_status = ft.Text("", size=12)
+    
+    def fetch_from_google_wallet(e):
+        """Fetch class from Google Wallet and save to database"""
+        class_id = google_class_id_input.value.strip()
+        
+        if not class_id:
+            import_status.value = "❌ Please enter a Class ID"
+            import_status.color = "red"
+            page.update()
+            return
+        
+        import_status.value = "⏳ Fetching from Google Wallet..."
+        import_status.color = "blue"
+        page.update()
+        
+        try:
+            # Fetch from Google Wallet using existing WalletClient
+            if not client:
+                raise Exception("Google Wallet service not connected")
+            
+            google_class = client.get_class(class_id)
+            
+            # Parse the Google Wallet class
+            metadata = parse_google_wallet_class(google_class)
+            
+            # Save to local database via API
+            result = api_client.create_class(
+                class_id=metadata['class_id'],
+                class_type=metadata['class_type'],
+                base_color=metadata['base_color'],
+                logo_url=metadata['logo_url']
+            )
+            
+            import_status.value = f"✅ Imported: {metadata['class_id']} ({metadata['class_type']})"
+            import_status.color = "green"
+            
+            # Refresh class list and select the new class
+            load_classes()
+            class_dropdown.value = metadata['class_id']
+            
+            # Trigger field generation
+            on_class_change(None)
+            
+            # Clear input
+            google_class_id_input.value = ""
+            
+        except Exception as ex:
+            import_status.value = f"❌ {str(ex)}"
+            import_status.color = "red"
+        
+        page.update()
+    
+    fetch_google_btn = ft.ElevatedButton(
+        "Fetch from Google Wallet",
+        icon="cloud_download",
+        on_click=fetch_from_google_wallet
+    )
+
     # --- Create Pass Form Fields ---
     class_dropdown = ft.Dropdown(
         label="Select Class",
@@ -313,10 +383,20 @@ def main(page: ft.Page):
                 except:
                     pass_data[field_name] = value
         
-        # Submit to API
+        # Submit to API (database)
         try:
+            create_result.value = "⏳ Creating pass..."
+            create_result.color = "blue"
+            page.update()
+            
+            # Ensure object ID has Issuer ID prefix
+            object_id = object_id_field.value.strip()
+            if not object_id.startswith(configs.ISSUER_ID):
+                object_id = f"{configs.ISSUER_ID}.{object_id}"
+            
+            # Save to database
             result = api_client.create_pass(
-                object_id=object_id_field.value.strip(),
+                object_id=object_id,
                 class_id=class_dropdown.value,
                 holder_name=holder_name_field.value.strip(),
                 holder_email=holder_email_field.value.strip(),
@@ -324,8 +404,81 @@ def main(page: ft.Page):
                 pass_data=pass_data
             )
             
-            create_result.value = f"✅ {result.get('message', 'Pass created successfully!')}"
-            create_result.color = "green"
+            # Get class details to determine type
+            class_data = api_client.get_class(class_dropdown.value)
+            class_type = class_data.get("class_type", "Generic") if class_data else "Generic"
+            
+            # Create pass object in Google Wallet
+            if client:
+                try:
+                    create_result.value = "⏳ Pushing to Google Wallet..."
+                    page.update()
+                    
+                    # Build pass object based on type
+                    if class_type == "EventTicket":
+                        pass_obj = client.build_event_ticket_object(
+                            object_id=object_id,
+                            class_id=class_dropdown.value,
+                            holder_name=holder_name_field.value.strip(),
+                            holder_email=holder_email_field.value.strip(),
+                            pass_data=pass_data
+                        )
+                    elif class_type == "LoyaltyCard":
+                        pass_obj = client.build_loyalty_object(
+                            object_id=object_id,
+                            class_id=class_dropdown.value,
+                            holder_name=holder_name_field.value.strip(),
+                            holder_email=holder_email_field.value.strip(),
+                            pass_data=pass_data
+                        )
+                    else:
+                        pass_obj = client.build_generic_object(
+                            object_id=object_id,
+                            class_id=class_dropdown.value,
+                            holder_name=holder_name_field.value.strip(),
+                            holder_email=holder_email_field.value.strip(),
+                            pass_data=pass_data
+                        )
+                    
+                    # Create in Google Wallet
+                    client.create_pass_object(pass_obj, class_type)
+                    
+                    # Generate Save to Wallet link
+                    save_link = client.generate_save_link(object_id, class_type)
+                    
+                    # Generate QR code
+                    qr_filename = f"qr_{object_id.replace('.', '_')}"
+                    qr_path = generate_qr_code(save_link, qr_filename)
+                    
+                    create_result.value = f"✅ Pass created successfully!\n📱 Scan QR code below to add to your wallet"
+                    create_result.color = "green"
+                    
+                    # Show QR code in a dialog
+                    def close_dialog(e):
+                        qr_dialog.open = False
+                        page.update()
+                    
+                    qr_dialog = ft.AlertDialog(
+                        title=ft.Text("Scan to Add to Google Wallet"),
+                        content=ft.Column([
+                            ft.Image(src=qr_path, width=300, height=300),
+                            ft.Text("Scan this QR code with your phone", size=14, text_align="center"),
+                            ft.Text(f"Pass ID: {object_id}", size=12, color="grey"),
+                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
+                        actions=[
+                            ft.TextButton("Close", on_click=close_dialog)
+                        ],
+                    )
+                    
+                    page.dialog = qr_dialog
+                    qr_dialog.open = True
+                    
+                except Exception as wallet_ex:
+                    create_result.value = f"✅ Pass saved to database\n⚠️ Google Wallet: {str(wallet_ex)}"
+                    create_result.color = "orange"
+            else:
+                create_result.value = f"✅ {result.get('message', 'Pass created successfully!')}\n⚠️ Google Wallet service not connected"
+                create_result.color = "orange"
             
             # Clear form
             object_id_field.value = ""
@@ -361,7 +514,31 @@ def main(page: ft.Page):
         content=ft.Column([
             ft.Text("Create New Pass", size=20, weight="bold"),
             ft.Divider(),
+            
+            # Google Wallet Import Section
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("Import from Google Wallet", size=16, weight="bold", color="purple"),
+                    ft.Row([google_class_id_input, fetch_google_btn], alignment=ft.MainAxisAlignment.START),
+                    import_status,
+                ], spacing=10),
+                bgcolor="purple12",
+                padding=15,
+                border_radius=10
+            ),
+            
+            ft.Divider(height=20),
+            ft.Text("OR", size=14, weight="bold", text_align="center"),
+            ft.Divider(height=20),
+            
+            # Existing class selection
+            ft.Text("Select Existing Class", size=16, weight="bold", color="blue"),
             ft.Row([class_dropdown, refresh_classes_btn], alignment=ft.MainAxisAlignment.START),
+            
+            ft.Divider(),
+            
+            # Pass details
+            ft.Text("Pass Information", size=16, weight="bold", color="blue"),
             object_id_field,
             holder_name_field,
             holder_email_field,

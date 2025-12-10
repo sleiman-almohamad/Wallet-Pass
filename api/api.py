@@ -9,17 +9,25 @@ from typing import List, Optional
 from datetime import datetime
 import sys
 from pathlib import Path
+import mysql.connector
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
+import configs
 from database.db_manager import DatabaseManager
 from api.models import (
     ClassCreate, ClassUpdate, ClassResponse,
     PassCreate, PassUpdate, PassStatusUpdate, PassResponse,
     HealthResponse, MessageResponse
 )
-
+def get_db_connection():
+    return mysql.connector.connect(
+        host=configs.DB_HOST,
+        port=configs.DB_PORT,
+        user=configs.DB_USER,
+        password=configs.DB_PASSWORD,
+        database=configs.DB_NAME
+    )
 # Initialize FastAPI app
 app = FastAPI(
     title="Wallet Passes API",
@@ -49,14 +57,43 @@ db = DatabaseManager()
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 async def health_check():
     """Check API and database health status"""
-    db_status = "connected" if db.test_connection() else "disconnected"
-    
+    db_status = "disconnected"
+    conn = None
+    cursor = None
+
+    try:
+        # Attempt to establish a new database connection
+        conn = get_db_connection() 
+        cursor = conn.cursor()
+        
+        # Execute a simple query to verify connection
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+        
+        # If we reach here without errors, connection is successful
+        db_status = "connected"
+        
+    except Exception as e:
+        # Log any errors to the console
+        print(f"⚠️ Health Check Failed: {e}")
+        db_status = "disconnected"
+        
+    finally:
+        # Always close cursor and connection if they were created
+        try:
+            if cursor:
+                cursor.close()
+            if conn and conn.is_connected():
+                conn.close()
+        except Exception as e:
+            print(f"⚠️ Error closing connection: {e}")
+
+    # Return the health status
     return HealthResponse(
         status="healthy" if db_status == "connected" else "unhealthy",
         database=db_status,
         timestamp=datetime.now()
     )
-
 
 # ========================================================================
 # Classes Endpoints

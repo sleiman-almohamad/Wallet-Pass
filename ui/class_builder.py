@@ -148,21 +148,40 @@ def create_template_builder(page, api_client=None):
         
         try:
             if api_client:
+                # Use default values since UI fields are commented out
+                issuer_name = "Your Business"
+                header_text = "Business Name"
+                card_title = "Pass Title"
+                
+                # Debug: Print values to console
+                print(f"Saving template with:")
+                print(f"  Class ID: {data['class_id']}")
+                print(f"  Class Type: {data['class_type']}")
+                print(f"  Issuer Name: {issuer_name}")
+                print(f"  Header Text: {header_text}")
+                print(f"  Card Title: {card_title}")
+                
                 result = api_client.create_class(
                     class_id=data["class_id"],
                     class_type=data["class_type"],
-                    base_color=data["background_color"],
-                    logo_url=data.get("logo_url", ""),
-                    issuer_name=data.get("issuer_name", "Your Business"),
-                    header_text=data.get("header", "Business Name"),
-                    card_title=data.get("card_title", "Pass Title")
+                    base_color=data.get("background_color", "#4285f4"),
+                    logo_url=data.get("logo_url") or None,
+                    issuer_name=issuer_name,
+                    header_text=header_text,
+                    card_title=card_title
                 )
+                
+                print(f"API Response: {result}")
+                
                 save_status_ref.current.value = "✅ Template saved successfully!"
                 save_status_ref.current.color = "green"
             else:
                 save_status_ref.current.value = "⚠️ API client not connected"
                 save_status_ref.current.color = "orange"
         except Exception as ex:
+            print(f"Error saving template: {ex}")
+            import traceback
+            traceback.print_exc()
             save_status_ref.current.value = f"❌ Error: {str(ex)}"
             save_status_ref.current.color = "red"
         
@@ -205,53 +224,47 @@ def create_template_builder(page, api_client=None):
                     options=[ft.dropdown.Option(ct) for ct in ["Generic", "EventTicket", "LoyaltyCard", "GiftCard", "TransitPass"]],
                     on_change=lambda e: template_state.update("class_type", e.control.value)
                 ),
-                ft.TextField(
-                    ref=issuer_input_ref,
-                    label="Issuer Name",
-                    value="Your Business",
-                    width=400,
-                    on_change=lambda e: template_state.update("issuer_name", e.control.value)
-                ),
-                
                 ft.Divider(height=20),
                 
-                ft.Text("Pass Content", size=18, weight=ft.FontWeight.BOLD),
-                ft.TextField(
-                    ref=header_input_ref,
-                    label="Header Text *",
-                    value="Business Name",
-                    width=400,
-                    on_change=lambda e: template_state.update("header", e.control.value)
-                ),
-                ft.TextField(
-                    ref=card_title_input_ref,
-                    label="Card Title *",
-                    value="Pass Title",
-                    width=400,
-                    on_change=lambda e: template_state.update("card_title", e.control.value)
-                ),
+                # COMMENTED OUT - Pass Content section - Can be restored later
+                # ft.Text("Pass Content", size=18, weight=ft.FontWeight.BOLD),
+                # ft.TextField(
+                #     ref=header_input_ref,
+                #     label="Header Text *",
+                #     value="Business Name",
+                #     width=400,
+                #     on_change=lambda e: template_state.update("header", e.control.value)
+                # ),
+                # ft.TextField(
+                #     ref=card_title_input_ref,
+                #     label="Card Title *",
+                #     value="Pass Title",
+                #     width=400,
+                #     on_change=lambda e: template_state.update("card_title", e.control.value)
+                # ),
                 
-                ft.Divider(height=20),
+                # ft.Divider(height=20),
                 
-                ft.Text("Visual Customization", size=18, weight=ft.FontWeight.BOLD),
-                ft.Text("Background Color", size=14, weight=ft.FontWeight.BOLD),
-                ft.TextField(
-                    label="Hex Color",
-                    value="#4285f4",
-                    width=200,
-                    prefix_text="#",
-                    on_change=lambda e: template_state.update("background_color", f"#{e.control.value}") if len(e.control.value) == 6 else None
-                ),
+                # COMMENTED OUT - Visual Customization section - Can be restored later
+                # ft.Text("Visual Customization", size=18, weight=ft.FontWeight.BOLD),
+                # ft.Text("Background Color", size=14, weight=ft.FontWeight.BOLD),
+                # ft.TextField(
+                #     label="Hex Color",
+                #     value="#4285f4",
+                #     width=200,
+                #     prefix_text="#",
+                #     on_change=lambda e: template_state.update("background_color", f"#{e.control.value}") if len(e.control.value) == 6 else None
+                # ),
                 
-                ft.Container(height=10),
+                # ft.Container(height=10),
                 
-                ft.Text("Logo URL", size=14, weight=ft.FontWeight.BOLD),
-                ft.TextField(
-                    label="Logo Image URL",
-                    hint_text="e.g., https://example.com/logo.png",
-                    width=400,
-                    on_change=lambda e: template_state.update("logo_url", e.control.value)
-                ),
+                # ft.Text("Logo URL", size=14, weight=ft.FontWeight.BOLD),
+                # ft.TextField(
+                #     label="Logo Image URL",
+                #     hint_text="e.g., https://example.com/logo.png",
+                #     width=400,
+                #     on_change=lambda e: template_state.update("logo_url", e.control.value)
+                # ),
                 
                 ft.Divider(height=20),
                 

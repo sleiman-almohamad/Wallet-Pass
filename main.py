@@ -186,9 +186,7 @@ def main(page: ft.Page):
     edit_issuer_name_field = ft.TextField(
         label="Issuer Name",
         hint_text="e.g., Your Business Name",
-        width=400,
-        read_only=True,
-        bgcolor="grey100"
+        width=400
     )
     
     edit_header_text_field = ft.TextField(
@@ -368,7 +366,11 @@ def main(page: ft.Page):
             # Populate form fields
             edit_class_id_field.value = class_data.get("class_id", "")
             edit_class_type_field.value = class_data.get("class_type", "Generic")
-            edit_issuer_name_field.value = class_data.get("issuer_name", "")
+            
+            # Handle issuer_name with proper default
+            issuer_name = class_data.get("issuer_name")
+            edit_issuer_name_field.value = issuer_name if issuer_name else "Your Business"
+            
             edit_header_text_field.value = class_data.get("header_text", "")
             edit_card_title_field.value = class_data.get("card_title", "")
             
@@ -418,6 +420,7 @@ def main(page: ft.Page):
                 class_id=class_id,
                 base_color=color if color else None,
                 logo_url=edit_logo_url_field.value if edit_logo_url_field.value else None,
+                issuer_name=edit_issuer_name_field.value if edit_issuer_name_field.value else None,
                 header_text=edit_header_text_field.value if edit_header_text_field.value else None,
                 card_title=edit_card_title_field.value if edit_card_title_field.value else None
             )

@@ -7,6 +7,7 @@ from google_wallet_parser import parse_google_wallet_class
 from qr_generator import generate_qr_code
 import configs
 from ui.class_builder import create_template_builder
+from ui.pass_generator import create_pass_generator
 
 
 def main(page: ft.Page):
@@ -482,24 +483,36 @@ def main(page: ft.Page):
             
             # Add type-specific fields
             if class_type == "Generic":
+                # Use header_text from database, fallback to issuer_name
+                header_value = edit_header_text_field.value or edit_issuer_name_field.value or "Business Name"
+                card_title_value = edit_card_title_field.value or "Pass Title"
+                
                 google_class_data["header"] = {
                     "defaultValue": {
                         "language": "en-US",
-                        "value": edit_issuer_name_field.value or "Business Name"
+                        "value": header_value
+                    }
+                }
+                google_class_data["cardTitle"] = {
+                    "defaultValue": {
+                        "language": "en-US",
+                        "value": card_title_value
                     }
                 }
             elif class_type == "EventTicket":
+                event_name = edit_header_text_field.value or edit_issuer_name_field.value or "Event Name"
                 google_class_data["eventName"] = {
                     "defaultValue": {
                         "language": "en-US",
-                        "value": edit_issuer_name_field.value or "Event Name"
+                        "value": event_name
                     }
                 }
             elif class_type == "LoyaltyCard":
+                program_name = edit_header_text_field.value or edit_issuer_name_field.value or "Loyalty Program"
                 google_class_data["programName"] = {
                     "defaultValue": {
                         "language": "en-US",
-                        "value": edit_issuer_name_field.value or "Loyalty Program"
+                        "value": program_name
                     }
                 }
             
@@ -616,12 +629,16 @@ def main(page: ft.Page):
         expand=True
     )
     
+    # Create Pass Generator tab
+    pass_generator = create_pass_generator(page, api_client=api_client, wallet_client=client)
+    
     # Tabs for switching views
     tabs = ft.Tabs(
         selected_index=0,
         animation_duration=300,
         tabs=[
             ft.Tab(text="Template Builder 🎨", content=template_builder),
+            ft.Tab(text="Pass Generator 🎫", content=pass_generator),
             ft.Tab(text="Manage Templates 📋", content=manage_templates_content),
         ],
         expand=True

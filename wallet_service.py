@@ -262,10 +262,16 @@ class WalletClient:
             }
         }
         
+        # Read the private key from the service account file
+        import json
+        with open(configs.KEY_FILE_PATH, 'r') as f:
+            service_account_info = json.load(f)
+            private_key = service_account_info['private_key']
+        
         # Sign the JWT with the service account private key
         token = jwt.encode(
             claims,
-            self.credentials.signer.key_bytes,
+            private_key,
             algorithm='RS256'
         )
         
@@ -355,16 +361,34 @@ class WalletClient:
     
     def build_generic_object(self, object_id, class_id, holder_name, holder_email, pass_data):
         """Build a Generic object structure"""
+        # Get cardTitle from pass_data, fallback to holder_name
+        card_title_value = pass_data.get("header_value", holder_name) if pass_data else holder_name
+        
         obj = {
             "id": object_id,
             "classId": class_id,
             "state": "ACTIVE",
-            "cardTitle": {
+            "header": {
                 "defaultValue": {
                     "language": "en-US",
                     "value": holder_name
                 }
+            },
+            "cardTitle": {
+                "defaultValue": {
+                    "language": "en-US",
+                    "value": card_title_value
+                }
             }
         }
+        
+        # Add subheader if provided
+        if pass_data and "subheader" in pass_data and pass_data["subheader"]:
+            obj["subheader"] = {
+                "defaultValue": {
+                    "language": "en-US",
+                    "value": pass_data["subheader"]
+                }
+            }
         
         return obj

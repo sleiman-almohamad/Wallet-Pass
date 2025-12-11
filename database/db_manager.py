@@ -46,7 +46,10 @@ class DatabaseManager:
     
     def create_class(self, class_id: str, class_type: str, 
                     base_color: Optional[str] = None, 
-                    logo_url: Optional[str] = None) -> bool:
+                    logo_url: Optional[str] = None,
+                    issuer_name: Optional[str] = None,
+                    header_text: Optional[str] = None,
+                    card_title: Optional[str] = None) -> bool:
         """
         Create a new pass class
         
@@ -55,6 +58,9 @@ class DatabaseManager:
             class_type: Type of pass (e.g., 'EventTicket', 'LoyaltyCard')
             base_color: Hex color code (e.g., '#FF5733')
             logo_url: URL to the class logo
+            issuer_name: Name of the issuer/business
+            header_text: Header text for the pass
+            card_title: Card title for the pass
             
         Returns:
             True if successful, False otherwise
@@ -63,9 +69,9 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute(
                 """INSERT INTO Classes_Table 
-                   (class_id, class_type, base_color, logo_url) 
-                   VALUES (%s, %s, %s, %s)""",
-                (class_id, class_type, base_color, logo_url)
+                   (class_id, class_type, base_color, logo_url, issuer_name, header_text, card_title) 
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (class_id, class_type, base_color, logo_url, issuer_name, header_text, card_title)
             )
             return cursor.rowcount > 0
     
@@ -105,12 +111,12 @@ class DatabaseManager:
         
         Args:
             class_id: The class identifier
-            **kwargs: Fields to update (class_type, base_color, logo_url)
+            **kwargs: Fields to update (class_type, base_color, logo_url, issuer_name, header_text, card_title)
             
         Returns:
             True if successful, False otherwise
         """
-        allowed_fields = ['class_type', 'base_color', 'logo_url']
+        allowed_fields = ['class_type', 'base_color', 'logo_url', 'issuer_name', 'header_text', 'card_title']
         updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
         
         if not updates:

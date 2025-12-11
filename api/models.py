@@ -24,6 +24,9 @@ class ClassCreate(BaseModel):
     class_type: str = Field(..., description="Type of pass (e.g., 'EventTicket', 'LoyaltyCard')")
     base_color: Optional[str] = Field(None, description="Hex color code (e.g., '#FF5733')")
     logo_url: Optional[str] = Field(None, description="URL to the class logo")
+    issuer_name: Optional[str] = Field(None, description="Name of the issuer/business")
+    header_text: Optional[str] = Field(None, description="Header text for the pass")
+    card_title: Optional[str] = Field(None, description="Card title for the pass")
     
     model_config = {
         "json_schema_extra": {
@@ -32,7 +35,10 @@ class ClassCreate(BaseModel):
                     "class_id": "EVENT_CLASS_001",
                     "class_type": "EventTicket",
                     "base_color": "#FF5733",
-                    "logo_url": "https://example.com/logo.png"
+                    "logo_url": "https://example.com/logo.png",
+                    "issuer_name": "My Business",
+                    "header_text": "Business Name",
+                    "card_title": "Event Pass"
                 }
             ]
         }
@@ -44,13 +50,19 @@ class ClassUpdate(BaseModel):
     class_type: Optional[str] = Field(None, description="Type of pass")
     base_color: Optional[str] = Field(None, description="Hex color code")
     logo_url: Optional[str] = Field(None, description="URL to the class logo")
+    issuer_name: Optional[str] = Field(None, description="Name of the issuer/business")
+    header_text: Optional[str] = Field(None, description="Header text for the pass")
+    card_title: Optional[str] = Field(None, description="Card title for the pass")
     
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
                     "base_color": "#00FF00",
-                    "logo_url": "https://example.com/new-logo.png"
+                    "logo_url": "https://example.com/new-logo.png",
+                    "issuer_name": "Updated Business Name",
+                    "header_text": "New Header",
+                    "card_title": "New Title"
                 }
             ]
         }
@@ -63,6 +75,9 @@ class ClassResponse(BaseModel):
     class_type: str
     base_color: Optional[str] = None
     logo_url: Optional[str] = None
+    issuer_name: Optional[str] = None
+    header_text: Optional[str] = None
+    card_title: Optional[str] = None
     created_at: datetime
     
     model_config = {

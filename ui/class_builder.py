@@ -152,7 +152,10 @@ def create_template_builder(page, api_client=None):
                     class_id=data["class_id"],
                     class_type=data["class_type"],
                     base_color=data["background_color"],
-                    logo_url=data.get("logo_url", "")
+                    logo_url=data.get("logo_url", ""),
+                    issuer_name=data.get("issuer_name", "Your Business"),
+                    header_text=data.get("header", "Business Name"),
+                    card_title=data.get("card_title", "Pass Title")
                 )
                 save_status_ref.current.value = "✅ Template saved successfully!"
                 save_status_ref.current.color = "green"
@@ -238,6 +241,16 @@ def create_template_builder(page, api_client=None):
                     width=200,
                     prefix_text="#",
                     on_change=lambda e: template_state.update("background_color", f"#{e.control.value}") if len(e.control.value) == 6 else None
+                ),
+                
+                ft.Container(height=10),
+                
+                ft.Text("Logo URL", size=14, weight=ft.FontWeight.BOLD),
+                ft.TextField(
+                    label="Logo Image URL",
+                    hint_text="e.g., https://example.com/logo.png",
+                    width=400,
+                    on_change=lambda e: template_state.update("logo_url", e.control.value)
                 ),
                 
                 ft.Divider(height=20),

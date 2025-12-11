@@ -161,12 +161,162 @@ def main(page: ft.Page):
     # Create Manage Templates tab content
     manage_templates_dropdown = ft.Dropdown(
         label="Select Template Class",
-        hint_text="Choose a class to insert to Google Wallet",
+        hint_text="Choose a class to manage",
         width=400,
         options=[]
     )
     
     manage_status = ft.Text("", size=12)
+    
+    # Form fields for editing template
+    edit_class_id_field = ft.TextField(
+        label="Class ID",
+        width=400,
+        read_only=True,
+        bgcolor="grey100"
+    )
+    
+    edit_class_type_field = ft.TextField(
+        label="Class Type",
+        width=400,
+        read_only=True,
+        bgcolor="grey100"
+    )
+    
+    edit_issuer_name_field = ft.TextField(
+        label="Issuer Name",
+        hint_text="e.g., Your Business Name",
+        width=400,
+        read_only=True,
+        bgcolor="grey100"
+    )
+    
+    edit_header_text_field = ft.TextField(
+        label="Header Text",
+        hint_text="e.g., Business Name",
+        width=400
+    )
+    
+    edit_card_title_field = ft.TextField(
+        label="Card Title",
+        hint_text="e.g., Event Ticket",
+        width=400
+    )
+    
+    edit_background_color_field = ft.TextField(
+        label="Background Color (Hex)",
+        hint_text="e.g., #4285f4",
+        width=400,
+        prefix_text="#"
+    )
+    
+    edit_logo_url_field = ft.TextField(
+        label="Logo URL",
+        hint_text="e.g., https://example.com/logo.png",
+        width=400
+    )
+    
+    # Preview container
+    preview_container = ft.Container(
+        content=ft.Text("Select a template and click 'Show' to preview", color="grey"),
+        alignment=ft.alignment.center
+    )
+    
+    def build_preview(class_data):
+        """Build visual pass preview from class data"""
+        bg_color = class_data.get("base_color", "#4285f4")
+        logo_url = class_data.get("logo_url")
+        header_text = class_data.get("header_text", "Business Name")
+        card_title = class_data.get("card_title", "Pass Title")
+        
+        # Logo
+        if logo_url:
+            logo_control = ft.Container(
+                width=50, height=50, border_radius=25,
+                clip_behavior=ft.ClipBehavior.HARD_EDGE,
+                content=ft.Image(src=logo_url, width=50, height=50, fit=ft.ImageFit.COVER)
+            )
+        else:
+            logo_control = ft.Container(
+                width=50, height=50, border_radius=25, bgcolor="white30",
+                content=ft.Icon("business", color="white", size=30),
+                alignment=ft.alignment.center
+            )
+        
+        return ft.Container(
+            width=350,
+            bgcolor=bg_color,
+            border_radius=15,
+            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            shadow=ft.BoxShadow(blur_radius=15, color="black26", offset=ft.Offset(0, 5)),
+            content=ft.Column([
+                # Top: Logo & Header
+                ft.Container(
+                    padding=15,
+                    content=ft.Row([
+                        logo_control,
+                        ft.Container(width=10),
+                        ft.Text(header_text, color="white", weight=ft.FontWeight.BOLD, size=16, expand=True)
+                    ])
+                ),
+                # Card Title
+                ft.Container(
+                    padding=ft.padding.only(left=15, right=15, bottom=10),
+                    content=ft.Text(card_title, color="white", size=22, weight=ft.FontWeight.BOLD)
+                ),
+                # Hero Image placeholder
+                ft.Container(
+                    height=150, bgcolor="black12",
+                    content=ft.Column([
+                        ft.Icon("image", size=40, color="grey"),
+                        ft.Text("Hero Image", size=12, color="grey")
+                    ], alignment=ft.MainAxisAlignment.CENTER,
+                       horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                ),
+                # Bottom: QR & Details
+                ft.Container(
+                    bgcolor="white",
+                    padding=15,
+                    content=ft.Column([
+                        ft.Text("Pass Details", color="grey", size=12),
+                        ft.Container(height=5),
+                        ft.Row([
+                            ft.Container(
+                                width=80, height=80, bgcolor="grey200", border_radius=5,
+                                content=ft.Icon("qr_code_2", size=60, color="grey"),
+                                alignment=ft.alignment.center
+                            ),
+                            ft.Container(width=15),
+                            ft.Column([
+                                ft.Text("John Doe", weight=ft.FontWeight.BOLD, size=14, color="black"),
+                                ft.Text("ID: 1234567890", size=12, color="grey")
+                            ])
+                        ])
+                    ])
+                )
+            ], spacing=0)
+        )
+    
+    def update_preview():
+        """Update preview based on current field values"""
+        if not edit_class_id_field.value:
+            return
+        
+        class_data = {
+            "base_color": f"#{edit_background_color_field.value}" if edit_background_color_field.value and not edit_background_color_field.value.startswith("#") else edit_background_color_field.value or "#4285f4",
+            "logo_url": edit_logo_url_field.value,
+            "header_text": edit_header_text_field.value or "Business Name",
+            "card_title": edit_card_title_field.value or "Pass Title"
+        }
+        
+        preview_container.content = build_preview(class_data)
+        page.update()
+    
+    # Add on_change handlers to update preview
+    edit_header_text_field.on_change = lambda e: update_preview()
+    edit_card_title_field.on_change = lambda e: update_preview()
+    edit_background_color_field.on_change = lambda e: update_preview()
+    edit_logo_url_field.on_change = lambda e: update_preview()
     
     def load_template_classes():
         """Load classes from database into dropdown"""
@@ -191,15 +341,15 @@ def main(page: ft.Page):
             manage_status.color = "red"
             page.update()
     
-    def insert_to_google(e):
-        """Insert selected class to Google Wallet"""
+    def show_template(e):
+        """Fetch and display template for editing"""
         if not manage_templates_dropdown.value:
             manage_status.value = "❌ Please select a class"
             manage_status.color = "red"
             page.update()
             return
         
-        manage_status.value = "⏳ Inserting to Google Wallet..."
+        manage_status.value = "⏳ Loading template..."
         manage_status.color = "blue"
         page.update()
         
@@ -215,60 +365,144 @@ def main(page: ft.Page):
                 page.update()
                 return
             
+            # Populate form fields
+            edit_class_id_field.value = class_data.get("class_id", "")
+            edit_class_type_field.value = class_data.get("class_type", "Generic")
+            edit_issuer_name_field.value = class_data.get("issuer_name", "")
+            edit_header_text_field.value = class_data.get("header_text", "")
+            edit_card_title_field.value = class_data.get("card_title", "")
+            
+            # Handle color with or without #
+            color = class_data.get("base_color", "")
+            if color and color.startswith("#"):
+                edit_background_color_field.value = color[1:]
+            else:
+                edit_background_color_field.value = color
+            
+            edit_logo_url_field.value = class_data.get("logo_url", "")
+            
+            # Update preview
+            preview_container.content = build_preview(class_data)
+            
+            manage_status.value = f"✅ Template loaded. Edit fields and click 'Update' to save changes."
+            manage_status.color = "green"
+            
+        except Exception as ex:
+            manage_status.value = f"❌ Error: {str(ex)}"
+            manage_status.color = "red"
+        
+        page.update()
+    
+    def update_template(e):
+        """Save template changes to database"""
+        if not edit_class_id_field.value:
+            manage_status.value = "❌ No template loaded"
+            manage_status.color = "red"
+            page.update()
+            return
+        
+        manage_status.value = "⏳ Updating template..."
+        manage_status.color = "blue"
+        page.update()
+        
+        try:
+            class_id = edit_class_id_field.value
+            
+            # Prepare color value
+            color = edit_background_color_field.value
+            if color and not color.startswith("#"):
+                color = f"#{color}"
+            
+            # Update via API
+            result = api_client.update_class(
+                class_id=class_id,
+                base_color=color if color else None,
+                logo_url=edit_logo_url_field.value if edit_logo_url_field.value else None,
+                header_text=edit_header_text_field.value if edit_header_text_field.value else None,
+                card_title=edit_card_title_field.value if edit_card_title_field.value else None
+            )
+            
+            manage_status.value = f"✅ Template '{class_id}' updated successfully!"
+            manage_status.color = "green"
+            
+            # Refresh preview
+            update_preview()
+            
+        except Exception as ex:
+            manage_status.value = f"❌ Error: {str(ex)}"
+            manage_status.color = "red"
+        
+        page.update()
+    
+    def insert_to_google(e):
+        """Insert selected class to Google Wallet"""
+        if not edit_class_id_field.value:
+            manage_status.value = "❌ Please load a template first"
+            manage_status.color = "red"
+            page.update()
+            return
+        
+        manage_status.value = "⏳ Inserting to Google Wallet..."
+        manage_status.color = "blue"
+        page.update()
+        
+        try:
+            class_id = edit_class_id_field.value
+            class_type = edit_class_type_field.value
+            
+            # Ensure class_id has issuer prefix
+            full_class_id = class_id if class_id.startswith(configs.ISSUER_ID) else f"{configs.ISSUER_ID}.{class_id}"
+            
+            # Prepare color
+            color = edit_background_color_field.value
+            if color and not color.startswith("#"):
+                color = f"#{color}"
+            
+            # Build class data for Google Wallet API
+            google_class_data = {
+                "id": full_class_id,
+                "issuerName": edit_issuer_name_field.value or "Your Business",
+                "reviewStatus": "UNDER_REVIEW",
+            }
+            
+            # Add background color if available
+            if color:
+                google_class_data["hexBackgroundColor"] = color
+            
+            # Add logo if available
+            if edit_logo_url_field.value:
+                google_class_data["logo"] = {
+                    "sourceUri": {
+                        "uri": edit_logo_url_field.value
+                    }
+                }
+            
+            # Add type-specific fields
+            if class_type == "Generic":
+                google_class_data["header"] = {
+                    "defaultValue": {
+                        "language": "en-US",
+                        "value": edit_issuer_name_field.value or "Business Name"
+                    }
+                }
+            elif class_type == "EventTicket":
+                google_class_data["eventName"] = {
+                    "defaultValue": {
+                        "language": "en-US",
+                        "value": edit_issuer_name_field.value or "Event Name"
+                    }
+                }
+            elif class_type == "LoyaltyCard":
+                google_class_data["programName"] = {
+                    "defaultValue": {
+                        "language": "en-US",
+                        "value": edit_issuer_name_field.value or "Loyalty Program"
+                    }
+                }
+            
             # Insert to Google Wallet using WalletClient
             if client:
-                # Build the Google Wallet class structure
-                class_type = class_data.get("class_type", "Generic")
-                
-                # Ensure class_id has issuer prefix
-                full_class_id = class_id if class_id.startswith(configs.ISSUER_ID) else f"{configs.ISSUER_ID}.{class_id}"
-                
-                # Build class data for Google Wallet API
-                google_class_data = {
-                    "id": full_class_id,
-                    "issuerName": class_data.get("issuer_name", "Your Business"),
-                    "reviewStatus": "UNDER_REVIEW",  # or "DRAFT"
-                }
-                
-                # Add background color if available
-                if class_data.get("base_color"):
-                    google_class_data["hexBackgroundColor"] = class_data["base_color"]
-                
-                # Add logo if available
-                if class_data.get("logo_url"):
-                    google_class_data["logo"] = {
-                        "sourceUri": {
-                            "uri": class_data["logo_url"]
-                        }
-                    }
-                
-                # Add type-specific fields
-                if class_type == "Generic":
-                    # For Generic passes, we need header field
-                    google_class_data["header"] = {
-                        "defaultValue": {
-                            "language": "en-US",
-                            "value": class_data.get("issuer_name", "Business Name")
-                        }
-                    }
-                elif class_type == "EventTicket":
-                    google_class_data["eventName"] = {
-                        "defaultValue": {
-                            "language": "en-US",
-                            "value": class_data.get("issuer_name", "Event Name")
-                        }
-                    }
-                elif class_type == "LoyaltyCard":
-                    google_class_data["programName"] = {
-                        "defaultValue": {
-                            "language": "en-US",
-                            "value": class_data.get("issuer_name", "Loyalty Program")
-                        }
-                    }
-                
-                # Create the class in Google Wallet
                 result = client.create_pass_class(google_class_data, class_type)
-                
                 manage_status.value = f"✅ Class '{class_id}' successfully inserted to Google Wallet!"
                 manage_status.color = "green"
             else:
@@ -285,40 +519,98 @@ def main(page: ft.Page):
     load_template_classes()
     
     manage_templates_content = ft.Container(
-        content=ft.Column([
-            ft.Text("Manage Templates", size=24, weight=ft.FontWeight.BOLD),
-            ft.Text("Select a template class to insert into Google Wallet", size=12, color="grey"),
-            ft.Divider(),
+        content=ft.Row([
+            # Left Panel: Controls and Edit Fields
+            ft.Container(
+                width=450,
+                content=ft.Column([
+                    ft.Text("Manage Templates", size=24, weight=ft.FontWeight.BOLD),
+                    ft.Text("Select, preview, and edit your pass templates", size=12, color="grey"),
+                    ft.Divider(),
+                    
+                    ft.Container(height=10),
+                    
+                    manage_templates_dropdown,
+                    
+                    ft.Container(height=10),
+                    
+                    ft.Row([
+                        ft.ElevatedButton(
+                            "Show",
+                            icon="visibility",
+                            on_click=show_template,
+                            style=ft.ButtonStyle(
+                                bgcolor="green",
+                                color="white"
+                            )
+                        ),
+                        ft.OutlinedButton(
+                            "Refresh List",
+                            icon="refresh",
+                            on_click=lambda e: load_template_classes()
+                        )
+                    ], spacing=10),
+                    
+                    ft.Divider(height=20),
+                    
+                    ft.Text("Template Details", size=16, weight=ft.FontWeight.BOLD),
+                    
+                    edit_class_id_field,
+                    edit_class_type_field,
+                    edit_issuer_name_field,
+                    edit_header_text_field,
+                    edit_card_title_field,
+                    edit_background_color_field,
+                    edit_logo_url_field,
+                    
+                    ft.Divider(height=20),
+                    
+                    ft.ElevatedButton(
+                        "Update Template",
+                        icon="save",
+                        on_click=update_template,
+                        width=400,
+                        style=ft.ButtonStyle(
+                            bgcolor="orange",
+                            color="white"
+                        )
+                    ),
+                    
+                    ft.Container(height=10),
+                    
+                    ft.ElevatedButton(
+                        "Insert to Google Wallet",
+                        icon="cloud_upload",
+                        on_click=insert_to_google,
+                        width=400,
+                        style=ft.ButtonStyle(
+                            bgcolor="blue",
+                            color="white"
+                        )
+                    ),
+                    
+                    ft.Container(height=10),
+                    
+                    manage_status
+                    
+                ], spacing=10, scroll="auto"),
+                padding=20
+            ),
             
-            ft.Container(height=20),
-            
-            manage_templates_dropdown,
-            
-            ft.Container(height=20),
-            
-            ft.Row([
-                ft.ElevatedButton(
-                    "Insert to Google Wallet",
-                    icon="cloud_upload",
-                    on_click=insert_to_google,
-                    style=ft.ButtonStyle(
-                        bgcolor="blue",
-                        color="white"
-                    )
-                ),
-                ft.OutlinedButton(
-                    "Refresh List",
-                    icon="refresh",
-                    on_click=lambda e: load_template_classes()
-                )
-            ], spacing=10),
-            
-            ft.Container(height=20),
-            
-            manage_status
-            
-        ], spacing=10),
-        padding=20
+            # Right Panel: Live Preview
+            ft.Container(
+                expand=True,
+                content=ft.Column([
+                    ft.Text("Live Preview", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("See how your pass will look in Google Wallet", size=12, color="grey"),
+                    ft.Container(height=20),
+                    preview_container
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll="auto"),
+                padding=20,
+                bgcolor="grey100"
+            )
+        ], expand=True, spacing=0),
+        expand=True
     )
     
     # Tabs for switching views

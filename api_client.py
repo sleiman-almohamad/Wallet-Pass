@@ -35,13 +35,19 @@ class APIClient:
     
     def create_class(self, class_id: str, class_type: str, 
                     base_color: Optional[str] = None, 
-                    logo_url: Optional[str] = None) -> Dict[str, Any]:
+                    logo_url: Optional[str] = None,
+                    issuer_name: Optional[str] = None,
+                    header_text: Optional[str] = None,
+                    card_title: Optional[str] = None) -> Dict[str, Any]:
         """Create a new class"""
         data = {
             "class_id": class_id,
             "class_type": class_type,
             "base_color": base_color,
-            "logo_url": logo_url
+            "logo_url": logo_url,
+            "issuer_name": issuer_name,
+            "header_text": header_text,
+            "card_title": card_title
         }
         try:
             response = requests.post(f"{self.base_url}/classes/", json=data)
@@ -49,6 +55,36 @@ class APIClient:
             return response.json()
         except Exception as e:
             raise Exception(f"Error creating class: {e}")
+    
+    def update_class(self, class_id: str, 
+                    class_type: Optional[str] = None,
+                    base_color: Optional[str] = None, 
+                    logo_url: Optional[str] = None,
+                    issuer_name: Optional[str] = None,
+                    header_text: Optional[str] = None,
+                    card_title: Optional[str] = None) -> Dict[str, Any]:
+        """Update an existing class"""
+        data = {}
+        if class_type is not None:
+            data["class_type"] = class_type
+        if base_color is not None:
+            data["base_color"] = base_color
+        if logo_url is not None:
+            data["logo_url"] = logo_url
+        if issuer_name is not None:
+            data["issuer_name"] = issuer_name
+        if header_text is not None:
+            data["header_text"] = header_text
+        if card_title is not None:
+            data["card_title"] = card_title
+        
+        try:
+            response = requests.put(f"{self.base_url}/classes/{class_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            raise Exception(f"Error updating class: {e}")
+
     
     def create_pass(self, object_id: str, class_id: str, 
                    holder_name: str, holder_email: str,

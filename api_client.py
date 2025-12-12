@@ -38,7 +38,8 @@ class APIClient:
                     logo_url: Optional[str] = None,
                     issuer_name: Optional[str] = None,
                     header_text: Optional[str] = None,
-                    card_title: Optional[str] = None) -> Dict[str, Any]:
+                    card_title: Optional[str] = None,
+                    class_json: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Create a new class"""
         data = {
             "class_id": class_id,
@@ -47,7 +48,8 @@ class APIClient:
             "logo_url": logo_url,
             "issuer_name": issuer_name,
             "header_text": header_text,
-            "card_title": card_title
+            "card_title": card_title,
+            "class_json": class_json
         }
         try:
             response = requests.post(f"{self.base_url}/classes/", json=data)
@@ -62,7 +64,8 @@ class APIClient:
                     logo_url: Optional[str] = None,
                     issuer_name: Optional[str] = None,
                     header_text: Optional[str] = None,
-                    card_title: Optional[str] = None) -> Dict[str, Any]:
+                    card_title: Optional[str] = None,
+                    class_json: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Update an existing class"""
         data = {}
         if class_type is not None:
@@ -77,6 +80,8 @@ class APIClient:
             data["header_text"] = header_text
         if card_title is not None:
             data["card_title"] = card_title
+        if class_json is not None:
+            data["class_json"] = class_json
         
         try:
             response = requests.put(f"{self.base_url}/classes/{class_id}", json=data)

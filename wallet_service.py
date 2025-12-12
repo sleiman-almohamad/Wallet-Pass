@@ -114,7 +114,8 @@ class WalletClient:
                 try:
                     return resource.get(resourceId=cid).execute()
                 except HttpError as e:
-                    if e.resp.status == 404:
+                    # Handle both 404 (not found) and 400 (wrong class type)
+                    if e.resp.status in [404, 400]:
                         last_error = e
                         continue
                     else:
@@ -126,6 +127,43 @@ class WalletClient:
             raise Exception(f"Google Error (404): Class not found.\nTried IDs: {ids_to_try}\nDetails: {error_content}")
         else:
              raise Exception("Unknown error fetching class")
+    
+    def list_all_classes(self):
+        """
+        List all classes from Google Wallet across all class types
+        
+        Returns:
+            List of class objects with their type information
+        """
+        all_classes = []
+        
+        # Define class types and their corresponding resources
+        class_types = [
+            ("Generic", self.service.genericclass()),
+            ("LoyaltyCard", self.service.loyaltyclass()),
+            ("EventTicket", self.service.eventticketclass()),
+            ("GiftCard", self.service.giftcardclass()),
+            ("TransitPass", self.service.transitclass()),
+        ]
+        
+        for class_type, resource in class_types:
+            try:
+                # List classes of this type
+                response = resource.list(issuerId=configs.ISSUER_ID).execute()
+                
+                if 'resources' in response:
+                    for cls in response['resources']:
+                        # Add class type information
+                        cls['class_type'] = class_type
+                        all_classes.append(cls)
+                        
+            except HttpError as e:
+                # Skip if this class type has no resources or error
+                if e.resp.status != 404:
+                    print(f"Warning: Error listing {class_type} classes: {e}")
+                continue
+        
+        return all_classes
 
     def verify_pass(self, object_id):
         """
@@ -216,12 +254,20 @@ class WalletClient:
             # If class already exists, try to update it
             if e.resp.status == 409:  # Conflict - class already exists
                 try:
-                    return resource.update(
+                    # Use patch instead of update for partial updates (more forgiving)
+                    print(f"Class exists, attempting to patch update...")
+                    return resource.patch(
                         resourceId=class_data['id'],
                         body=class_data
                     ).execute()
                 except HttpError as update_error:
-                    raise Exception(f"Error updating existing class: {update_error}")
+                    # Print detailed error for debugging
+                    import json
+                    print(f"Error updating class. Class data being sent:")
+                    print(json.dumps(class_data, indent=2))
+                    error_details = update_error.content.decode('utf-8') if hasattr(update_error, 'content') else str(update_error)
+                    print(f"Error details: {error_details}")
+                    raise Exception(f"Error updating existing class: {update_error}\n\nClass data: {json.dumps(class_data, indent=2)}")
             else:
                 raise Exception(f"Error creating pass class: {e}")
     
@@ -304,12 +350,13 @@ class WalletClient:
         
         # Add seat information if available
         if pass_data:
-            if "seat" in pass_data:
+            if "seat_number" in pass_data or "seat" in pass_data:
+                seat_value = pass_data.get("seat_number") or pass_data.get("seat", "")
                 obj["seatInfo"] = {
                     "seat": {
                         "defaultValue": {
                             "language": "en-US",
-                            "value": str(pass_data["seat"])
+                            "value": str(seat_value)
                         }
                     }
                 }
@@ -337,6 +384,67 @@ class WalletClient:
                         "value": str(pass_data["section"])
                     }
                 }
+            
+            # Add text modules for event details
+            text_modules = []
+            if "event_name" in pass_data and pass_data["event_name"]:
+                text_modules.append({
+                    "header": "Event",
+                    "body": str(pass_data["event_name"]),
+                    "id": "event_info"
+                })
+            if "event_date" in pass_data and pass_data["event_date"]:
+                text_modules.append({
+                    "header": "Date",
+                    "body": str(pass_data["event_date"]),
+                    "id": "event_date"
+                })
+            
+            if text_modules:
+                obj["textModulesData"] = text_modules
+            
+            # Add info modules for all other pass data
+            info_label_values = []
+            
+            # Define which fields to show and their labels
+            field_labels = {
+                "event_time": "Event Time",
+                "seat_number": "Seat",
+                "seat": "Seat",
+                "section": "Section",
+                "row": "Row",
+                "gate": "Gate",
+                "venue": "Venue"
+            }
+            
+            for field_key, field_label in field_labels.items():
+                if field_key in pass_data and pass_data[field_key]:
+                    # Skip if already in seatInfo or textModules
+                    if field_key in ["event_name", "event_date"]:
+                        continue
+                    
+                    info_label_values.append({
+                        "label": field_label,
+                        "value": str(pass_data[field_key])
+                    })
+            
+            # Add any additional custom fields not in predefined list
+            for key, value in pass_data.items():
+                if value and key not in field_labels and key not in ["event_name", "event_date"]:
+                    # Format key as label
+                    label = key.replace("_", " ").title()
+                    info_label_values.append({
+                        "label": label,
+                        "value": str(value)
+                    })
+            
+            if info_label_values:
+                obj["infoModulesData"] = [{
+                    "showTime": {},
+                    "labelValueRows": [{
+                        "columns": info_label_values
+                    }]
+                }]
         
         return obj
     
@@ -350,12 +458,68 @@ class WalletClient:
             "accountId": holder_email
         }
         
-        if pass_data and "points" in pass_data:
-            obj["loyaltyPoints"] = {
-                "balance": {
-                    "int": int(pass_data["points"])
+        if pass_data:
+            # Add loyalty points if available
+            if "points_balance" in pass_data or "points" in pass_data:
+                points_value = pass_data.get("points_balance") or pass_data.get("points", 0)
+                obj["loyaltyPoints"] = {
+                    "balance": {
+                        "int": int(points_value)
+                    }
                 }
+            
+            # Add text modules for member information
+            text_modules = []
+            if "member_since" in pass_data and pass_data["member_since"]:
+                text_modules.append({
+                    "header": "Member Since",
+                    "body": str(pass_data["member_since"]),
+                    "id": "member_info"
+                })
+            
+            if text_modules:
+                obj["textModulesData"] = text_modules
+            
+            # Add info modules for tier and other details
+            info_label_values = []
+            
+            # Define which fields to show and their labels
+            field_labels = {
+                "tier_level": "Tier",
+                "tier": "Tier",
+                "points_balance": "Points Balance",
+                "points": "Points",
+                "rewards_available": "Available Rewards",
+                "expiry_date": "Expires"
             }
+            
+            for field_key, field_label in field_labels.items():
+                if field_key in pass_data and pass_data[field_key]:
+                    # Skip member_since as it's in textModules
+                    if field_key == "member_since":
+                        continue
+                    
+                    info_label_values.append({
+                        "label": field_label,
+                        "value": str(pass_data[field_key])
+                    })
+            
+            # Add any additional custom fields
+            for key, value in pass_data.items():
+                if value and key not in field_labels and key != "member_since":
+                    label = key.replace("_", " ").title()
+                    info_label_values.append({
+                        "label": label,
+                        "value": str(value)
+                    })
+            
+            if info_label_values:
+                obj["infoModulesData"] = [{
+                    "showTime": {},
+                    "labelValueRows": [{
+                        "columns": info_label_values
+                    }]
+                }]
         
         return obj
     
@@ -382,13 +546,49 @@ class WalletClient:
             }
         }
         
-        # Add subheader if provided
-        if pass_data and "subheader" in pass_data and pass_data["subheader"]:
-            obj["subheader"] = {
-                "defaultValue": {
-                    "language": "en-US",
-                    "value": pass_data["subheader"]
+        if pass_data:
+            # Add subheader if provided
+            if "subheader" in pass_data and pass_data["subheader"]:
+                obj["subheader"] = {
+                    "defaultValue": {
+                        "language": "en-US",
+                        "value": pass_data["subheader"]
+                    }
                 }
-            }
+            
+            # Add text modules for any text-heavy fields
+            text_modules = []
+            if "description" in pass_data and pass_data["description"]:
+                text_modules.append({
+                    "header": "Description",
+                    "body": str(pass_data["description"]),
+                    "id": "description"
+                })
+            
+            if text_modules:
+                obj["textModulesData"] = text_modules
+            
+            # Add info modules for all other data
+            info_label_values = []
+            
+            # Skip fields already used in header, cardTitle, subheader, or textModules
+            skip_fields = ["header_value", "subheader", "description"]
+            
+            for key, value in pass_data.items():
+                if value and key not in skip_fields:
+                    # Format key as label
+                    label = key.replace("_", " ").title()
+                    info_label_values.append({
+                        "label": label,
+                        "value": str(value)
+                    })
+            
+            if info_label_values:
+                obj["infoModulesData"] = [{
+                    "showTime": {},
+                    "labelValueRows": [{
+                        "columns": info_label_values
+                    }]
+                }]
         
         return obj

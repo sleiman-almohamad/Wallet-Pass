@@ -5,6 +5,7 @@ Creates individual Google Wallet passes for end users
 
 import flet as ft
 from typing import Dict, List, Any, Optional
+from qr_generator import generate_qr_code
 
 
 # Field configurations for each pass type
@@ -190,21 +191,69 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
             return
         
         try:
-            # Fetch class data
+            # Get class_id
             class_id = template_dropdown_ref.current.value
-            class_data = api_client.get_class(class_id)
             
-            if not class_data:
-                status_ref.current.value = f"❌ Template '{class_id}' not found"
-                status_ref.current.color = "red"
-                page.update()
-                return
-            
-            # Store current class data
-            current_class_data.update(class_data)
+            # Get class data from local database
+            if class_id in class_metadata:
+                class_data = class_metadata[class_id]
+            else:
+                # Fetch from database if not in metadata
+                class_data = api_client.get_class(class_id) if api_client else None
+                
+                if not class_data:
+                    status_ref.current.value = f"❌ Template '{class_id}' not found in database"
+                    status_ref.current.color = "red"
+                    page.update()
+                    return
+                
+                # Store in metadata
+                class_metadata[class_id] = class_data
             
             # Get class type
             class_type = class_data.get("class_type", "Generic")
+            
+            # Extract visual properties from class_json if available
+            class_json = class_data.get("class_json", {})
+            
+            # Extract background color
+            base_color = class_data.get("base_color") or class_json.get("hexBackgroundColor", "#4285f4")
+            
+            # Extract logo URL
+            logo_url = class_data.get("logo_url")
+            if not logo_url and "logo" in class_json:
+                logo_url = class_json.get("logo", {}).get("sourceUri", {}).get("uri")
+            elif not logo_url and "programLogo" in class_json:
+                logo_url = class_json.get("programLogo", {}).get("sourceUri", {}).get("uri")
+            
+            # Extract header text
+            header_text = class_data.get("header_text") or class_data.get("issuer_name", "Business Name")
+            if not header_text or header_text == "Business Name":
+                if "localizedIssuerName" in class_json:
+                    header_text = class_json.get("localizedIssuerName", {}).get("defaultValue", {}).get("value", "Business")
+                elif "issuerName" in class_json:
+                    header_text = class_json.get("issuerName", "Business")
+            
+            # Extract card title
+            card_title = class_data.get("card_title", "Pass Title")
+            if not card_title or card_title == "Pass Title":
+                if "localizedProgramName" in class_json:
+                    card_title = class_json.get("localizedProgramName", {}).get("defaultValue", {}).get("value", "Program")
+                elif "eventName" in class_json:
+                    card_title = class_json.get("eventName", {}).get("defaultValue", {}).get("value", "Event")
+                elif "cardTitle" in class_json:
+                    card_title = class_json.get("cardTitle", {}).get("defaultValue", {}).get("value", "Title")
+            
+            # Store current class data for preview
+            current_class_data.clear()
+            current_class_data.update({
+                "class_type": class_type,
+                "class_id": class_id,
+                "base_color": base_color,
+                "logo_url": logo_url,
+                "header_text": header_text,
+                "card_title": card_title
+            })
             
             # Clear dynamic fields
             dynamic_fields_container.controls.clear()
@@ -228,32 +277,49 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 
                 dynamic_fields_container.controls.append(field)
             
-            status_ref.current.value = f"✅ Template loaded: {class_type}"
+            status_ref.current.value = f"✅ Template loaded from database: {class_type}"
             status_ref.current.color = "green"
             
             # Update preview
             update_preview()
             
         except Exception as ex:
+            import traceback
+            traceback.print_exc()
             status_ref.current.value = f"❌ Error: {str(ex)}"
             status_ref.current.color = "red"
         
         page.update()
     
+    # Store class metadata (id -> full class info)
+    class_metadata = {}
+    
     def load_templates():
-        """Load available templates into dropdown"""
+        """Load available templates into dropdown from local database"""
         try:
-            classes = api_client.get_classes()
+            # Fetch classes from local database via API
+            classes = api_client.get_classes() if api_client else []
+            
             if classes and len(classes) > 0:
+                # Clear metadata
+                class_metadata.clear()
+                
+                # Store metadata for each class
+                for cls in classes:
+                    class_metadata[cls["class_id"]] = cls
+                
                 template_dropdown_ref.current.options = [
-                    ft.dropdown.Option(cls["class_id"]) 
+                    ft.dropdown.Option(
+                        key=cls["class_id"],
+                        text=f"{cls['class_id']} ({cls.get('class_type', 'Unknown')})"
+                    )
                     for cls in classes
                 ]
-                status_ref.current.value = f"✅ Loaded {len(classes)} template(s)"
+                status_ref.current.value = f"✅ Loaded {len(classes)} template(s) from local database"
                 status_ref.current.color = "green"
             else:
                 template_dropdown_ref.current.options = []
-                status_ref.current.value = "ℹ️ No templates found. Create one in Template Builder tab."
+                status_ref.current.value = "ℹ️ No templates found in local database. Create one in Template Builder tab."
                 status_ref.current.color = "blue"
             page.update()
         except Exception as e:
@@ -345,25 +411,65 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
             # Generate JWT-signed save link
             save_link = wallet_client.generate_save_link(object_id, class_type)
             
-            # Create pass in local database (use original class_id from dropdown)
-            status_ref.current.value = "⏳ Saving to database..."
+            # Try to create pass in local database (optional - for record keeping)
+            try:
+                status_ref.current.value = "⏳ Saving to local database..."
+                status_ref.current.color = "blue"
+                page.update()
+                
+                # Strip issuer prefix from class_id for local database
+                db_class_id = class_id.split('.')[-1] if '.' in class_id else class_id
+                
+                db_result = api_client.create_pass(
+                    object_id=object_id,
+                    class_id=db_class_id,
+                    holder_name=holder_name_ref.current.value,
+                    holder_email=holder_email_ref.current.value,
+                    status="Active",
+                    pass_data=pass_data
+                )
+                db_saved = True
+            except Exception as db_error:
+                # Local database save failed, but pass was still created in Google Wallet
+                print(f"Warning: Could not save to local database: {db_error}")
+                db_saved = False
+            
+            # Generate QR code for the save link
+            status_ref.current.value = "⏳ Generating QR code..."
             status_ref.current.color = "blue"
             page.update()
             
-            db_result = api_client.create_pass(
-                object_id=object_id,
-                class_id=template_dropdown_ref.current.value,  # Use original ID from dropdown
-                holder_name=holder_name_ref.current.value,
-                holder_email=holder_email_ref.current.value,
-                status="Active",
-                pass_data=pass_data
-            )
+            import time
+            qr_filename = f"pass_qr_{int(time.time())}"
+            qr_image_path = generate_qr_code(save_link, qr_filename)
             
-            # Show success result
+            # Show success result with QR code
             result_container_ref.current.content = ft.Column([
                 ft.Text("✅ Pass created successfully!", color="green", size=16, weight=ft.FontWeight.BOLD),
-                ft.Container(height=10),
-                ft.Text("Save to Google Wallet:", size=14, weight=ft.FontWeight.BOLD),
+                ft.Container(height=5),
+                ft.Text(
+                    f"{'✅ Saved to local database' if db_saved else '⚠️ Not saved to local database (class not in DB)'}",
+                    size=10,
+                    color="green" if db_saved else "orange"
+                ),
+                ft.Container(height=15),
+                
+                # QR Code Section
+                ft.Text("Scan QR Code:", size=14, weight=ft.FontWeight.BOLD),
+                ft.Container(height=5),
+                ft.Container(
+                    content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
+                    alignment=ft.alignment.center,
+                    bgcolor="white",
+                    border_radius=10,
+                    padding=10
+                ),
+                ft.Text("Scan with your phone camera to add to Google Wallet", size=10, color="grey", text_align=ft.TextAlign.CENTER),
+                
+                ft.Container(height=15),
+                
+                # Link Section
+                ft.Text("Or use link:", size=14, weight=ft.FontWeight.BOLD),
                 ft.Row([
                     ft.TextField(value=save_link, read_only=True, expand=True, text_size=10),
                     ft.IconButton(icon="content_copy", tooltip="Copy link", on_click=lambda e: page.set_clipboard(save_link))
@@ -377,7 +483,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 ),
                 ft.Container(height=10),
                 ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
-            ], spacing=5)
+            ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
             
             status_ref.current.value = "✅ Pass generated and saved to Google Wallet!"
             status_ref.current.color = "green"

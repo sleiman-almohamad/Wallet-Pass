@@ -49,7 +49,8 @@ class DatabaseManager:
                     logo_url: Optional[str] = None,
                     issuer_name: Optional[str] = None,
                     header_text: Optional[str] = None,
-                    card_title: Optional[str] = None) -> bool:
+                    card_title: Optional[str] = None,
+                    class_json: Optional[Dict[str, Any]] = None) -> bool:
         """
         Create a new pass class
         
@@ -61,17 +62,20 @@ class DatabaseManager:
             issuer_name: Name of the issuer/business
             header_text: Header text for the pass
             card_title: Card title for the pass
+            class_json: Complete Google Wallet class JSON configuration
             
         Returns:
             True if successful, False otherwise
         """
+        class_json_str = json.dumps(class_json) if class_json else None
+        
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """INSERT INTO Classes_Table 
-                   (class_id, class_type, base_color, logo_url, issuer_name, header_text, card_title) 
-                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                (class_id, class_type, base_color, logo_url, issuer_name, header_text, card_title)
+                   (class_id, class_type, base_color, logo_url, issuer_name, header_text, card_title, class_json) 
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                (class_id, class_type, base_color, logo_url, issuer_name, header_text, card_title, class_json_str)
             )
             return cursor.rowcount > 0
     
@@ -91,7 +95,12 @@ class DatabaseManager:
                 "SELECT * FROM Classes_Table WHERE class_id = %s",
                 (class_id,)
             )
-            return cursor.fetchone()
+            result = cursor.fetchone()
+            if result and result.get('class_json'):
+                # Parse JSON string to dict if it's a string
+                if isinstance(result['class_json'], str):
+                    result['class_json'] = json.loads(result['class_json'])
+            return result
     
     def get_all_classes(self) -> List[Dict[str, Any]]:
         """
@@ -103,7 +112,13 @@ class DatabaseManager:
         with self.get_connection() as conn:
             cursor = conn.cursor(dictionary=True)
             cursor.execute("SELECT * FROM Classes_Table ORDER BY created_at DESC")
-            return cursor.fetchall()
+            results = cursor.fetchall()
+            for result in results:
+                if result and result.get('class_json'):
+                    # Parse JSON string to dict if it's a string
+                    if isinstance(result['class_json'], str):
+                        result['class_json'] = json.loads(result['class_json'])
+            return results
     
     def update_class(self, class_id: str, **kwargs) -> bool:
         """
@@ -111,13 +126,20 @@ class DatabaseManager:
         
         Args:
             class_id: The class identifier
-            **kwargs: Fields to update (class_type, base_color, logo_url, issuer_name, header_text, card_title)
+            **kwargs: Fields to update (class_type, base_color, logo_url, issuer_name, header_text, card_title, class_json)
             
         Returns:
             True if successful, False otherwise
         """
-        allowed_fields = ['class_type', 'base_color', 'logo_url', 'issuer_name', 'header_text', 'card_title']
-        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
+        allowed_fields = ['class_type', 'base_color', 'logo_url', 'issuer_name', 'header_text', 'card_title', 'class_json']
+        updates = {}
+        
+        for k, v in kwargs.items():
+            if k in allowed_fields:
+                if k == 'class_json' and isinstance(v, dict):
+                    updates[k] = json.dumps(v)
+                else:
+                    updates[k] = v
         
         if not updates:
             return False

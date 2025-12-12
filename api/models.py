@@ -27,6 +27,7 @@ class ClassCreate(BaseModel):
     issuer_name: Optional[str] = Field(None, description="Name of the issuer/business")
     header_text: Optional[str] = Field(None, description="Header text for the pass")
     card_title: Optional[str] = Field(None, description="Card title for the pass")
+    class_json: Optional[Dict[str, Any]] = Field(None, description="Complete Google Wallet class JSON configuration")
     
     model_config = {
         "json_schema_extra": {
@@ -53,6 +54,7 @@ class ClassUpdate(BaseModel):
     issuer_name: Optional[str] = Field(None, description="Name of the issuer/business")
     header_text: Optional[str] = Field(None, description="Header text for the pass")
     card_title: Optional[str] = Field(None, description="Card title for the pass")
+    class_json: Optional[Dict[str, Any]] = Field(None, description="Complete Google Wallet class JSON configuration")
     
     model_config = {
         "json_schema_extra": {
@@ -78,6 +80,7 @@ class ClassResponse(BaseModel):
     issuer_name: Optional[str] = None
     header_text: Optional[str] = None
     card_title: Optional[str] = None
+    class_json: Optional[Dict[str, Any]] = None
     created_at: datetime
     
     model_config = {

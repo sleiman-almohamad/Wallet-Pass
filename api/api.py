@@ -107,7 +107,11 @@ async def create_class(class_data: ClassCreate):
             class_id=class_data.class_id,
             class_type=class_data.class_type,
             base_color=class_data.base_color,
-            logo_url=class_data.logo_url
+            logo_url=class_data.logo_url,
+            issuer_name=class_data.issuer_name,
+            header_text=class_data.header_text,
+            card_title=class_data.card_title,
+            class_json=class_data.class_json
         )
         
         if success:

@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS Classes_Table (
     class_type VARCHAR(100) NOT NULL COMMENT 'Type of pass (e.g., EventTicket, LoyaltyCard)',
     base_color VARCHAR(7) COMMENT 'Hex color code for the pass (e.g., #FF5733)',
     logo_url VARCHAR(500) COMMENT 'URL to the class logo image',
+    issuer_name VARCHAR(255) COMMENT 'Name of the issuer/business',
+    header_text VARCHAR(255) COMMENT 'Header text for the pass',
+    card_title VARCHAR(255) COMMENT 'Card title for the pass',
+    class_json JSON COMMENT 'Complete Google Wallet class JSON configuration',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Record last update timestamp',
     

@@ -169,7 +169,12 @@ def main(page: ft.Page):
     
     manage_status = ft.Text("", size=12)
     
-    # Form fields for editing template
+    # Dynamic form infrastructure for Manage Templates
+    manage_current_json = {}
+    manage_current_class_type = None
+    manage_dynamic_form = None
+    
+    # Read-only info fields
     edit_class_id_field = ft.TextField(
         label="Class ID",
         width=400,
@@ -184,51 +189,300 @@ def main(page: ft.Page):
         bgcolor="grey100"
     )
     
-    edit_issuer_name_field = ft.TextField(
-        label="Issuer Name",
-        hint_text="e.g., Your Business Name",
-        width=400
+    # Container for dynamic form fields
+    manage_form_container = ft.Column(
+        controls=[
+            ft.Text("Load a template to see editable fields", color="grey", size=11)
+        ],
+        spacing=8,
+        scroll="auto"
     )
     
-    edit_header_text_field = ft.TextField(
-        label="Header Text",
-        hint_text="e.g., Business Name",
-        width=400
-    )
+    # (Old build_preview and update_preview functions removed - using build_manage_preview instead)
     
-    edit_card_title_field = ft.TextField(
-        label="Card Title",
-        hint_text="e.g., Event Ticket",
-        width=400
-    )
+    def load_template_classes():
+        """Load classes from local database into dropdown"""
+        try:
+            # Fetch classes from local database via API
+            classes = api_client.get_classes() if api_client else []
+            
+            if classes and len(classes) > 0:
+                manage_templates_dropdown.options = [
+                    ft.dropdown.Option(
+                        key=cls["class_id"],
+                        text=f"{cls['class_id']} ({cls.get('class_type', 'Unknown')})"
+                    )
+                    for cls in classes
+                ]
+                manage_templates_dropdown.value = classes[0]["class_id"]
+                manage_status.value = f"✅ Loaded {len(classes)} template(s) from local database"
+                manage_status.color = "green"
+            else:
+                manage_templates_dropdown.options = []
+                manage_templates_dropdown.value = None
+                manage_status.value = "ℹ️ No templates found in local database. Create one via 'Template Builder' tab."
+                manage_status.color = "blue"
+            page.update()
+        except Exception as e:
+            manage_status.value = f"❌ Error loading classes from database: {e}"
+            manage_status.color = "red"
+            page.update()
     
-    edit_background_color_field = ft.TextField(
-        label="Background Color (Hex)",
-        hint_text="e.g., #4285f4",
-        width=400,
-        prefix_text="#"
-    )
-    
-    edit_logo_url_field = ft.TextField(
-        label="Logo URL",
-        hint_text="e.g., https://example.com/logo.png",
-        width=400
-    )
-    
-    # Preview container
-    preview_container = ft.Container(
-        content=ft.Text("Select a template and click 'Show' to preview", color="grey"),
-        alignment=ft.alignment.center
-    )
-    
-    def build_preview(class_data):
-        """Build visual pass preview from class data"""
-        bg_color = class_data.get("base_color", "#4285f4")
-        logo_url = class_data.get("logo_url")
-        header_text = class_data.get("header_text", "Business Name")
-        card_title = class_data.get("card_title", "Pass Title")
+    def show_template(e):
+        """Fetch and display template for editing from local database"""
+        nonlocal manage_json_editor, manage_current_json, manage_current_class_type, manage_dynamic_form
         
-        # Logo
+        if not manage_templates_dropdown.value:
+            manage_status.value = "❌ Please select a class"
+            manage_status.color = "red"
+            page.update()
+            return
+        
+        manage_status.value = "⏳ Loading template from database..."
+        manage_status.color = "blue"
+        page.update()
+        
+        try:
+            class_id = manage_templates_dropdown.value
+            
+            # Fetch class data from local database
+            class_data = api_client.get_class(class_id) if api_client else None
+            
+            if not class_data:
+                manage_status.value = f"❌ Template '{class_id}' not found in database"
+                manage_status.color = "red"
+                page.update()
+                return
+            
+            # Use class_json if available, otherwise build from legacy fields
+            if class_data.get("class_json"):
+                json_data = class_data["class_json"]
+            else:
+                # Build JSON from legacy fields for backward compatibility
+                json_data = {
+                    "id": f"{configs.ISSUER_ID}.{class_id}",
+                    "issuerName": class_data.get("issuer_name", "Your Business"),
+                    "hexBackgroundColor": class_data.get("base_color", "#4285f4")
+                }
+                if class_data.get("logo_url"):
+                    json_data["logo"] = {
+                        "sourceUri": {"uri": class_data["logo_url"]}
+                    }
+            
+            # Detect class type
+            class_type = class_data.get("class_type", "Generic")
+            
+            # Populate read-only info fields
+            edit_class_id_field.value = class_id
+            edit_class_type_field.value = class_type
+            
+            # Store current state
+            manage_current_json = json_data.copy()
+            manage_current_class_type = class_type
+            
+            # Get editable fields for this class type
+            from json_templates import get_editable_fields
+            field_mappings = get_editable_fields(class_type)
+            
+            # Callback when form fields change
+            def on_manage_form_change(updated_json):
+                nonlocal manage_current_json
+                manage_current_json = updated_json
+                
+                # Update JSON editor
+                if manage_json_editor:
+                    manage_json_editor.update_json(updated_json)
+                
+                # Update visual preview
+                manage_preview_container.content = build_manage_preview(updated_json)
+                page.update()
+            
+            # Create dynamic form
+            from ui.components.json_form_mapper import DynamicForm
+            manage_dynamic_form = DynamicForm(field_mappings, manage_current_json, on_manage_form_change)
+            form_controls = manage_dynamic_form.build()
+            
+            # Update form container
+            manage_form_container.controls = form_controls
+            
+            # Update JSON editor
+            manage_json_editor = JSONEditor(manage_current_json, read_only=True)
+            manage_json_container.content = manage_json_editor.build()
+            
+            # Update visual preview
+            manage_preview_container.content = build_manage_preview(manage_current_json)
+            
+            manage_status.value = f"✅ Template loaded. Edit fields to modify JSON, then click 'Update Template' to save to database."
+            manage_status.color = "green"
+            
+        except Exception as ex:
+            import traceback
+            traceback.print_exc()
+            manage_status.value = f"❌ Error: {str(ex)}"
+            manage_status.color = "red"
+        
+        page.update()
+    
+    def update_template(e):
+        """Save template changes to local database only"""
+        nonlocal manage_current_json, manage_dynamic_form
+        
+        if not edit_class_id_field.value:
+            manage_status.value = "❌ No template loaded"
+            manage_status.color = "red"
+            page.update()
+            return
+        
+        if not manage_dynamic_form:
+            manage_status.value = "❌ No form data available. Please load a template first."
+            manage_status.color = "red"
+            page.update()
+            return
+        
+        manage_status.value = "⏳ Updating local database..."
+        manage_status.color = "blue"
+        page.update()
+        
+        try:
+            class_id_suffix = edit_class_id_field.value
+            class_type = edit_class_type_field.value
+            
+            # Get current JSON from dynamic form
+            updated_json = manage_dynamic_form.get_json_data()
+            
+            # Update local database with complete JSON
+            api_client.update_class(
+                class_id=class_id_suffix,
+                class_type=class_type,
+                class_json=updated_json
+            )
+            
+            manage_status.value = f"✅ Template '{class_id_suffix}' saved to local database!"
+            manage_status.color = "green"
+            
+        except Exception as ex:
+            import traceback
+            traceback.print_exc()
+            manage_status.value = f"❌ Error: {str(ex)}"
+            manage_status.color = "red"
+        
+        page.update()
+
+    
+    def insert_to_google(e):
+        """Insert/update class to Google Wallet using current form data"""
+        nonlocal manage_current_json, manage_dynamic_form
+        
+        if not edit_class_id_field.value:
+            manage_status.value = "❌ Please load a template first"
+            manage_status.color = "red"
+            page.update()
+            return
+        
+        if not manage_dynamic_form:
+            manage_status.value = "❌ No form data available. Please load a template first."
+            manage_status.color = "red"
+            page.update()
+            return
+        
+        manage_status.value = "⏳ Inserting to Google Wallet..."
+        manage_status.color = "blue"
+        page.update()
+        
+        try:
+            class_id = edit_class_id_field.value
+            class_type = edit_class_type_field.value
+            
+            # Get current JSON from dynamic form
+            google_class_data = manage_dynamic_form.get_json_data()
+            
+            # Ensure ID has proper issuer prefix
+            if "id" in google_class_data:
+                if not google_class_data["id"].startswith(configs.ISSUER_ID):
+                    google_class_data["id"] = f"{configs.ISSUER_ID}.{google_class_data['id']}"
+            else:
+                google_class_data["id"] = f"{configs.ISSUER_ID}.{class_id}"
+            
+            # Insert to Google Wallet using WalletClient
+            if client:
+                result = client.create_pass_class(google_class_data, class_type)
+                manage_status.value = f"✅ Class '{class_id}' successfully inserted to Google Wallet!"
+                manage_status.color = "green"
+            else:
+                manage_status.value = "❌ Google Wallet service not connected"
+                manage_status.color = "red"
+                
+        except Exception as ex:
+            import traceback
+            traceback.print_exc()
+            manage_status.value = f"❌ Error: {str(ex)}"
+            manage_status.color = "red"
+        
+        page.update()
+    
+    # Load classes on startup
+    load_template_classes()
+    
+    # Import JSON editor for manage templates
+    from ui.components.json_editor import JSONEditor
+    
+    # JSON editor and preview state for manage templates
+    manage_json_editor = None
+    manage_json_container = ft.Container(
+        content=ft.Text("Load a template to see JSON", color="grey", size=11),
+        expand=True
+    )
+    manage_preview_container = ft.Container(
+        content=ft.Column([
+            ft.Icon("credit_card", size=80, color="grey300"),
+            ft.Text("Preview will appear here", size=12, color="grey")
+        ], alignment=ft.MainAxisAlignment.CENTER,
+           horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+        expand=True
+    )
+    
+    def build_manage_preview(class_data: dict) -> ft.Container:
+        """Build visual pass preview for manage templates"""
+        # Extract visual elements
+        bg_color = class_data.get("hexBackgroundColor") or class_data.get("base_color", "#4285f4")
+        
+        # Get logo URL
+        logo_url = None
+        if "programLogo" in class_data:
+            logo_url = class_data.get("programLogo", {}).get("sourceUri", {}).get("uri")
+        elif "logo" in class_data:
+            logo_url = class_data.get("logo", {}).get("sourceUri", {}).get("uri")
+        elif "logo_url" in class_data:
+            logo_url = class_data.get("logo_url")
+        
+        # Get hero image
+        hero_url = None
+        if "heroImage" in class_data:
+            hero_url = class_data.get("heroImage", {}).get("sourceUri", {}).get("uri")
+        
+        # Get header/title text
+        header_text = "Business Name"
+        card_title = "Pass Title"
+        
+        if "localizedIssuerName" in class_data:
+            header_text = class_data.get("localizedIssuerName", {}).get("defaultValue", {}).get("value", "Business")
+        elif "issuerName" in class_data:
+            header_text = class_data.get("issuerName", "Business")
+        elif "issuer_name" in class_data:
+            header_text = class_data.get("issuer_name", "Business")
+        
+        if "localizedProgramName" in class_data:
+            card_title = class_data.get("localizedProgramName", {}).get("defaultValue", {}).get("value", "Program")
+        elif "eventName" in class_data:
+            card_title = class_data.get("eventName", {}).get("defaultValue", {}).get("value", "Event")
+        elif "header" in class_data:
+            header_text = class_data.get("header", {}).get("defaultValue", {}).get("value", "Header")
+        if "cardTitle" in class_data:
+            card_title = class_data.get("cardTitle", {}).get("defaultValue", {}).get("value", "Title")
+        elif "card_title" in class_data:
+            card_title = class_data.get("card_title", "Title")
+        
+        # Build logo
         if logo_url:
             logo_control = ft.Container(
                 width=50, height=50, border_radius=25,
@@ -242,53 +496,58 @@ def main(page: ft.Page):
                 alignment=ft.alignment.center
             )
         
+        # Build hero
+        if hero_url:
+            hero_control = ft.Container(
+                height=150,
+                content=ft.Image(src=hero_url, width=300, height=150, fit=ft.ImageFit.COVER)
+            )
+        else:
+            hero_control = ft.Container(
+                height=150, bgcolor="black12",
+                content=ft.Column([
+                    ft.Icon("image", size=40, color="grey"),
+                    ft.Text("Hero Image", size=12, color="grey")
+                ], alignment=ft.MainAxisAlignment.CENTER,
+                   horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+            )
+        
         return ft.Container(
-            width=350,
+            width=300,
             bgcolor=bg_color,
             border_radius=15,
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             shadow=ft.BoxShadow(blur_radius=15, color="black26", offset=ft.Offset(0, 5)),
             content=ft.Column([
-                # Top: Logo & Header
                 ft.Container(
                     padding=15,
                     content=ft.Row([
                         logo_control,
                         ft.Container(width=10),
-                        ft.Text(header_text, color="white", weight=ft.FontWeight.BOLD, size=16, expand=True)
+                        ft.Text(header_text, color="white", weight=ft.FontWeight.BOLD, size=14, expand=True)
                     ])
                 ),
-                # Card Title
                 ft.Container(
                     padding=ft.padding.only(left=15, right=15, bottom=10),
-                    content=ft.Text(card_title, color="white", size=22, weight=ft.FontWeight.BOLD)
+                    content=ft.Text(card_title, color="white", size=20, weight=ft.FontWeight.BOLD)
                 ),
-                # Hero Image placeholder
-                ft.Container(
-                    height=150, bgcolor="black12",
-                    content=ft.Column([
-                        ft.Icon("image", size=40, color="grey"),
-                        ft.Text("Hero Image", size=12, color="grey")
-                    ], alignment=ft.MainAxisAlignment.CENTER,
-                       horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-                ),
-                # Bottom: QR & Details
+                hero_control,
                 ft.Container(
                     bgcolor="white",
                     padding=15,
                     content=ft.Column([
-                        ft.Text("Pass Details", color="grey", size=12),
+                        ft.Text("Pass Details", color="grey", size=11),
                         ft.Container(height=5),
                         ft.Row([
                             ft.Container(
-                                width=80, height=80, bgcolor="grey200", border_radius=5,
-                                content=ft.Icon("qr_code_2", size=60, color="grey"),
+                                width=70, height=70, bgcolor="grey200", border_radius=5,
+                                content=ft.Icon("qr_code_2", size=50, color="grey"),
                                 alignment=ft.alignment.center
                             ),
-                            ft.Container(width=15),
+                            ft.Container(width=10),
                             ft.Column([
-                                ft.Text("John Doe", weight=ft.FontWeight.BOLD, size=14, color="black"),
-                                ft.Text("ID: 1234567890", size=12, color="grey")
+                                ft.Text("Sample User", weight=ft.FontWeight.BOLD, size=13, color="black"),
+                                ft.Text("ID: 1234567890", size=11, color="grey")
                             ])
                         ])
                     ])
@@ -296,252 +555,14 @@ def main(page: ft.Page):
             ], spacing=0)
         )
     
-    def update_preview():
-        """Update preview based on current field values"""
-        if not edit_class_id_field.value:
-            return
-        
-        class_data = {
-            "base_color": f"#{edit_background_color_field.value}" if edit_background_color_field.value and not edit_background_color_field.value.startswith("#") else edit_background_color_field.value or "#4285f4",
-            "logo_url": edit_logo_url_field.value,
-            "header_text": edit_header_text_field.value or "Business Name",
-            "card_title": edit_card_title_field.value or "Pass Title"
-        }
-        
-        preview_container.content = build_preview(class_data)
-        page.update()
-    
-    # Add on_change handlers to update preview
-    edit_header_text_field.on_change = lambda e: update_preview()
-    edit_card_title_field.on_change = lambda e: update_preview()
-    edit_background_color_field.on_change = lambda e: update_preview()
-    edit_logo_url_field.on_change = lambda e: update_preview()
-    
-    def load_template_classes():
-        """Load classes from database into dropdown"""
-        try:
-            classes = api_client.get_classes()
-            if classes and len(classes) > 0:
-                manage_templates_dropdown.options = [
-                    ft.dropdown.Option(cls["class_id"]) 
-                    for cls in classes
-                ]
-                manage_templates_dropdown.value = classes[0]["class_id"]
-                manage_status.value = f"✅ Loaded {len(classes)} template(s)"
-                manage_status.color = "green"
-            else:
-                manage_templates_dropdown.options = []
-                manage_templates_dropdown.value = None
-                manage_status.value = "ℹ️ No templates found. Create one in Template Builder tab."
-                manage_status.color = "blue"
-            page.update()
-        except Exception as e:
-            manage_status.value = f"❌ Error loading classes: {e}"
-            manage_status.color = "red"
-            page.update()
-    
-    def show_template(e):
-        """Fetch and display template for editing"""
-        if not manage_templates_dropdown.value:
-            manage_status.value = "❌ Please select a class"
-            manage_status.color = "red"
-            page.update()
-            return
-        
-        manage_status.value = "⏳ Loading template..."
-        manage_status.color = "blue"
-        page.update()
-        
-        try:
-            class_id = manage_templates_dropdown.value
-            
-            # Get class details from database
-            class_data = api_client.get_class(class_id)
-            
-            if not class_data:
-                manage_status.value = f"❌ Class '{class_id}' not found in database"
-                manage_status.color = "red"
-                page.update()
-                return
-            
-            # Populate form fields
-            edit_class_id_field.value = class_data.get("class_id", "")
-            edit_class_type_field.value = class_data.get("class_type", "Generic")
-            
-            # Handle issuer_name with proper default
-            issuer_name = class_data.get("issuer_name")
-            edit_issuer_name_field.value = issuer_name if issuer_name else "Your Business"
-            
-            edit_header_text_field.value = class_data.get("header_text", "")
-            edit_card_title_field.value = class_data.get("card_title", "")
-            
-            # Handle color with or without #
-            color = class_data.get("base_color", "")
-            if color and color.startswith("#"):
-                edit_background_color_field.value = color[1:]
-            else:
-                edit_background_color_field.value = color
-            
-            edit_logo_url_field.value = class_data.get("logo_url", "")
-            
-            # Update preview
-            preview_container.content = build_preview(class_data)
-            
-            manage_status.value = f"✅ Template loaded. Edit fields and click 'Update' to save changes."
-            manage_status.color = "green"
-            
-        except Exception as ex:
-            manage_status.value = f"❌ Error: {str(ex)}"
-            manage_status.color = "red"
-        
-        page.update()
-    
-    def update_template(e):
-        """Save template changes to database"""
-        if not edit_class_id_field.value:
-            manage_status.value = "❌ No template loaded"
-            manage_status.color = "red"
-            page.update()
-            return
-        
-        manage_status.value = "⏳ Updating template..."
-        manage_status.color = "blue"
-        page.update()
-        
-        try:
-            class_id = edit_class_id_field.value
-            
-            # Prepare color value
-            color = edit_background_color_field.value
-            if color and not color.startswith("#"):
-                color = f"#{color}"
-            
-            # Update via API
-            result = api_client.update_class(
-                class_id=class_id,
-                base_color=color if color else None,
-                logo_url=edit_logo_url_field.value if edit_logo_url_field.value else None,
-                issuer_name=edit_issuer_name_field.value if edit_issuer_name_field.value else None,
-                header_text=edit_header_text_field.value if edit_header_text_field.value else None,
-                card_title=edit_card_title_field.value if edit_card_title_field.value else None
-            )
-            
-            manage_status.value = f"✅ Template '{class_id}' updated successfully!"
-            manage_status.color = "green"
-            
-            # Refresh preview
-            update_preview()
-            
-        except Exception as ex:
-            manage_status.value = f"❌ Error: {str(ex)}"
-            manage_status.color = "red"
-        
-        page.update()
-    
-    def insert_to_google(e):
-        """Insert selected class to Google Wallet"""
-        if not edit_class_id_field.value:
-            manage_status.value = "❌ Please load a template first"
-            manage_status.color = "red"
-            page.update()
-            return
-        
-        manage_status.value = "⏳ Inserting to Google Wallet..."
-        manage_status.color = "blue"
-        page.update()
-        
-        try:
-            class_id = edit_class_id_field.value
-            class_type = edit_class_type_field.value
-            
-            # Ensure class_id has issuer prefix
-            full_class_id = class_id if class_id.startswith(configs.ISSUER_ID) else f"{configs.ISSUER_ID}.{class_id}"
-            
-            # Prepare color
-            color = edit_background_color_field.value
-            if color and not color.startswith("#"):
-                color = f"#{color}"
-            
-            # Build class data for Google Wallet API
-            google_class_data = {
-                "id": full_class_id,
-                "issuerName": edit_issuer_name_field.value or "Your Business",
-                "reviewStatus": "UNDER_REVIEW",
-            }
-            
-            # Add background color if available
-            if color:
-                google_class_data["hexBackgroundColor"] = color
-            
-            # Add logo if available
-            if edit_logo_url_field.value:
-                google_class_data["logo"] = {
-                    "sourceUri": {
-                        "uri": edit_logo_url_field.value
-                    }
-                }
-            
-            # Add type-specific fields
-            if class_type == "Generic":
-                # Use header_text from database, fallback to issuer_name
-                header_value = edit_header_text_field.value or edit_issuer_name_field.value or "Business Name"
-                card_title_value = edit_card_title_field.value or "Pass Title"
-                
-                google_class_data["header"] = {
-                    "defaultValue": {
-                        "language": "en-US",
-                        "value": header_value
-                    }
-                }
-                google_class_data["cardTitle"] = {
-                    "defaultValue": {
-                        "language": "en-US",
-                        "value": card_title_value
-                    }
-                }
-            elif class_type == "EventTicket":
-                event_name = edit_header_text_field.value or edit_issuer_name_field.value or "Event Name"
-                google_class_data["eventName"] = {
-                    "defaultValue": {
-                        "language": "en-US",
-                        "value": event_name
-                    }
-                }
-            elif class_type == "LoyaltyCard":
-                program_name = edit_header_text_field.value or edit_issuer_name_field.value or "Loyalty Program"
-                google_class_data["programName"] = {
-                    "defaultValue": {
-                        "language": "en-US",
-                        "value": program_name
-                    }
-                }
-            
-            # Insert to Google Wallet using WalletClient
-            if client:
-                result = client.create_pass_class(google_class_data, class_type)
-                manage_status.value = f"✅ Class '{class_id}' successfully inserted to Google Wallet!"
-                manage_status.color = "green"
-            else:
-                manage_status.value = "❌ Google Wallet service not connected"
-                manage_status.color = "red"
-                
-        except Exception as ex:
-            manage_status.value = f"❌ Error: {str(ex)}"
-            manage_status.color = "red"
-        
-        page.update()
-    
-    # Load classes on startup
-    load_template_classes()
-    
     manage_templates_content = ft.Container(
         content=ft.Row([
             # Left Panel: Controls and Edit Fields
             ft.Container(
-                width=450,
+                width=380,
                 content=ft.Column([
-                    ft.Text("Manage Templates", size=24, weight=ft.FontWeight.BOLD),
-                    ft.Text("Select, preview, and edit your pass templates", size=12, color="grey"),
+                    ft.Text("Manage Templates", size=22, weight=ft.FontWeight.BOLD),
+                    ft.Text("Select, preview, and edit your pass templates", size=11, color="grey"),
                     ft.Divider(),
                     
                     ft.Container(height=10),
@@ -573,11 +594,11 @@ def main(page: ft.Page):
                     
                     edit_class_id_field,
                     edit_class_type_field,
-                    edit_issuer_name_field,
-                    edit_header_text_field,
-                    edit_card_title_field,
-                    edit_background_color_field,
-                    edit_logo_url_field,
+                    
+                    ft.Container(height=5),
+                    ft.Text("Editable Fields", size=14, weight=ft.FontWeight.W_500, color="grey700"),
+                    
+                    manage_form_container,
                     
                     ft.Divider(height=20),
                     
@@ -585,7 +606,7 @@ def main(page: ft.Page):
                         "Update Template",
                         icon="save",
                         on_click=update_template,
-                        width=400,
+                        width=350,
                         style=ft.ButtonStyle(
                             bgcolor="orange",
                             color="white"
@@ -598,7 +619,7 @@ def main(page: ft.Page):
                         "Insert to Google Wallet",
                         icon="cloud_upload",
                         on_click=insert_to_google,
-                        width=400,
+                        width=350,
                         style=ft.ButtonStyle(
                             bgcolor="blue",
                             color="white"
@@ -609,20 +630,34 @@ def main(page: ft.Page):
                     
                     manage_status
                     
-                ], spacing=10, scroll="auto"),
-                padding=20
+                ], spacing=8, scroll="auto"),
+                padding=15,
+                bgcolor="white"
+            ),
+            
+            # Middle Panel: JSON Preview
+            ft.Container(
+                width=320,
+                content=ft.Column([
+                    ft.Text("JSON Configuration", size=18, weight=ft.FontWeight.BOLD),
+                    ft.Text("Complete class JSON", size=10, color="grey"),
+                    ft.Container(height=10),
+                    manage_json_container
+                ], scroll="auto"),
+                padding=15,
+                bgcolor="grey50"
             ),
             
             # Right Panel: Live Preview
             ft.Container(
                 expand=True,
                 content=ft.Column([
-                    ft.Text("Live Preview", size=20, weight=ft.FontWeight.BOLD),
-                    ft.Text("See how your pass will look in Google Wallet", size=12, color="grey"),
+                    ft.Text("Visual Preview", size=18, weight=ft.FontWeight.BOLD),
+                    ft.Text("How your pass will look", size=10, color="grey"),
                     ft.Container(height=20),
-                    preview_container
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll="auto"),
-                padding=20,
+                    manage_preview_container
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                padding=15,
                 bgcolor="grey100"
             )
         ], expand=True, spacing=0),

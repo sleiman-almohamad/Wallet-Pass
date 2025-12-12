@@ -1,50 +1,75 @@
 """
-Template Builder Module - Simplified Version
-Functional approach without UserControl for compatibility
+Template Builder Module - Complete Redesign
+Dynamic class creation with JSON templates, form generation, and live preview
 """
 
 import flet as ft
-from ui.models.template_state import TemplateState
+from json_templates import JSONTemplateManager, get_template, get_editable_fields
+from ui.components.json_form_mapper import DynamicForm, set_nested_value
+from ui.components.json_editor import JSONEditor
+import configs
+import json
 
 
 def create_template_builder(page, api_client=None):
     """
-    Create the template builder interface
-    Returns a Container with the complete template builder UI
+    Create the redesigned template builder interface with:
+    - Left panel: Class ID, Type selector, Dynamic form
+    - Middle panel: JSON preview
+    - Right panel: Visual preview
     """
     
-    # Initialize state
-    template_state = TemplateState()
+    # State variables
+    current_class_id = None
+    current_class_type = "Generic"
+    current_json = {}
+    dynamic_form = None
+    json_editor = None
     
-    # Create all UI elements as refs so we can update them
+    # UI References
     class_id_input_ref = ft.Ref[ft.TextField]()
     class_type_dropdown_ref = ft.Ref[ft.Dropdown]()
-    issuer_input_ref = ft.Ref[ft.TextField]()
-    header_input_ref = ft.Ref[ft.TextField]()
-    card_title_input_ref = ft.Ref[ft.TextField]()
-    save_status_ref = ft.Ref[ft.Text]()
+    form_container_ref = ft.Ref[ft.Column]()
+    json_container_ref = ft.Ref[ft.Container]()
     preview_container_ref = ft.Ref[ft.Container]()
-    color_picker_container_ref = ft.Ref[ft.Container]()
+    status_text_ref = ft.Ref[ft.Text]()
     
-    # Subscribe to state changes to update preview
-    def on_state_change(data):
-        if preview_container_ref.current:
-            preview_container_ref.current.content = build_live_preview(data)
-            page.update()
-    
-    template_state.subscribe(on_state_change)
-    
-    # Build live preview
-    def build_live_preview(data):
-        """Build the pass preview"""
-        header = data.get("header", "Business Name")
-        card_title = data.get("card_title", "Pass Title")
-        bg_color = data.get("background_color", "#4285f4")
-        logo_url = data.get("logo_url")
-        hero_url = data.get("hero_url")
-        fields = data.get("fields", [])
+    def build_visual_preview(json_data: dict) -> ft.Container:
+        """Build visual pass preview from JSON data"""
+        # Extract visual elements based on class type
+        bg_color = json_data.get("hexBackgroundColor", "#4285f4")
         
-        # Logo
+        # Get logo URL (different paths for different types)
+        logo_url = None
+        if "programLogo" in json_data:
+            logo_url = json_data.get("programLogo", {}).get("sourceUri", {}).get("uri")
+        elif "logo" in json_data:
+            logo_url = json_data.get("logo", {}).get("sourceUri", {}).get("uri")
+        
+        # Get hero image URL
+        hero_url = None
+        if "heroImage" in json_data:
+            hero_url = json_data.get("heroImage", {}).get("sourceUri", {}).get("uri")
+        
+        # Get header/title text
+        header_text = "Business Name"
+        card_title = "Pass Title"
+        
+        if "localizedIssuerName" in json_data:
+            header_text = json_data.get("localizedIssuerName", {}).get("defaultValue", {}).get("value", "Business")
+        elif "issuerName" in json_data:
+            header_text = json_data.get("issuerName", "Business")
+        
+        if "localizedProgramName" in json_data:
+            card_title = json_data.get("localizedProgramName", {}).get("defaultValue", {}).get("value", "Program")
+        elif "eventName" in json_data:
+            card_title = json_data.get("eventName", {}).get("defaultValue", {}).get("value", "Event")
+        elif "header" in json_data:
+            header_text = json_data.get("header", {}).get("defaultValue", {}).get("value", "Header")
+        if "cardTitle" in json_data:
+            card_title = json_data.get("cardTitle", {}).get("defaultValue", {}).get("value", "Title")
+        
+        # Build logo control
         if logo_url:
             logo_control = ft.Container(
                 width=50, height=50, border_radius=25,
@@ -58,11 +83,11 @@ def create_template_builder(page, api_client=None):
                 alignment=ft.alignment.center
             )
         
-        # Hero image
+        # Build hero image control
         if hero_url:
             hero_control = ft.Container(
                 height=150,
-                content=ft.Image(src=hero_url, width=350, height=150, fit=ft.ImageFit.COVER)
+                content=ft.Image(src=hero_url, width=300, height=150, fit=ft.ImageFit.COVER)
             )
         else:
             hero_control = ft.Container(
@@ -74,22 +99,9 @@ def create_template_builder(page, api_client=None):
                    horizontal_alignment=ft.CrossAxisAlignment.CENTER)
             )
         
-        # Fields display
-        if fields:
-            field_widgets = [
-                ft.Text(f"{field.get('label', 'Field')}: Sample", size=12, 
-                       color="black" if i == 0 else "grey")
-                for i, field in enumerate(fields[:3])
-            ]
-            fields_control = ft.Column(field_widgets, spacing=3)
-        else:
-            fields_control = ft.Column([
-                ft.Text("John Doe", weight=ft.FontWeight.BOLD, size=14, color="black"),
-                ft.Text("ID: 1234567890", size=12, color="grey")
-            ])
-        
+        # Build the pass preview
         return ft.Container(
-            width=350,
+            width=300,
             bgcolor=bg_color,
             border_radius=15,
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
@@ -101,13 +113,13 @@ def create_template_builder(page, api_client=None):
                     content=ft.Row([
                         logo_control,
                         ft.Container(width=10),
-                        ft.Text(header, color="white", weight=ft.FontWeight.BOLD, size=16, expand=True)
+                        ft.Text(header_text, color="white", weight=ft.FontWeight.BOLD, size=14, expand=True)
                     ])
                 ),
                 # Card Title
                 ft.Container(
                     padding=ft.padding.only(left=15, right=15, bottom=10),
-                    content=ft.Text(card_title, color="white", size=22, weight=ft.FontWeight.BOLD)
+                    content=ft.Text(card_title, color="white", size=20, weight=ft.FontWeight.BOLD)
                 ),
                 # Hero Image
                 hero_control,
@@ -116,184 +128,282 @@ def create_template_builder(page, api_client=None):
                     bgcolor="white",
                     padding=15,
                     content=ft.Column([
-                        ft.Text("Pass Details", color="grey", size=12),
+                        ft.Text("Pass Details", color="grey", size=11),
                         ft.Container(height=5),
                         ft.Row([
                             ft.Container(
-                                width=80, height=80, bgcolor="grey200", border_radius=5,
-                                content=ft.Icon("qr_code_2", size=60, color="grey"),
+                                width=70, height=70, bgcolor="grey200", border_radius=5,
+                                content=ft.Icon("qr_code_2", size=50, color="grey"),
                                 alignment=ft.alignment.center
                             ),
-                            ft.Container(width=15),
-                            fields_control
+                            ft.Container(width=10),
+                            ft.Column([
+                                ft.Text("Sample User", weight=ft.FontWeight.BOLD, size=13, color="black"),
+                                ft.Text("ID: 1234567890", size=11, color="grey")
+                            ])
                         ])
                     ])
                 )
             ], spacing=0)
         )
     
-    # Save template function
-    def save_template(e):
-        data = template_state.get_all()
+    def on_json_change(updated_json: dict):
+        """Callback when JSON data changes from form or editor"""
+        nonlocal current_json
+        current_json = updated_json
         
-        if not data.get("class_id"):
-            save_status_ref.current.value = "❌ Class ID is required"
-            save_status_ref.current.color = "red"
+        # Update JSON editor
+        if json_editor:
+            json_editor.update_json(updated_json)
+        
+        # Update visual preview
+        if preview_container_ref.current:
+            preview_container_ref.current.content = build_visual_preview(updated_json)
+        
+        page.update()
+    
+    def on_class_type_change(e):
+        """When class type changes, load new template"""
+        nonlocal current_class_type, current_json, dynamic_form, json_editor
+        
+        current_class_type = e.control.value
+        class_id = class_id_input_ref.current.value
+        
+        if not class_id:
+            status_text_ref.current.value = "⚠️ Please enter a Class ID first"
+            status_text_ref.current.color = "orange"
             page.update()
             return
         
-        save_status_ref.current.value = "⏳ Saving template..."
-        save_status_ref.current.color = "blue"
+        # Load template for this class type
+        current_json = get_template(current_class_type, class_id)
+        
+        # Get editable fields for this type
+        field_mappings = get_editable_fields(current_class_type)
+        
+        # Create dynamic form
+        dynamic_form = DynamicForm(field_mappings, current_json, on_json_change)
+        form_controls = dynamic_form.build()
+        
+        # Update form container
+        if form_container_ref.current:
+            form_container_ref.current.controls = form_controls
+        
+        # Create/update JSON editor
+        json_editor = JSONEditor(current_json, on_change=on_json_change, read_only=True)
+        if json_container_ref.current:
+            json_container_ref.current.content = json_editor.build()
+        
+        # Update preview
+        if preview_container_ref.current:
+            preview_container_ref.current.content = build_visual_preview(current_json)
+        
+        status_text_ref.current.value = f"✓ Loaded {current_class_type} template"
+        status_text_ref.current.color = "green"
+        page.update()
+    
+    def on_class_id_change(e):
+        """When class ID changes, update JSON"""
+        nonlocal current_json
+        
+        class_id = e.control.value
+        if class_id and current_json:
+            # Update ID in JSON
+            full_id = f"{configs.ISSUER_ID}.{class_id}" if not class_id.startswith(configs.ISSUER_ID) else class_id
+            current_json["id"] = full_id
+            
+            # Trigger updates
+            on_json_change(current_json)
+    
+    def save_template(e):
+        """Save template to database"""
+        nonlocal current_json
+        
+        class_id = class_id_input_ref.current.value
+        
+        if not class_id:
+            status_text_ref.current.value = "❌ Class ID is required"
+            status_text_ref.current.color = "red"
+            page.update()
+            return
+        
+        if not current_json:
+            status_text_ref.current.value = "❌ No template data to save"
+            status_text_ref.current.color = "red"
+            page.update()
+            return
+        
+        status_text_ref.current.value = "⏳ Saving template..."
+        status_text_ref.current.color = "blue"
         page.update()
         
         try:
             if api_client:
-                # Use default values since UI fields are commented out
-                issuer_name = "Your Business"
-                header_text = "Business Name"
-                card_title = "Pass Title"
+                # Check if class already exists
+                existing_class = api_client.get_class(class_id)
                 
-                # Debug: Print values to console
-                print(f"Saving template with:")
-                print(f"  Class ID: {data['class_id']}")
-                print(f"  Class Type: {data['class_type']}")
-                print(f"  Issuer Name: {issuer_name}")
-                print(f"  Header Text: {header_text}")
-                print(f"  Card Title: {card_title}")
+                if existing_class:
+                    # Update existing class
+                    print(f"Class '{class_id}' already exists, updating...")
+                    result = api_client.update_class(
+                        class_id=class_id,
+                        class_type=current_class_type,
+                        class_json=current_json
+                    )
+                    status_text_ref.current.value = f"✅ Template '{class_id}' updated successfully!"
+                else:
+                    # Create new class
+                    print(f"Creating new class '{class_id}'...")
+                    result = api_client.create_class(
+                        class_id=class_id,
+                        class_type=current_class_type,
+                        class_json=current_json
+                    )
+                    status_text_ref.current.value = f"✅ Template '{class_id}' created successfully!"
                 
-                result = api_client.create_class(
-                    class_id=data["class_id"],
-                    class_type=data["class_type"],
-                    base_color=data.get("background_color", "#4285f4"),
-                    logo_url=data.get("logo_url") or None,
-                    issuer_name=issuer_name,
-                    header_text=header_text,
-                    card_title=card_title
-                )
-                
-                print(f"API Response: {result}")
-                
-                save_status_ref.current.value = "✅ Template saved successfully!"
-                save_status_ref.current.color = "green"
+                status_text_ref.current.color = "green"
             else:
-                save_status_ref.current.value = "⚠️ API client not connected"
-                save_status_ref.current.color = "orange"
+                status_text_ref.current.value = "⚠️ API client not connected"
+                status_text_ref.current.color = "orange"
         except Exception as ex:
             print(f"Error saving template: {ex}")
             import traceback
             traceback.print_exc()
-            save_status_ref.current.value = f"❌ Error: {str(ex)}"
-            save_status_ref.current.color = "red"
+            
+            # Check if it's a 409 conflict error
+            error_msg = str(ex)
+            if "409" in error_msg or "Conflict" in error_msg:
+                status_text_ref.current.value = f"❌ Class '{class_id}' already exists. Try refreshing and editing it instead."
+            else:
+                status_text_ref.current.value = f"❌ Error: {str(ex)}"
+            status_text_ref.current.color = "red"
         
         page.update()
     
-    # Reset form function
     def reset_form(e):
-        template_state.reset()
+        """Reset the form"""
+        nonlocal current_json, dynamic_form, json_editor
+        
         class_id_input_ref.current.value = ""
         class_type_dropdown_ref.current.value = "Generic"
-        issuer_input_ref.current.value = "Your Business"
-        header_input_ref.current.value = "Business Name"
-        card_title_input_ref.current.value = "Pass Title"
-        save_status_ref.current.value = ""
+        current_json = {}
+        
+        if form_container_ref.current:
+            form_container_ref.current.controls = []
+        
+        if json_container_ref.current:
+            json_container_ref.current.content = ft.Text("Select a class type to begin", color="grey")
+        
+        if preview_container_ref.current:
+            preview_container_ref.current.content = ft.Column([
+                ft.Icon("credit_card", size=80, color="grey300"),
+                ft.Text("Preview", size=12, color="grey")
+            ], alignment=ft.MainAxisAlignment.CENTER,
+               horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        
+        status_text_ref.current.value = ""
         page.update()
     
-    # Build the complete UI
+    # Build the UI
     return ft.Row([
-        # Left Panel: Editor
+        # LEFT PANEL: Form
         ft.Container(
-            width=550,
+            width=380,
             content=ft.Column([
-                ft.Text("Template Builder", size=24, weight=ft.FontWeight.BOLD),
-                ft.Text("Create and customize your Google Wallet pass template", size=12, color="grey"),
+                ft.Text("Create Pass Class", size=22, weight=ft.FontWeight.BOLD),
+                ft.Text("Dynamic class creation with templates", size=11, color="grey"),
                 ft.Divider(),
                 
-                ft.Text("Basic Information", size=18, weight=ft.FontWeight.BOLD),
+                ft.Text("Basic Information", size=16, weight=ft.FontWeight.BOLD),
                 ft.TextField(
                     ref=class_id_input_ref,
                     label="Class ID *",
-                    hint_text="e.g., SeasonTicket2025",
-                    width=400,
-                    on_change=lambda e: template_state.update("class_id", e.control.value)
+                    hint_text="e.g., coffee_loyalty_2025",
+                    width=350,
+                    on_change=on_class_id_change
                 ),
                 ft.Dropdown(
                     ref=class_type_dropdown_ref,
                     label="Class Type *",
                     value="Generic",
-                    width=400,
-                    options=[ft.dropdown.Option(ct) for ct in ["Generic", "EventTicket", "LoyaltyCard", "GiftCard", "TransitPass"]],
-                    on_change=lambda e: template_state.update("class_type", e.control.value)
+                    width=350,
+                    options=[
+                        ft.dropdown.Option("Generic"),
+                        ft.dropdown.Option("LoyaltyCard"),
+                        ft.dropdown.Option("GiftCard"),
+                        ft.dropdown.Option("EventTicket"),
+                        ft.dropdown.Option("TransitPass")
+                    ],
+                    on_change=on_class_type_change
                 ),
-                ft.Divider(height=20),
                 
-                # COMMENTED OUT - Pass Content section - Can be restored later
-                # ft.Text("Pass Content", size=18, weight=ft.FontWeight.BOLD),
-                # ft.TextField(
-                #     ref=header_input_ref,
-                #     label="Header Text *",
-                #     value="Business Name",
-                #     width=400,
-                #     on_change=lambda e: template_state.update("header", e.control.value)
-                # ),
-                # ft.TextField(
-                #     ref=card_title_input_ref,
-                #     label="Card Title *",
-                #     value="Pass Title",
-                #     width=400,
-                #     on_change=lambda e: template_state.update("card_title", e.control.value)
-                # ),
+                ft.Divider(height=15),
                 
-                # ft.Divider(height=20),
+                ft.Text("Template Fields", size=16, weight=ft.FontWeight.BOLD),
+                ft.Text("Fields will appear here after selecting a type", size=10, color="grey"),
                 
-                # COMMENTED OUT - Visual Customization section - Can be restored later
-                # ft.Text("Visual Customization", size=18, weight=ft.FontWeight.BOLD),
-                # ft.Text("Background Color", size=14, weight=ft.FontWeight.BOLD),
-                # ft.TextField(
-                #     label="Hex Color",
-                #     value="#4285f4",
-                #     width=200,
-                #     prefix_text="#",
-                #     on_change=lambda e: template_state.update("background_color", f"#{e.control.value}") if len(e.control.value) == 6 else None
-                # ),
+                ft.Column(
+                    ref=form_container_ref,
+                    controls=[],
+                    scroll="auto",
+                    spacing=8
+                ),
                 
-                # ft.Container(height=10),
-                
-                # ft.Text("Logo URL", size=14, weight=ft.FontWeight.BOLD),
-                # ft.TextField(
-                #     label="Logo Image URL",
-                #     hint_text="e.g., https://example.com/logo.png",
-                #     width=400,
-                #     on_change=lambda e: template_state.update("logo_url", e.control.value)
-                # ),
-                
-                ft.Divider(height=20),
+                ft.Divider(height=15),
                 
                 ft.Row([
-                    ft.ElevatedButton("Save Template", icon="save", on_click=save_template),
+                    ft.ElevatedButton(
+                        "Save Template",
+                        icon="save",
+                        on_click=save_template,
+                        style=ft.ButtonStyle(bgcolor="blue", color="white")
+                    ),
                     ft.OutlinedButton("Reset", icon="refresh", on_click=reset_form)
                 ], spacing=10),
                 
-                ft.Text(ref=save_status_ref, value="", size=12),
+                ft.Text(ref=status_text_ref, value="", size=11),
                 
-                ft.Container(height=50)
-            ], scroll="auto", spacing=10),
-            padding=20,
+            ], spacing=8, scroll="auto"),
+            padding=15,
             bgcolor="white"
         ),
         
-        # Right Panel: Live Preview
+        # MIDDLE PANEL: JSON Preview
+        ft.Container(
+            width=320,
+            content=ft.Column([
+                ft.Text("JSON Configuration", size=18, weight=ft.FontWeight.BOLD),
+                ft.Text("Live JSON preview", size=10, color="grey"),
+                ft.Container(height=10),
+                ft.Container(
+                    ref=json_container_ref,
+                    content=ft.Text("Select a class type to see JSON", color="grey", size=11),
+                    expand=True
+                )
+            ], scroll="auto"),
+            padding=15,
+            bgcolor="grey50"
+        ),
+        
+        # RIGHT PANEL: Visual Preview
         ft.Container(
             expand=True,
             content=ft.Column([
-                ft.Text("Live Preview", size=20, weight=ft.FontWeight.BOLD),
-                ft.Text("See how your pass will look in Google Wallet", size=12, color="grey"),
+                ft.Text("Visual Preview", size=18, weight=ft.FontWeight.BOLD),
+                ft.Text("How your pass will look", size=10, color="grey"),
                 ft.Container(height=20),
                 ft.Container(
                     ref=preview_container_ref,
-                    content=build_live_preview(template_state.get_all())
+                    content=ft.Column([
+                        ft.Icon("credit_card", size=80, color="grey300"),
+                        ft.Text("Preview will appear here", size=12, color="grey")
+                    ], alignment=ft.MainAxisAlignment.CENTER,
+                       horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    alignment=ft.alignment.top_center,
+                    expand=True
                 )
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll="auto"),
-            bgcolor="grey100",
-            padding=20
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=15,
+            bgcolor="grey100"
         )
     ], expand=True, spacing=0)

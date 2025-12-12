@@ -588,6 +588,20 @@ def main(page: ft.Page):
                         )
                     ], spacing=10),
                     
+                    ft.Container(height=5),
+                    
+                    ft.ElevatedButton(
+                        "Sync from Google Wallet",
+                        icon="cloud_download",
+                        on_click=sync_from_google,
+                        style=ft.ButtonStyle(
+                            bgcolor="blue",
+                            color="white"
+                        ),
+                        width=360,
+                        tooltip="Import all classes from Google Wallet to local database"
+                    ),
+                    
                     ft.Divider(height=20),
                     
                     ft.Text("Template Details", size=16, weight=ft.FontWeight.BOLD),
@@ -855,7 +869,115 @@ def main(page: ft.Page):
             create_result.color = "red"
             page.update()
     
-    def load_classes():
+    def sync_from_google(e):
+        """Sync all classes from Google Wallet to local database"""
+        manage_status.value = "⏳ Fetching classes from Google Wallet..."
+        manage_status.color = "blue"
+        page.update()
+        
+        try:
+            # Fetch all classes from Google Wallet
+            if not client:
+                manage_status.value = "❌ Google Wallet client not initialized"
+                manage_status.color = "red"
+                page.update()
+                return
+            
+            google_classes = client.list_all_classes()
+            
+            if not google_classes:
+                manage_status.value = "ℹ️ No classes found in Google Wallet"
+                manage_status.color = "blue"
+                page.update()
+                return
+            
+            manage_status.value = f"⏳ Importing {len(google_classes)} classes to local database..."
+            manage_status.color = "blue"
+            page.update()
+            
+            imported = 0
+            updated = 0
+            errors = 0
+            
+            for google_class in google_classes:
+                try:
+                    from google_wallet_parser import parse_google_wallet_class
+                    
+                    class_id_full = google_class.get("id", "")
+                    # Remove issuer prefix for local database
+                    class_id = class_id_full.split('.')[-1] if '.' in class_id_full else class_id_full
+                    class_type = google_class.get("class_type", "Generic")
+                    
+                    # Parse metadata
+                    metadata = parse_google_wallet_class(google_class)
+                    base_color = metadata.get("base_color")
+                    logo_url = metadata.get("logo_url")
+                    
+                    # Extract text fields
+                    issuer_name = None
+                    header_text = None
+                    card_title = None
+                    
+                    if class_type == "LoyaltyCard":
+                        issuer_name = google_class.get("localizedIssuerName", {}).get("defaultValue", {}).get("value")
+                        card_title = google_class.get("localizedProgramName", {}).get("defaultValue", {}).get("value")
+                    elif class_type == "EventTicket":
+                        issuer_name = google_class.get("issuerName")
+                        card_title = google_class.get("eventName", {}).get("defaultValue", {}).get("value")
+                    elif class_type == "Generic":
+                        issuer_name = google_class.get("issuerName")
+                        header_text = google_class.get("header", {}).get("defaultValue", {}).get("value")
+                        card_title = google_class.get("cardTitle", {}).get("defaultValue", {}).get("value")
+                    
+                    # Check if exists
+                    existing = api_client.get_class(class_id) if api_client else None
+                    
+                    if existing:
+                        # Update
+                        api_client.update_class(
+                            class_id=class_id,
+                            class_type=class_type,
+                            base_color=base_color,
+                            logo_url=logo_url,
+                            issuer_name=issuer_name,
+                            header_text=header_text,
+                            card_title=card_title,
+                            class_json=google_class
+                        )
+                        updated += 1
+                    else:
+                        # Create
+                        api_client.create_class(
+                            class_id=class_id,
+                            class_type=class_type,
+                            base_color=base_color,
+                            logo_url=logo_url,
+                            issuer_name=issuer_name,
+                            header_text=header_text,
+                            card_title=card_title,
+                            class_json=google_class
+                        )
+                        imported += 1
+                        
+                except Exception as ex:
+                    print(f"Error processing {class_id}: {ex}")
+                    errors += 1
+            
+            # Refresh the dropdown
+            load_template_classes()
+            
+            manage_status.value = f"✅ Sync complete! Imported: {imported}, Updated: {updated}, Errors: {errors}"
+            manage_status.color = "green"
+            
+        except Exception as ex:
+            import traceback
+            traceback.print_exc()
+            manage_status.value = f"❌ Sync error: {str(ex)}"
+            manage_status.color = "red"
+        
+        page.update()
+    
+    def load_template_classes():
         """Load available classes from API"""
         try:
             classes = api_client.get_classes()

@@ -120,6 +120,8 @@ Perfect for:
 - Syncing production classes to local testing
 - Sharing templates with your supervisor/team
 
+After syncing, go to **"Manage Templates"** tab and click **"Refresh List"** to load the synced templates.
+
 ## Usage
 
 ### 1. Template Builder

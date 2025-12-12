@@ -206,24 +206,47 @@ def main(page: ft.Page):
             # Fetch classes from local database via API
             classes = api_client.get_classes() if api_client else []
             
+            print(f"DEBUG: Fetched {len(classes)} classes from database")  # Debug
+            
             if classes and len(classes) > 0:
-                manage_templates_dropdown.options = [
-                    ft.dropdown.Option(
-                        key=cls["class_id"],
-                        text=f"{cls['class_id']} ({cls.get('class_type', 'Unknown')})"
+                # Build dropdown options
+                options = []
+                for cls in classes:
+                    class_id = cls["class_id"]
+                    class_type = cls.get('class_type', 'Unknown')
+                    option = ft.dropdown.Option(
+                        key=class_id,
+                        text=f"{class_id} ({class_type})"
                     )
-                    for cls in classes
-                ]
+                    options.append(option)
+                    print(f"DEBUG: Added option: {class_id} ({class_type})")  # Debug
+                
+                manage_templates_dropdown.options = options
                 manage_templates_dropdown.value = classes[0]["class_id"]
+                manage_templates_dropdown.hint_text = ""  # Clear hint when loading
+                
+                print(f"DEBUG: Dropdown value set to: {manage_templates_dropdown.value}")  # Debug
+                
                 manage_status.value = f"✅ Loaded {len(classes)} template(s) from local database"
                 manage_status.color = "green"
             else:
+                # Empty state
+                print("DEBUG: No classes found, setting empty state")  # Debug
                 manage_templates_dropdown.options = []
                 manage_templates_dropdown.value = None
-                manage_status.value = "ℹ️ No templates found in local database. Create one via 'Template Builder' tab."
+                manage_templates_dropdown.hint_text = "No templates available"
+                manage_status.value = "ℹ️ No templates found in local database. Use 'Sync from Google Wallet' or create in 'Template Builder'."
                 manage_status.color = "blue"
+            
+            # Force update - only update page, not individual control
+            manage_status.update()
             page.update()
+            print("DEBUG: Page updated")  # Debug
+            
         except Exception as e:
+            import traceback
+            print(f"DEBUG: Error in load_template_classes: {e}")  # Debug
+            traceback.print_exc()
             manage_status.value = f"❌ Error loading classes from database: {e}"
             manage_status.color = "red"
             page.update()
@@ -584,23 +607,14 @@ def main(page: ft.Page):
                         ft.OutlinedButton(
                             "Refresh List",
                             icon="refresh",
-                            on_click=lambda e: load_template_classes()
+                            on_click=lambda e: (
+                                setattr(manage_status, 'value', '⏳ Refreshing...'),
+                                setattr(manage_status, 'color', 'blue'),
+                                page.update(),
+                                load_template_classes()
+                            )
                         )
                     ], spacing=10),
-                    
-                    ft.Container(height=5),
-                    
-                    ft.ElevatedButton(
-                        "Sync from Google Wallet",
-                        icon="cloud_download",
-                        on_click=sync_from_google,
-                        style=ft.ButtonStyle(
-                            bgcolor="blue",
-                            color="white"
-                        ),
-                        width=360,
-                        tooltip="Import all classes from Google Wallet to local database"
-                    ),
                     
                     ft.Divider(height=20),
                     
@@ -869,113 +883,7 @@ def main(page: ft.Page):
             create_result.color = "red"
             page.update()
     
-    def sync_from_google(e):
-        """Sync all classes from Google Wallet to local database"""
-        manage_status.value = "⏳ Fetching classes from Google Wallet..."
-        manage_status.color = "blue"
-        page.update()
-        
-        try:
-            # Fetch all classes from Google Wallet
-            if not client:
-                manage_status.value = "❌ Google Wallet client not initialized"
-                manage_status.color = "red"
-                page.update()
-                return
-            
-            google_classes = client.list_all_classes()
-            
-            if not google_classes:
-                manage_status.value = "ℹ️ No classes found in Google Wallet"
-                manage_status.color = "blue"
-                page.update()
-                return
-            
-            manage_status.value = f"⏳ Importing {len(google_classes)} classes to local database..."
-            manage_status.color = "blue"
             page.update()
-            
-            imported = 0
-            updated = 0
-            errors = 0
-            
-            for google_class in google_classes:
-                try:
-                    from google_wallet_parser import parse_google_wallet_class
-                    
-                    class_id_full = google_class.get("id", "")
-                    # Remove issuer prefix for local database
-                    class_id = class_id_full.split('.')[-1] if '.' in class_id_full else class_id_full
-                    class_type = google_class.get("class_type", "Generic")
-                    
-                    # Parse metadata
-                    metadata = parse_google_wallet_class(google_class)
-                    base_color = metadata.get("base_color")
-                    logo_url = metadata.get("logo_url")
-                    
-                    # Extract text fields
-                    issuer_name = None
-                    header_text = None
-                    card_title = None
-                    
-                    if class_type == "LoyaltyCard":
-                        issuer_name = google_class.get("localizedIssuerName", {}).get("defaultValue", {}).get("value")
-                        card_title = google_class.get("localizedProgramName", {}).get("defaultValue", {}).get("value")
-                    elif class_type == "EventTicket":
-                        issuer_name = google_class.get("issuerName")
-                        card_title = google_class.get("eventName", {}).get("defaultValue", {}).get("value")
-                    elif class_type == "Generic":
-                        issuer_name = google_class.get("issuerName")
-                        header_text = google_class.get("header", {}).get("defaultValue", {}).get("value")
-                        card_title = google_class.get("cardTitle", {}).get("defaultValue", {}).get("value")
-                    
-                    # Check if exists
-                    existing = api_client.get_class(class_id) if api_client else None
-                    
-                    if existing:
-                        # Update
-                        api_client.update_class(
-                            class_id=class_id,
-                            class_type=class_type,
-                            base_color=base_color,
-                            logo_url=logo_url,
-                            issuer_name=issuer_name,
-                            header_text=header_text,
-                            card_title=card_title,
-                            class_json=google_class
-                        )
-                        updated += 1
-                    else:
-                        # Create
-                        api_client.create_class(
-                            class_id=class_id,
-                            class_type=class_type,
-                            base_color=base_color,
-                            logo_url=logo_url,
-                            issuer_name=issuer_name,
-                            header_text=header_text,
-                            card_title=card_title,
-                            class_json=google_class
-                        )
-                        imported += 1
-                        
-                except Exception as ex:
-                    print(f"Error processing {class_id}: {ex}")
-                    errors += 1
-            
-            # Refresh the dropdown
-            load_template_classes()
-            
-            manage_status.value = f"✅ Sync complete! Imported: {imported}, Updated: {updated}, Errors: {errors}"
-            manage_status.color = "green"
-            
-        except Exception as ex:
-            import traceback
-            traceback.print_exc()
-            manage_status.value = f"❌ Sync error: {str(ex)}"
-            manage_status.color = "red"
-        
-        page.update()
     
     def load_template_classes():
         """Load available classes from API"""

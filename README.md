@@ -95,6 +95,31 @@ Once started, the following services are available:
 | **phpMyAdmin** | http://localhost:8080 | root / 123456789 |
 | **MariaDB** | localhost:3306 | wallet_passes DB |
 
+## Database Sync
+
+### Import Classes from Google Wallet
+
+If you have existing classes in Google Wallet and want to load them into your local database:
+
+```bash
+# Make sure the API server is running first
+uv run python -m uvicorn api.api:app --reload
+
+# In another terminal, run the sync script
+uv run python database/sync_from_google.py
+```
+
+This will:
+- Fetch **all** classes from your Google Wallet account
+- Import them into the local database
+- Preserve the complete JSON structure
+- Update existing classes if already in database
+
+Perfect for:
+- Setting up a new development environment
+- Syncing production classes to local testing
+- Sharing templates with your supervisor/team
+
 ## Usage
 
 ### 1. Template Builder

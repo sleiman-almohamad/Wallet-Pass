@@ -391,6 +391,36 @@ def main(page: ft.Page):
         page.update()
 
     
+
+    def sync_all_classes(e):
+        """Trigger sync of all classes from Google Wallet"""
+        manage_status.value = "⏳ Syncing all classes from Google Wallet... This may take a moment."
+        manage_status.color = "blue"
+        page.update()
+        
+        try:
+            result = api_client.sync_classes()
+            
+            # Show success message
+            manage_status.value = f"✅ {result.get('message', 'Sync complete')}"
+            manage_status.color = "green"
+            
+            # Use a timer to refresh the list after a brief delay
+            # to allow user to read the message
+            import time
+            time.sleep(1) # Small delay for visual feedback
+            
+            # Refresh the list
+            load_template_classes()
+            
+        except Exception as ex:
+            import traceback
+            traceback.print_exc()
+            manage_status.value = f"❌ Error syncing classes: {str(ex)}"
+            manage_status.color = "red"
+        
+        page.update()
+
     def insert_to_google(e):
         """Insert/update class to Google Wallet using current form data"""
         nonlocal manage_current_json, manage_dynamic_form
@@ -612,6 +642,12 @@ def main(page: ft.Page):
                                 page.update(),
                                 load_template_classes()
                             )
+                        ),
+                        ft.OutlinedButton(
+                            "Sync All from Google",
+                            icon="cloud_sync",
+                            on_click=lambda e: sync_all_classes(e),
+                            style=ft.ButtonStyle(color="blue")
                         )
                     ], spacing=10),
                     

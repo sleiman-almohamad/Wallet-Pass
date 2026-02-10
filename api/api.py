@@ -188,10 +188,15 @@ async def update_class(class_id: str, class_data: ClassUpdate):
             raise HTTPException(status_code=400, detail="No fields to update")
         
         # Step 1: Update local database
+        # Step 1: Update local database
         success = db.update_class(class_id, **update_data)
         
         if not success:
-            raise HTTPException(status_code=400, detail="Failed to update class")
+            # If update returns False, it means 0 rows were changed.
+            # Since we already verified the class exists, this just means 
+            # the data was identical to what's already in the DB (idempotent update).
+            # We should proceed instead of raising an error.
+            logger.info(f"Class '{class_id}' update returned 0 rows changed (idempotent update)")
         
         # Step 2: Get the updated class data for Google Wallet sync
         updated_class = db.get_class(class_id)
@@ -265,6 +270,92 @@ async def update_class(class_id: str, class_data: ClassUpdate):
         logger.error(f"Error updating class '{class_id}': {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+@app.post("/classes/sync", response_model=MessageResponse, tags=["Classes"])
+async def sync_classes_from_google():
+    """
+    Fetch all classes from Google Wallet and sync them to local database.
+    Updates existing classes and creates new ones.
+    """
+    try:
+        if not wallet_client:
+            raise HTTPException(status_code=503, detail="Google Wallet client not initialized")
+        
+        # 1. Fetch all classes from Google Wallet
+        logger.info("Fetching all classes from Google Wallet...")
+        google_classes = wallet_client.list_all_classes()
+        logger.info(f"Found {len(google_classes)} classes in Google Wallet")
+        
+        synced_count = 0
+        new_count = 0
+        updated_count = 0
+        errors = []
+        
+        # Import parser
+        from google_wallet_parser import parse_google_wallet_class
+        
+        # 2. Process each class
+        for google_class in google_classes:
+            try:
+                # Parse metadata
+                metadata = parse_google_wallet_class(google_class)
+                class_id = metadata['class_id']
+                
+                # Check if class exists locally
+                existing_class = db.get_class(class_id)
+                
+                if existing_class:
+                    # Update parameters
+                    logger.info(f"Updating local class: {class_id}")
+                    # We always overwrite local with cloud data for sync
+                    success = db.update_class(
+                        class_id=class_id,
+                        class_type=metadata['class_type'],
+                        base_color=metadata['base_color'],
+                        logo_url=metadata['logo_url'],
+                        issuer_name=metadata['issuer_name'],
+                        header_text=metadata['header_text'],
+                        card_title=metadata['card_title'],
+                        class_json=google_class  # IMPORTANT: Save the full JSON
+                    )
+                    # Count as updated (even if idempotent, our fix earlier handles db.update_class returning False)
+                    updated_count += 1
+                else:
+                    # Create new class
+                    logger.info(f"Creating local class: {class_id}")
+                    success = db.create_class(
+                        class_id=class_id,
+                        class_type=metadata['class_type'],
+                        base_color=metadata['base_color'],
+                        logo_url=metadata['logo_url'],
+                        issuer_name=metadata['issuer_name'],
+                        header_text=metadata['header_text'],
+                        card_title=metadata['card_title'],
+                        class_json=google_class
+                    )
+                    if success:
+                        new_count += 1
+                
+                synced_count += 1
+                
+            except Exception as e:
+                error_msg = f"Error syncing class {google_class.get('id')}: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+        
+        message = f"Sync complete. Processed {synced_count} classes (New: {new_count}, Updated: {updated_count})."
+        
+        return MessageResponse(
+            message=message,
+            success=True
+        )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Sync failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/classes/{class_id}", response_model=MessageResponse, tags=["Classes"])

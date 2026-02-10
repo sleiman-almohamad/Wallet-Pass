@@ -17,8 +17,16 @@ def parse_google_wallet_class(class_json):
         'class_id': class_json.get('id', ''),
         'class_type': 'Generic',
         'base_color': None,
-        'logo_url': None
+        'logo_url': None,
+        'issuer_name': None,
+        'header_text': None,
+        'card_title': None
     }
+    
+    # Strip issuer ID prefix if present
+    import configs
+    if metadata['class_id'].startswith(f"{configs.ISSUER_ID}."):
+        metadata['class_id'] = metadata['class_id'][len(configs.ISSUER_ID)+1:]
     
     # Determine class type from the JSON structure
     if 'eventName' in class_json:
@@ -39,7 +47,24 @@ def parse_google_wallet_class(class_json):
         logo = class_json['logo']
         if 'sourceUri' in logo and 'uri' in logo['sourceUri']:
             metadata['logo_url'] = logo['sourceUri']['uri']
-    
+            
+    # Extract Issuer Name
+    if 'localizedIssuerName' in class_json:
+        metadata['issuer_name'] = class_json['localizedIssuerName'].get('defaultValue', {}).get('value')
+    elif 'issuerName' in class_json:
+        metadata['issuer_name'] = class_json['issuerName']
+        
+    # Extract Header Text and Card Title based on headers
+    if 'localizedProgramName' in class_json: # Loyalty
+        metadata['card_title'] = class_json['localizedProgramName'].get('defaultValue', {}).get('value')
+    elif 'eventName' in class_json: # Event
+        metadata['card_title'] = class_json['eventName'].get('defaultValue', {}).get('value')
+    elif 'cardTitle' in class_json: # Generic
+        metadata['card_title'] = class_json['cardTitle'].get('defaultValue', {}).get('value')
+        
+    if 'header' in class_json: # Generic header
+        metadata['header_text'] = class_json['header'].get('defaultValue', {}).get('value')
+        
     return metadata
 
 

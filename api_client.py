@@ -137,6 +137,18 @@ class APIClient:
             print(f"Error fetching pass: {e}")
             return None
     
+    def sync_classes(self) -> Dict[str, Any]:
+        """Trigger sync of all classes from Google Wallet to local database"""
+        try:
+            response = requests.post(f"{self.base_url}/classes/sync")
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise Exception(f"Sync failed: {error_detail}")
+        except Exception as e:
+            raise Exception(f"Sync failed: {e}")
+
     def check_health(self) -> Dict[str, Any]:
         """Check API health status"""
         try:

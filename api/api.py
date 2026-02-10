@@ -20,6 +20,24 @@ from api.models import (
     PassCreate, PassUpdate, PassStatusUpdate, PassResponse,
     HealthResponse, MessageResponse
 )
+
+# Import service layer and wallet client
+from services.class_update_service import propagate_class_update_to_passes
+from wallet_service import WalletClient
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize wallet client (will be used for class updates)
+try:
+    wallet_client = WalletClient()
+    logger.info("WalletClient initialized successfully")
+except Exception as e:
+    wallet_client = None
+    logger.warning(f"WalletClient initialization failed: {e}. Google Wallet sync will be disabled.")
+
 def get_db_connection():
     return mysql.connector.connect(
         host=configs.DB_HOST,
@@ -156,7 +174,7 @@ async def get_class(class_id: str):
 
 @app.put("/classes/{class_id}", response_model=MessageResponse, tags=["Classes"])
 async def update_class(class_id: str, class_data: ClassUpdate):
-    """Update a pass class"""
+    """Update a pass class and propagate changes to all associated passes"""
     try:
         # Check if class exists
         existing_class = db.get_class(class_id)
@@ -169,20 +187,84 @@ async def update_class(class_id: str, class_data: ClassUpdate):
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
         
+        # Step 1: Update local database
         success = db.update_class(class_id, **update_data)
         
-        if success:
+        if not success:
+            raise HTTPException(status_code=400, detail="Failed to update class")
+        
+        # Step 2: Get the updated class data for Google Wallet sync
+        updated_class = db.get_class(class_id)
+        
+        # Step 3: Sync to Google Wallet and propagate to passes
+        if wallet_client and updated_class.get('class_json'):
+            try:
+                # 3a: Update the class in Google Wallet (triggers class-level notification)
+                logger.info(f"Syncing class '{class_id}' to Google Wallet")
+                wallet_client.update_pass_class(
+                    class_id=class_id,
+                    class_data=updated_class['class_json'],
+                    class_type=updated_class.get('class_type', 'Generic')
+                )
+                
+                # 3b: Propagate updates to all pass objects (triggers pass-level notifications)
+                logger.info(f"Propagating class '{class_id}' updates to affected passes")
+                propagation_result = propagate_class_update_to_passes(
+                    class_id=class_id,
+                    updated_class=updated_class,
+                    db_manager=db,
+                    wallet_client=wallet_client
+                )
+                
+                # Build response message
+                updated_count = propagation_result["updated_count"]
+                failed_count = propagation_result["failed_count"]
+                total_count = propagation_result["total_count"]
+                
+                if failed_count > 0:
+                    # Partial success
+                    message = (
+                        f"✅ Class '{class_id}' updated! "
+                        f"📱 {updated_count}/{total_count} passes synced successfully. "
+                        f"⚠️ {failed_count} passes failed to sync."
+                    )
+                    logger.warning(f"Partial sync for class '{class_id}': {propagation_result['errors']}")
+                else:
+                    # Full success
+                    message = (
+                        f"✅ Class '{class_id}' updated! "
+                        f"📱 {updated_count} pass(es) synced successfully."
+                    )
+                    logger.info(f"Successfully synced class '{class_id}' and {updated_count} passes")
+                
+                return MessageResponse(
+                    message=message,
+                    success=True
+                )
+                
+            except Exception as e:
+                # Google Wallet sync failed, but local DB update succeeded
+                error_msg = str(e)
+                logger.error(f"Google Wallet sync failed for class '{class_id}': {error_msg}")
+                return MessageResponse(
+                    message=f"Class '{class_id}' updated locally. ⚠️ Google Wallet sync failed: {error_msg}",
+                    success=True
+                )
+        else:
+            # No Google Wallet sync needed/possible
+            reason = "WalletClient not available" if not wallet_client else "No class_json found"
+            logger.info(f"Class '{class_id}' updated locally only. Reason: {reason}")
             return MessageResponse(
-                message=f"Class '{class_id}' updated successfully",
+                message=f"Class '{class_id}' updated successfully (local only)",
                 success=True
             )
-        else:
-            raise HTTPException(status_code=400, detail="Failed to update class")
             
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error updating class '{class_id}': {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.delete("/classes/{class_id}", response_model=MessageResponse, tags=["Classes"])

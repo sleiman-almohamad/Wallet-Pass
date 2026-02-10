@@ -238,8 +238,7 @@ def main(page: ft.Page):
                 manage_status.value = "ℹ️ No templates found in local database. Use 'Sync from Google Wallet' or create in 'Template Builder'."
                 manage_status.color = "blue"
             
-            # Force update - only update page, not individual control
-            manage_status.update()
+            # Update page (don't update individual control before it's added to page)
             page.update()
             print("DEBUG: Page updated")  # Debug
             

@@ -236,6 +236,19 @@ class WalletClient:
             Created class from Google Wallet API
         """
         try:
+            # Sanitize reviewStatus field to prevent invalid values
+            # Google Wallet only accepts: "UNDER_REVIEW", "DRAFT", or "APPROVED"
+            allowed_review_statuses = {"UNDER_REVIEW", "DRAFT", "APPROVED"}
+            review_status = class_data.get("reviewStatus")
+            
+            if isinstance(review_status, str) and review_status not in allowed_review_statuses:
+                # Invalid value (e.g., "Optional[APPROVED]"), remove it and use safe default
+                print(f"Warning: Invalid reviewStatus '{review_status}' detected, using default 'UNDER_REVIEW'")
+                class_data["reviewStatus"] = "UNDER_REVIEW"
+            elif review_status is None or review_status == "":
+                # Set default if missing
+                class_data["reviewStatus"] = "UNDER_REVIEW"
+            
             # Select appropriate resource based on class type
             if class_type == "EventTicket":
                 resource = self.service.eventticketclass()
@@ -323,6 +336,124 @@ class WalletClient:
         
         # Return the Save to Wallet URL
         return f"https://pay.google.com/gp/v/save/{token}"
+    
+    def update_pass_class(self, class_id, class_data, class_type="Generic"):
+        """
+        Update an existing pass class in Google Wallet
+        
+        This triggers automatic push notifications to all users who have
+        passes from this class saved in their Google Wallet.
+        
+        Args:
+            class_id: Class ID (with or without issuer prefix)
+            class_data: Dictionary with updated class data
+            class_type: Type of class (Generic, EventTicket, LoyaltyCard, etc.)
+            
+        Returns:
+            Updated class from Google Wallet API
+        """
+        try:
+            # Ensure class_id has issuer prefix
+            full_class_id = self._prepare_ids_to_try(class_id)[0]
+            
+            # Remove reviewStatus from the update payload to avoid API errors
+            # Google Wallet doesn't allow updating reviewStatus on existing classes
+            def remove_review_status(obj):
+                """Recursively remove reviewStatus from nested dictionaries"""
+                if isinstance(obj, dict):
+                    obj.pop('reviewStatus', None)
+                    for value in obj.values():
+                        remove_review_status(value)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        remove_review_status(item)
+            
+            # Create a copy to avoid modifying the original
+            import copy
+            clean_class_data = copy.deepcopy(class_data)
+            remove_review_status(clean_class_data)
+            
+            # Select appropriate resource based on class type
+            if class_type == "EventTicket":
+                resource = self.service.eventticketclass()
+            elif class_type == "LoyaltyCard":
+                resource = self.service.loyaltyclass()
+            elif class_type == "GiftCard":
+                resource = self.service.giftcardclass()
+            elif class_type == "TransitPass":
+                resource = self.service.transitclass()
+            else:
+                resource = self.service.genericclass()
+            
+            # Use patch for partial updates (more forgiving than update)
+            return resource.patch(
+                resourceId=full_class_id,
+                body=clean_class_data
+            ).execute()
+            
+        except HttpError as e:
+            error_details = e.content.decode('utf-8') if hasattr(e, 'content') else str(e)
+            raise Exception(f"Error updating pass class '{class_id}': {error_details}")
+    
+    def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket"):
+        """
+        Update an individual pass object in Google Wallet
+        
+        This triggers a push notification to the user's device informing them
+        that their pass has been updated.
+        
+        Args:
+            object_id: Full object ID (with issuer prefix)
+            class_id: Reference class ID (with issuer prefix)
+            holder_name: Name of the pass holder
+            holder_email: Email of the pass holder
+            pass_data: Dictionary with pass-specific data (custom fields)
+            class_type: Type of pass (EventTicket, LoyaltyCard, Generic)
+            
+        Returns:
+            Updated object from Google Wallet API
+        """
+        try:
+            # Ensure IDs have issuer prefix
+            full_object_id = self._prepare_ids_to_try(object_id)[0]
+            full_class_id = self._prepare_ids_to_try(class_id)[0]
+            
+            # Build the updated pass object using existing builder methods
+            if class_type == "EventTicket":
+                object_data = self.build_event_ticket_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                )
+                resource = self.service.eventticketobject()
+            elif class_type == "LoyaltyCard":
+                object_data = self.build_loyalty_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                )
+                resource = self.service.loyaltyobject()
+            elif class_type == "GiftCard":
+                object_data = self.build_generic_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                )
+                resource = self.service.giftcardobject()
+            elif class_type == "TransitPass":
+                object_data = self.build_generic_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                )
+                resource = self.service.transitobject()
+            else:  # Generic
+                object_data = self.build_generic_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                )
+                resource = self.service.genericobject()
+            
+            # Use patch to update the object (more forgiving than full update)
+            return resource.patch(
+                resourceId=full_object_id,
+                body=object_data
+            ).execute()
+            
+        except HttpError as e:
+            error_details = e.content.decode('utf-8') if hasattr(e, 'content') else str(e)
+            raise Exception(f"Error updating pass object '{object_id}': {error_details}")
     
     def build_event_ticket_object(self, object_id, class_id, holder_name, holder_email, pass_data):
         """

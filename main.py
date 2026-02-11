@@ -169,6 +169,36 @@ def main(page: ft.Page):
     
     manage_status = ft.Text("", size=12)
     
+    def startup_sync_classes():
+        """Check local DB and sync from Google Wallet if empty"""
+        try:
+            classes = api_client.get_classes() if api_client else []
+            
+            if not classes or len(classes) == 0:
+                manage_status.value = "⏳ Syncing classes from Google Wallet..."
+                manage_status.color = "blue"
+                page.update()
+                
+                try:
+                    result = api_client.sync_classes()
+                    classes = api_client.get_classes() if api_client else []
+                    
+                    if classes and len(classes) > 0:
+                        manage_status.value = f"✅ Synced {len(classes)} classes from Google Wallet"
+                        manage_status.color = "green"
+                    else:
+                        manage_status.value = "ℹ️ No classes found in Google Wallet"
+                        manage_status.color = "blue"
+                except Exception as sync_error:
+                    manage_status.value = f"❌ Error syncing classes: {str(sync_error)}"
+                    manage_status.color = "red"
+                
+                page.update()
+        except Exception as e:
+            manage_status.value = f"❌ Error checking local database: {str(e)}"
+            manage_status.color = "red"
+            page.update()
+    
     # Dynamic form infrastructure for Manage Templates
     manage_current_json = {}
     manage_current_class_type = None
@@ -235,7 +265,7 @@ def main(page: ft.Page):
                 manage_templates_dropdown.options = []
                 manage_templates_dropdown.value = None
                 manage_templates_dropdown.hint_text = "No templates available"
-                manage_status.value = "ℹ️ No templates found in local database. Use 'Sync from Google Wallet' or create in 'Template Builder'."
+                manage_status.value = "ℹ️ No templates found. Create one in 'Template Builder' tab or restart app to sync from Google Wallet."
                 manage_status.color = "blue"
             
             # Update page (don't update individual control before it's added to page)
@@ -390,36 +420,9 @@ def main(page: ft.Page):
         
         page.update()
 
+
     
 
-    def sync_all_classes(e):
-        """Trigger sync of all classes from Google Wallet"""
-        manage_status.value = "⏳ Syncing all classes from Google Wallet... This may take a moment."
-        manage_status.color = "blue"
-        page.update()
-        
-        try:
-            result = api_client.sync_classes()
-            
-            # Show success message
-            manage_status.value = f"✅ {result.get('message', 'Sync complete')}"
-            manage_status.color = "green"
-            
-            # Use a timer to refresh the list after a brief delay
-            # to allow user to read the message
-            import time
-            time.sleep(1) # Small delay for visual feedback
-            
-            # Refresh the list
-            load_template_classes()
-            
-        except Exception as ex:
-            import traceback
-            traceback.print_exc()
-            manage_status.value = f"❌ Error syncing classes: {str(ex)}"
-            manage_status.color = "red"
-        
-        page.update()
 
     def insert_to_google(e):
         """Insert/update class to Google Wallet using current form data"""
@@ -471,6 +474,9 @@ def main(page: ft.Page):
             manage_status.color = "red"
         
         page.update()
+    
+    # Sync classes on startup if local DB is empty
+    startup_sync_classes()
     
     # Load classes on startup
     load_template_classes()
@@ -623,33 +629,15 @@ def main(page: ft.Page):
                     
                     ft.Container(height=10),
                     
-                    ft.Row([
-                        ft.ElevatedButton(
-                            "Show",
-                            icon="visibility",
-                            on_click=show_template,
-                            style=ft.ButtonStyle(
-                                bgcolor="green",
-                                color="white"
-                            )
-                        ),
-                        ft.OutlinedButton(
-                            "Refresh List",
-                            icon="refresh",
-                            on_click=lambda e: (
-                                setattr(manage_status, 'value', '⏳ Refreshing...'),
-                                setattr(manage_status, 'color', 'blue'),
-                                page.update(),
-                                load_template_classes()
-                            )
-                        ),
-                        ft.OutlinedButton(
-                            "Sync All from Google",
-                            icon="cloud_sync",
-                            on_click=lambda e: sync_all_classes(e),
-                            style=ft.ButtonStyle(color="blue")
+                    ft.ElevatedButton(
+                        "Show",
+                        icon="visibility",
+                        on_click=show_template,
+                        style=ft.ButtonStyle(
+                            bgcolor="green",
+                            color="white"
                         )
-                    ], spacing=10),
+                    ),
                     
                     ft.Divider(height=20),
                     

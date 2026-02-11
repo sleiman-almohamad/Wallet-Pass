@@ -319,7 +319,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 status_ref.current.color = "green"
             else:
                 template_dropdown_ref.current.options = []
-                status_ref.current.value = "ℹ️ No templates found in local database. Create one in Template Builder tab."
+                status_ref.current.value = "ℹ️ No templates found. Create one in 'Template Builder' tab or restart app to sync from Google Wallet."
                 status_ref.current.color = "blue"
             page.update()
         except Exception as e:
@@ -510,20 +510,13 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 ft.Container(height=10),
                 
                 ft.Text("Select Template", size=16, weight=ft.FontWeight.BOLD),
-                ft.Row([
-                    ft.Dropdown(
-                        ref=template_dropdown_ref,
-                        label="Template Class",
-                        hint_text="Choose a template",
-                        width=300,
-                        on_change=on_template_selected
-                    ),
-                    ft.IconButton(
-                        icon="refresh",
-                        tooltip="Load templates",
-                        on_click=lambda e: load_templates()
-                    )
-                ], spacing=5),
+                ft.Dropdown(
+                    ref=template_dropdown_ref,
+                    label="Template Class",
+                    hint_text="Choose a template",
+                    width=400,
+                    on_change=on_template_selected
+                ),
                 
                 ft.Container(height=10),
                 

@@ -120,7 +120,11 @@ Perfect for:
 - Syncing production classes to local testing
 - Sharing templates with your supervisor/team
 
-After syncing, go to **"Manage Templates"** tab and click **"Refresh List"** to load the synced templates.
+### Syncing from Google Wallet
+
+The application automatically syncs templates from Google Wallet on startup if the local database is empty.
+
+If you need to re-sync, restart the application.
 
 ## Usage
 

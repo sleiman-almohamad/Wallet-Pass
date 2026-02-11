@@ -305,6 +305,21 @@ async def sync_classes_from_google():
                 # Check if class exists locally
                 existing_class = db.get_class(class_id)
                 
+                # Filter out reviewStatus from the class JSON to prevent it from being saved
+                # This ensures we don't overwrite local review status with "UNDER_REVIEW" from Google
+                def remove_review_status(obj):
+                    if isinstance(obj, dict):
+                        obj.pop('reviewStatus', None)
+                        for value in obj.values():
+                            remove_review_status(value)
+                    elif isinstance(obj, list):
+                        for item in obj:
+                            remove_review_status(item)
+                
+                import copy
+                clean_google_class = copy.deepcopy(google_class)
+                remove_review_status(clean_google_class)
+                
                 if existing_class:
                     # Update parameters
                     logger.info(f"Updating local class: {class_id}")
@@ -317,7 +332,7 @@ async def sync_classes_from_google():
                         issuer_name=metadata['issuer_name'],
                         header_text=metadata['header_text'],
                         card_title=metadata['card_title'],
-                        class_json=google_class  # IMPORTANT: Save the full JSON
+                        class_json=clean_google_class  # IMPORTANT: Save the cleaned JSON
                     )
                     # Count as updated (even if idempotent, our fix earlier handles db.update_class returning False)
                     updated_count += 1
@@ -332,7 +347,7 @@ async def sync_classes_from_google():
                         issuer_name=metadata['issuer_name'],
                         header_text=metadata['header_text'],
                         card_title=metadata['card_title'],
-                        class_json=google_class
+                        class_json=clean_google_class
                     )
                     if success:
                         new_count += 1

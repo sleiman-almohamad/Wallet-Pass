@@ -376,7 +376,7 @@ def main(page: ft.Page):
         page.update()
     
     def update_template(e):
-        """Save template changes to local database only"""
+        """Save template changes to local database and sync to Google Wallet"""
         nonlocal manage_current_json, manage_dynamic_form
         
         if not edit_class_id_field.value:
@@ -391,7 +391,7 @@ def main(page: ft.Page):
             page.update()
             return
         
-        manage_status.value = "⏳ Updating local database..."
+        manage_status.value = "⏳ Updating database and syncing to Google Wallet..."
         manage_status.color = "blue"
         page.update()
         
@@ -402,14 +402,15 @@ def main(page: ft.Page):
             # Get current JSON from dynamic form
             updated_json = manage_dynamic_form.get_json_data()
             
-            # Update local database with complete JSON
-            api_client.update_class(
+            # Update local database (and trigger Google Wallet sync via backend)
+            response = api_client.update_class(
                 class_id=class_id_suffix,
                 class_type=class_type,
                 class_json=updated_json
             )
             
-            manage_status.value = f"✅ Template '{class_id_suffix}' saved to local database!"
+            # Display detailed success message from backend
+            manage_status.value = response.get("message", "✅ Template updated successfully!")
             manage_status.color = "green"
             
         except Exception as ex:
@@ -421,59 +422,13 @@ def main(page: ft.Page):
         page.update()
 
 
-    
-
-
     def insert_to_google(e):
-        """Insert/update class to Google Wallet using current form data"""
-        nonlocal manage_current_json, manage_dynamic_form
+        """Insert/update class to Google Wallet (alias for update_template)"""
+        # Since update_template now handles Google Wallet sync via the backend,
+        # we can just call it directly.
+        update_template(e)
         
-        if not edit_class_id_field.value:
-            manage_status.value = "❌ Please load a template first"
-            manage_status.color = "red"
-            page.update()
-            return
-        
-        if not manage_dynamic_form:
-            manage_status.value = "❌ No form data available. Please load a template first."
-            manage_status.color = "red"
-            page.update()
-            return
-        
-        manage_status.value = "⏳ Inserting to Google Wallet..."
-        manage_status.color = "blue"
-        page.update()
-        
-        try:
-            class_id = edit_class_id_field.value
-            class_type = edit_class_type_field.value
-            
-            # Get current JSON from dynamic form
-            google_class_data = manage_dynamic_form.get_json_data()
-            
-            # Ensure ID has proper issuer prefix
-            if "id" in google_class_data:
-                if not google_class_data["id"].startswith(configs.ISSUER_ID):
-                    google_class_data["id"] = f"{configs.ISSUER_ID}.{google_class_data['id']}"
-            else:
-                google_class_data["id"] = f"{configs.ISSUER_ID}.{class_id}"
-            
-            # Insert to Google Wallet using WalletClient
-            if client:
-                result = client.create_pass_class(google_class_data, class_type)
-                manage_status.value = f"✅ Class '{class_id}' successfully inserted to Google Wallet!"
-                manage_status.color = "green"
-            else:
-                manage_status.value = "❌ Google Wallet service not connected"
-                manage_status.color = "red"
-                
-        except Exception as ex:
-            import traceback
-            traceback.print_exc()
-            manage_status.value = f"❌ Error: {str(ex)}"
-            manage_status.color = "red"
-        
-        page.update()
+
     
     # Sync classes on startup if local DB is empty
     startup_sync_classes()

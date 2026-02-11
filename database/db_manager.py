@@ -409,6 +409,33 @@ class DatabaseManager:
             return cursor.rowcount > 0
     
     # ========================================================================
+    # Notifications_Table Operations
+    # ========================================================================
+
+    def create_notification(self, class_id: str, object_id: str, status: str, message: str) -> bool:
+        """
+        Log a notification attempt
+        
+        Args:
+            class_id: The class ID
+            object_id: The pass object ID
+            status: Status of the notification ('Sent', 'Failed')
+            message: Details or error message
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """INSERT INTO Notifications_Table 
+                   (class_id, object_id, status, message) 
+                   VALUES (%s, %s, %s, %s)""",
+                (class_id, object_id, status, message)
+            )
+            return cursor.rowcount > 0
+
+    # ========================================================================
     # Utility Methods
     # ========================================================================
     

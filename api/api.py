@@ -188,15 +188,7 @@ async def update_class(class_id: str, class_data: ClassUpdate):
             raise HTTPException(status_code=400, detail="No fields to update")
         
         # Step 1: Update local database
-        # Step 1: Update local database
         success = db.update_class(class_id, **update_data)
-        
-        if not success:
-            # If update returns False, it means 0 rows were changed.
-            # Since we already verified the class exists, this just means 
-            # the data was identical to what's already in the DB (idempotent update).
-            # We should proceed instead of raising an error.
-            logger.info(f"Class '{class_id}' update returned 0 rows changed (idempotent update)")
         
         # Step 2: Get the updated class data for Google Wallet sync
         updated_class = db.get_class(class_id)
@@ -204,10 +196,10 @@ async def update_class(class_id: str, class_data: ClassUpdate):
         # Step 3: Sync to Google Wallet and propagate to passes
         if wallet_client and updated_class.get('class_json'):
             try:
-                # 3a: Update the class in Google Wallet (triggers class-level notification)
+                # 3a: Upsert the class in Google Wallet (Creates if missing, Updates if exists)
+                # This ensures we don't fail if the class was only local before
                 logger.info(f"Syncing class '{class_id}' to Google Wallet")
-                wallet_client.update_pass_class(
-                    class_id=class_id,
+                wallet_client.create_pass_class(
                     class_data=updated_class['class_json'],
                     class_type=updated_class.get('class_type', 'Generic')
                 )
@@ -229,16 +221,16 @@ async def update_class(class_id: str, class_data: ClassUpdate):
                 if failed_count > 0:
                     # Partial success
                     message = (
-                        f"✅ Class '{class_id}' updated! "
-                        f"📱 {updated_count}/{total_count} passes synced successfully. "
-                        f"⚠️ {failed_count} passes failed to sync."
+                        f"✅ Class updated! "
+                        f"📱 Notification sent to {updated_count}/{total_count} users. "
+                        f"⚠️ {failed_count} failed."
                     )
                     logger.warning(f"Partial sync for class '{class_id}': {propagation_result['errors']}")
                 else:
                     # Full success
                     message = (
-                        f"✅ Class '{class_id}' updated! "
-                        f"📱 {updated_count} pass(es) synced successfully."
+                        f"✅ Class updated! "
+                        f"📱 Notification sent to {updated_count} users."
                     )
                     logger.info(f"Successfully synced class '{class_id}' and {updated_count} passes")
                 
@@ -252,7 +244,7 @@ async def update_class(class_id: str, class_data: ClassUpdate):
                 error_msg = str(e)
                 logger.error(f"Google Wallet sync failed for class '{class_id}': {error_msg}")
                 return MessageResponse(
-                    message=f"Class '{class_id}' updated locally. ⚠️ Google Wallet sync failed: {error_msg}",
+                    message=f"Class updated locally. ⚠️ Google Wallet sync failed: {error_msg}",
                     success=True
                 )
         else:
@@ -260,7 +252,7 @@ async def update_class(class_id: str, class_data: ClassUpdate):
             reason = "WalletClient not available" if not wallet_client else "No class_json found"
             logger.info(f"Class '{class_id}' updated locally only. Reason: {reason}")
             return MessageResponse(
-                message=f"Class '{class_id}' updated successfully (local only)",
+                message=f"Class '{class_id}' updated locally only (no wallet sync).",
                 success=True
             )
             

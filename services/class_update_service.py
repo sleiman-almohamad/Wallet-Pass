@@ -92,6 +92,14 @@ def propagate_class_update_to_passes(
                     class_type=class_type
                 )
                 
+                # Log success to database
+                db_manager.create_notification(
+                    class_id=class_id,
+                    object_id=object_id,
+                    status="Sent",
+                    message="Pass updated successfully via Google Wallet API"
+                )
+                
                 result["updated_count"] += 1
                 logger.debug(f"Successfully updated pass: {object_id}")
                 
@@ -99,6 +107,15 @@ def propagate_class_update_to_passes(
                 result["failed_count"] += 1
                 error_msg = f"Failed to update pass {object_id}: {str(e)}"
                 result["errors"].append(error_msg)
+                
+                # Log failure to database
+                db_manager.create_notification(
+                    class_id=class_id,
+                    object_id=object_id,
+                    status="Failed",
+                    message=str(e)
+                )
+                
                 logger.error(error_msg, exc_info=True)
                 # Continue with other passes (best-effort)
         

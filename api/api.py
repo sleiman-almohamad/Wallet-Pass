@@ -5,7 +5,8 @@ Provides RESTful API endpoints for managing pass classes and passes
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+import copy
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import sys
 from pathlib import Path
@@ -496,32 +497,55 @@ async def get_passes_by_email(email: str):
 
 @app.put("/passes/{object_id}", response_model=MessageResponse, tags=["Passes"])
 async def update_pass(object_id: str, pass_data: PassUpdate):
-    """Update a pass"""
+    """Update a pass and sync to Google Wallet"""
     try:
         # Check if pass exists
         existing_pass = db.get_pass(object_id)
         if not existing_pass:
             raise HTTPException(status_code=404, detail=f"Pass '{object_id}' not found")
         
-        # Only update fields that are provided
+        # 1. Update local database
         update_data = pass_data.model_dump(exclude_unset=True)
-        
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
         
-        # Convert status enum to string if present
         if 'status' in update_data:
             update_data['status'] = update_data['status'].value
         
-        success = db.update_pass(object_id, **update_data)
+        db_success = db.update_pass(object_id, **update_data)
         
-        if success:
+        # 2. Sync to Google Wallet if client is available
+        wallet_message = ""
+        if wallet_client:
+            try:
+                # Refresh data to get latest state from DB (combining existing + update)
+                updated_pass = db.get_pass(object_id)
+                class_info = db.get_class(updated_pass['class_id'])
+                
+                if class_info:
+                    logger.info(f"Syncing pass '{object_id}' to Google Wallet")
+                    wallet_client.update_pass_object(
+                        object_id=object_id,
+                        class_id=updated_pass['class_id'],
+                        holder_name=updated_pass['holder_name'],
+                        holder_email=updated_pass['holder_email'],
+                        pass_data=updated_pass.get('pass_data', {}),
+                        class_type=class_info.get('class_type', 'Generic')
+                    )
+                    wallet_message = " 📱 Synced to Google Wallet."
+                else:
+                    wallet_message = " ⚠️ Could not sync to Google Wallet (Class info missing)."
+            except Exception as e:
+                logger.error(f"Failed to sync updated pass to Google Wallet: {e}")
+                wallet_message = f" ⚠️ Google Wallet sync failed: {str(e)}"
+
+        if db_success:
             return MessageResponse(
-                message=f"Pass '{object_id}' updated successfully",
+                message=f"Pass '{object_id}' updated successfully.{wallet_message}",
                 success=True
             )
         else:
-            raise HTTPException(status_code=400, detail="Failed to update pass")
+            raise HTTPException(status_code=400, detail="Failed to update pass locally")
             
     except HTTPException:
         raise
@@ -592,6 +616,126 @@ async def root():
         "docs": "/docs",
         "redoc": "/redoc"
     }
+
+
+@app.post("/passes/sync", response_model=MessageResponse, tags=["Passes"])
+async def sync_passes():
+    """Sync all pass objects from Google Wallet to local database"""
+    try:
+        if not wallet_client:
+            raise HTTPException(status_code=503, detail="Google Wallet service not initialized")
+            
+        logger.info("Starting pass objects sync from Google Wallet")
+        
+        # 1. Fetch all pass objects from Google Wallet
+        google_passes = wallet_client.list_all_pass_objects()
+        
+        synced_count = 0
+        new_count = 0
+        updated_count = 0
+        errors = []
+        
+        # 2. Process each pass and save to local DB
+        for google_pass in google_passes:
+            try:
+                # Extract full ID with issuer prefix
+                full_object_id = google_pass.get('id')
+                # Extract local ID (suffix) for database consistency if needed, 
+                # but we usually store the full object_id in Passes_Table
+                object_id = full_object_id
+                
+                # Check if pass already exists locally
+                existing_pass = db.get_pass(object_id)
+                
+                # Extract metadata
+                class_id = google_pass.get('classId')
+                # Remove issuer prefix from class_id for local DB storage if it matches our ISSUER_ID
+                if class_id and class_id.startswith(configs.ISSUER_ID + "."):
+                    local_class_id = class_id.split(".", 1)[1]
+                else:
+                    local_class_id = class_id
+                
+                # Extract holder info - this varies by object type
+                holder_name = ""
+                holder_email = ""
+                
+                # Try common fields for different pass types
+                if 'ticketHolderName' in google_pass:
+                    holder_name = google_pass['ticketHolderName']
+                elif 'accountName' in google_pass:
+                    holder_name = google_pass['accountName']
+                elif 'passengerName' in google_pass:
+                    holder_name = google_pass['passengerName']
+                
+                if 'accountId' in google_pass:
+                    holder_email = google_pass['accountId']
+                
+                # If we still don't have email/name, try custom modules or just leave blank
+                # In our system holder_email is UNIQUE and REQUIRED, this might be a problem for sync
+                # if the user manually created passes in Google Wallet console without emails.
+                if not holder_email:
+                    holder_email = f"unknown_{object_id}@example.com"
+                if not holder_name:
+                    holder_name = "Unknown Holder"
+
+                # Prepare pass_data (everything else as JSON)
+                pass_data_cleaned = copy.deepcopy(google_pass)
+                # Remove common fields that are already in separate columns
+                pass_data_cleaned.pop('id', None)
+                pass_data_cleaned.pop('classId', None)
+                pass_data_cleaned.pop('ticketHolderName', None)
+                pass_data_cleaned.pop('accountName', None)
+                pass_data_cleaned.pop('accountId', None)
+                pass_data_cleaned.pop('state', None)
+                
+                status = "Active" if google_pass.get('state') == "ACTIVE" else "Expired"
+                
+                if existing_pass:
+                    # Update parameters
+                    logger.info(f"Updating local pass: {object_id}")
+                    db.update_pass(
+                        object_id=object_id,
+                        holder_name=holder_name,
+                        holder_email=holder_email,
+                        status=status,
+                        pass_data=pass_data_cleaned
+                    )
+                    updated_count += 1
+                else:
+                    # Create new pass
+                    logger.info(f"Creating local pass: {object_id}")
+                    # Ensure class exists locally before creating pass (FK constraint)
+                    if not db.get_class(local_class_id):
+                         logger.warning(f"Class '{local_class_id}' not found for pass '{object_id}'. Skipping pass sync.")
+                         continue
+                         
+                    db.create_pass(
+                        object_id=object_id,
+                        class_id=local_class_id,
+                        holder_name=holder_name,
+                        holder_email=holder_email,
+                        status=status,
+                        pass_data=pass_data_cleaned
+                    )
+                    new_count += 1
+                
+                synced_count += 1
+                
+            except Exception as e:
+                error_msg = f"Error syncing pass {google_pass.get('id')}: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+        
+        message = f"Sync complete. Processed {synced_count} passes (New: {new_count}, Updated: {updated_count})."
+        
+        return MessageResponse(
+            message=message,
+            success=True
+        )
+            
+    except Exception as e:
+        logger.error(f"Pass sync failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

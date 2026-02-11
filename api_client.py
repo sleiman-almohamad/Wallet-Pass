@@ -137,6 +137,32 @@ class APIClient:
             print(f"Error fetching pass: {e}")
             return None
     
+    def update_pass(self, object_id: str, 
+                    holder_name: Optional[str] = None,
+                    holder_email: Optional[str] = None,
+                    status: Optional[str] = None,
+                    pass_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Update an existing pass"""
+        data = {}
+        if holder_name is not None:
+            data["holder_name"] = holder_name
+        if holder_email is not None:
+            data["holder_email"] = holder_email
+        if status is not None:
+            data["status"] = status
+        if pass_data is not None:
+            data["pass_data"] = pass_data
+        
+        try:
+            response = requests.put(f"{self.base_url}/passes/{object_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise Exception(f"Error updating pass: {error_detail}")
+        except Exception as e:
+            raise Exception(f"Error updating pass: {e}")
+
     def sync_classes(self) -> Dict[str, Any]:
         """Trigger sync of all classes from Google Wallet to local database"""
         try:
@@ -148,6 +174,18 @@ class APIClient:
             raise Exception(f"Sync failed: {error_detail}")
         except Exception as e:
             raise Exception(f"Sync failed: {e}")
+
+    def sync_passes(self) -> Dict[str, Any]:
+        """Trigger sync of all pass objects from Google Wallet to local database"""
+        try:
+            response = requests.post(f"{self.base_url}/passes/sync")
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise Exception(f"Sync passes failed: {error_detail}")
+        except Exception as e:
+            raise Exception(f"Sync passes failed: {e}")
 
     def check_health(self) -> Dict[str, Any]:
         """Check API health status"""

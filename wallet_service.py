@@ -165,6 +165,56 @@ class WalletClient:
         
         return all_classes
 
+    def list_all_pass_objects(self):
+        """
+        List all pass objects from Google Wallet across all object types
+        
+        Returns:
+            List of pass objects with their type information
+        """
+        all_objects = []
+        
+        # Define object types and their corresponding resources
+        object_types = [
+            ("Generic", self.service.genericobject()),
+            ("LoyaltyCard", self.service.loyaltyobject()),
+            ("EventTicket", self.service.eventticketobject()),
+            ("GiftCard", self.service.giftcardobject()),
+            ("TransitPass", self.service.transitobject()),
+        ]
+        
+        for obj_type, resource in object_types:
+            try:
+                # List objects of this type with pagination
+                print(f"DEBUG: Listing {obj_type} objects...")
+                request = resource.list(issuerId=configs.ISSUER_ID)
+                
+                while request is not None:
+                    response = request.execute()
+                    
+                    if 'resources' in response:
+                        count = len(response['resources'])
+                        print(f"DEBUG: Found {count} {obj_type} objects in current page")
+                        for obj in response['resources']:
+                            # Add object type information
+                            obj['class_type'] = obj_type
+                            all_objects.append(obj)
+                    else:
+                        print(f"DEBUG: No resources in response for {obj_type}")
+                    
+                    request = resource.list_next(previous_request=request, previous_response=response)
+                        
+            except HttpError as e:
+                # Skip if this object type has no resources or error
+                if e.resp.status != 404:
+                    print(f"Warning: Error listing {obj_type} objects: {e}")
+                continue
+            except Exception as e:
+                print(f"Error listing {obj_type} objects: {e}")
+                continue
+        
+        return all_objects
+
     def verify_pass(self, object_id):
         """
         Orchestrates the verification process:

@@ -198,6 +198,97 @@ def main(page: ft.Page):
             manage_status.value = f"❌ Error checking local database: {str(e)}"
             manage_status.color = "red"
             page.update()
+
+    # --- Manage Passes State ---
+    manage_passes_dropdown = ft.Dropdown(
+        label="Select Pass Object",
+        hint_text="Choose a pass to manage",
+        width=400,
+        options=[]
+    )
+    
+    passes_status = ft.Text("", size=12)
+    passes_current_json = {}
+    passes_current_class_type = None
+    passes_dynamic_form = None
+    passes_json_editor = None
+    
+    passes_object_id_field = ft.TextField(
+        label="Object ID",
+        width=400,
+        read_only=True,
+        bgcolor="grey100"
+    )
+    
+    passes_class_id_field = ft.TextField(
+        label="Class ID",
+        width=400,
+        read_only=True,
+        bgcolor="grey100"
+    )
+
+    passes_form_container = ft.Column(
+        controls=[
+            ft.Text("Load a pass to see editable fields", color="grey", size=11)
+        ],
+        spacing=8,
+        scroll="auto"
+    )
+
+    passes_json_container = ft.Container(
+        content=ft.Text("Load a pass to see JSON", color="grey", size=11),
+        expand=True
+    )
+
+    passes_preview_container = ft.Container(
+        content=ft.Column([
+            ft.Icon("credit_card", size=80, color="grey300"),
+            ft.Text("Preview will appear here", size=12, color="grey")
+        ], alignment=ft.MainAxisAlignment.CENTER,
+           horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+        expand=True
+    )
+
+    def startup_sync_passes():
+        """Check local DB and sync passes from Google Wallet if empty"""
+        print("DEBUG: startup_sync_passes called")
+        try:
+            passes = api_client.get_passes() if api_client else []
+            print(f"DEBUG: Initial local passes count: {len(passes) if passes else 0}")
+            
+            if not passes or len(passes) == 0:
+                print("DEBUG: Local DB empty, triggering sync...")
+                passes_status.value = "⏳ Syncing passes from Google Wallet..."
+                passes_status.color = "blue"
+                page.update()
+                
+                try:
+                    result = api_client.sync_passes()
+                    print(f"DEBUG: Sync result: {result}")
+                    passes = api_client.get_passes() if api_client else []
+                    print(f"DEBUG: Post-sync local passes count: {len(passes) if passes else 0}")
+                    
+                    if passes and len(passes) > 0:
+                        passes_status.value = f"✅ Synced {len(passes)} passes from Google Wallet"
+                        passes_status.color = "green"
+                    else:
+                        passes_status.value = "ℹ️ No passes found in Google Wallet (or sync failed silently)"
+                        passes_status.color = "orange"
+                except Exception as sync_error:
+                    print(f"DEBUG: Sync error: {sync_error}")
+                    import traceback
+                    traceback.print_exc()
+                    passes_status.value = f"❌ Error syncing passes: {str(sync_error)}"
+                    passes_status.color = "red"
+                
+                page.update()
+            else:
+                print("DEBUG: Local passes found, skipping auto-sync")
+        except Exception as e:
+            print(f"DEBUG: Error in startup_sync_passes: {e}")
+            passes_status.value = f"❌ Error checking local passes database: {str(e)}"
+            passes_status.color = "red"
+            page.update()
     
     # Dynamic form infrastructure for Manage Templates
     manage_current_json = {}
@@ -422,11 +513,210 @@ def main(page: ft.Page):
         page.update()
 
 
-    def insert_to_google(e):
-        """Insert/update class to Google Wallet (alias for update_template)"""
-        # Since update_template now handles Google Wallet sync via the backend,
-        # we can just call it directly.
-        update_template(e)
+    def load_passes():
+        """Load passes from local database into dropdown"""
+        print("DEBUG: load_passes called")
+        try:
+            passes = api_client.get_passes() if api_client else []
+            print(f"DEBUG: Fetched {len(passes) if passes else 0} passes for dropdown")
+            
+            if passes and len(passes) > 0:
+                options = []
+                for p in passes:
+                    object_id = p["object_id"]
+                    holder = p.get('holder_name', 'Unknown')
+                    option = ft.dropdown.Option(
+                        key=object_id,
+                        text=f"{object_id} ({holder})"
+                    )
+                    options.append(option)
+                
+                manage_passes_dropdown.options = options
+                manage_passes_dropdown.value = passes[0]["object_id"] if passes else None
+                # manage_passes_dropdown.hint_text = "" # Don't clear hint text, keeps it usable if cleared
+                
+                passes_status.value = f"✅ Loaded {len(passes)} pass(es) from local database"
+                passes_status.color = "green"
+            else:
+                print("DEBUG: No passes found for dropdown")
+                manage_passes_dropdown.options = []
+                manage_passes_dropdown.value = None
+                manage_passes_dropdown.hint_text = "No passes available"
+                passes_status.value = "ℹ️ No passes found. Create one in 'Pass Generator' tab or sync from Google Wallet."
+                passes_status.color = "blue"
+            
+            page.update()
+            
+        except Exception as e:
+            print(f"DEBUG: Error loading passes: {e}")
+            import traceback
+            traceback.print_exc()
+            passes_status.value = f"❌ Error loading passes from database: {e}"
+            passes_status.color = "red"
+            page.update()
+
+    def show_pass(e):
+        """Fetch and display pass for editing from local database"""
+        nonlocal passes_json_editor, passes_current_json, passes_current_class_type, passes_dynamic_form
+        
+        if not manage_passes_dropdown.value:
+            passes_status.value = "❌ Please select a pass"
+            passes_status.color = "red"
+            page.update()
+            return
+        
+        passes_status.value = "⏳ Loading pass details..."
+        passes_status.color = "blue"
+        page.update()
+        
+        try:
+            object_id = manage_passes_dropdown.value
+            
+            # Fetch pass data from local database
+            p_data = api_client.get_pass(object_id) if api_client else None
+            
+            if not p_data:
+                passes_status.value = f"❌ Pass '{object_id}' not found in database"
+                passes_status.color = "red"
+                page.update()
+                return
+            
+            # Populate read-only info fields
+            passes_object_id_field.value = object_id
+            passes_class_id_field.value = p_data.get("class_id")
+            
+            # Get class details to determine type
+            class_info = api_client.get_class(p_data["class_id"])
+            class_type = class_info.get("class_type", "Generic") if class_info else "Generic"
+            passes_current_class_type = class_type
+            
+            # Prepare current JSON for editing
+            json_data = {
+                "id": object_id,
+                "classId": f"{configs.ISSUER_ID}.{p_data['class_id']}",
+                "holder_name": p_data.get("holder_name"),
+                "holder_email": p_data.get("holder_email"),
+                "status": p_data.get("status")
+            }
+            
+            # Add dynamic fields from pass_data
+            if p_data.get("pass_data"):
+                json_data.update(p_data["pass_data"])
+            
+            passes_current_json = json_data.copy()
+            
+            # Select editable fields
+            # Select editable fields
+            field_mappings = {
+                "holder_name": {"label": "Holder Name", "type": "text"},
+                "holder_email": {"label": "Holder Email", "type": "text"},
+                "status": {"label": "Status", "type": "select", "options": ["Active", "Completed", "Expired"]},
+            }
+            
+            # Add dynamic fields from pass_data keys
+            if p_data.get("pass_data"):
+                for key in p_data["pass_data"].keys():
+                     if key not in ["holder_name", "holder_email", "status", "id", "classId"]:
+                         field_mappings[key] = {
+                             "label": key.replace("_", " ").title(),
+                             "type": "text"
+                         }
+            
+            def on_passes_form_change(updated_json):
+                nonlocal passes_current_json
+                passes_current_json = updated_json
+                if passes_json_editor:
+                    passes_json_editor.update_json(updated_json)
+                
+                # Update visual preview
+                if class_info and class_info.get('class_json'):
+                    passes_preview_container.content = build_manage_preview(class_info['class_json']) 
+                else:
+                    passes_preview_container.content = ft.Text("No preview available")
+                
+                page.update()
+            
+            from ui.components.json_form_mapper import DynamicForm
+            passes_dynamic_form = DynamicForm(field_mappings, passes_current_json, on_passes_form_change)
+            form_controls = passes_dynamic_form.build()
+            passes_form_container.controls = form_controls
+            
+            from ui.components.json_editor import JSONEditor
+            passes_json_editor = JSONEditor(passes_current_json, read_only=True)
+            passes_json_container.content = passes_json_editor.build()
+            
+            # Initial Preview
+            if class_info and class_info.get('class_json'):
+                 passes_preview_container.content = build_manage_preview(class_info['class_json'])
+            else:
+                 passes_preview_container.content = ft.Text("Class info not found for preview")
+            
+            passes_status.value = f"✅ Pass loaded. Edit fields and click 'Update Pass' to save."
+            passes_status.color = "green"
+            
+        except Exception as ex:
+            import traceback
+            traceback.print_exc()
+            passes_status.value = f"❌ Error: {str(ex)}"
+            passes_status.color = "red"
+        
+        page.update()
+
+    def update_pass_object_handler(e):
+        """Update pass locally and sync to Google Wallet"""
+        nonlocal passes_current_json, passes_dynamic_form
+        
+        if not passes_object_id_field.value:
+            passes_status.value = "❌ No pass loaded"
+            passes_status.color = "red"
+            page.update()
+            return
+
+        passes_status.value = "⏳ Updating pass and syncing..."
+        passes_status.color = "blue"
+        page.update()
+        
+        try:
+            object_id = passes_object_id_field.value
+            updated_data = passes_dynamic_form.get_json_data() if passes_dynamic_form else {}
+            
+            holder_name = updated_data.pop("holder_name", None)
+            holder_email = updated_data.pop("holder_email", None)
+            status = updated_data.pop("status", None)
+            
+            pass_data = updated_data
+            pass_data.pop("id", None)
+            pass_data.pop("classId", None)
+            
+            response = api_client.update_pass(
+                object_id=object_id,
+                holder_name=holder_name,
+                holder_email=holder_email,
+                status=status,
+                pass_data=pass_data
+            )
+            
+            passes_status.value = response.get("message", "✅ Pass updated successfully!")
+            passes_status.color = "green"
+        except Exception as ex:
+            passes_status.value = f"❌ Error: {str(ex)}"
+            passes_status.color = "red"
+        page.update()
+
+    def sync_passes_manual(e):
+        """Manual trigger for pass sync"""
+        passes_status.value = "⏳ Syncing passes from Google Wallet..."
+        passes_status.color = "blue"
+        page.update()
+        try:
+            result = api_client.sync_passes()
+            load_passes()
+            passes_status.value = f"✅ {result.get('message', 'Sync complete')}"
+            passes_status.color = "green"
+        except Exception as ex:
+            passes_status.value = f"❌ Sync failed: {str(ex)}"
+            passes_status.color = "red"
+        page.update()
         
 
     
@@ -624,7 +914,7 @@ def main(page: ft.Page):
                     ft.ElevatedButton(
                         "Insert to Google Wallet",
                         icon="cloud_upload",
-                        on_click=insert_to_google,
+                        on_click=update_template,
                         width=350,
                         style=ft.ButtonStyle(
                             bgcolor="blue",
@@ -1084,6 +1374,105 @@ def main(page: ft.Page):
     #     input_val = id_input.value.strip()
 
     # search_btn = ft.ElevatedButton("Search", icon="search", on_click=run_search)
+
+    # Build Manage Passes Tab Content
+    # Build Manage Passes Tab Content
+    manage_passes_content = ft.Container(
+        content=ft.Column([
+            # Header Section
+            ft.Row([
+                ft.Text("Manage Pass Objects", size=24, weight="bold", color="blueGrey800"),
+                ft.IconButton("sync", on_click=sync_passes_manual, tooltip="Refresh passes from Google Wallet")
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            ft.Divider(),
+            
+            # Selection Row
+            ft.Container(
+                content=ft.Row([
+                    ft.Column([
+                        ft.Text("Select Pass to Edit", size=14, weight="bold", color="blue"),
+                        ft.Row([
+                            manage_passes_dropdown,
+                            ft.ElevatedButton("Load Pass", icon="download", on_click=show_pass)
+                        ])
+                    ]),
+                    ft.VerticalDivider(width=20, color="transparent"),
+                    ft.Column([
+                        ft.Text("Status", size=14, weight="bold", color="blue"),
+                        passes_status
+                    ])
+                ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START),
+                padding=10,
+                bgcolor="grey50",
+                border_radius=10,
+                border=ft.border.all(1, "grey200")
+            ),
+            
+            ft.Divider(),
+            
+            # Edit Section (Expands to fill remaining space)
+            ft.Row([
+                # Left Column: Form
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("Edit Pass Details", size=16, weight="bold", color="blue"),
+                        passes_object_id_field,
+                        passes_class_id_field,
+                        ft.Divider(),
+                        passes_form_container,
+                        ft.Container(height=20),
+                        ft.ElevatedButton(
+                            "Update Pass & Sync", 
+                            icon="save", 
+                            on_click=update_pass_object_handler,
+                            scale=1.1,
+                            style=ft.ButtonStyle(bgcolor="blue", color="white")
+                        ),
+                    ], scroll="auto", spacing=10, expand=True),
+                    width=450,
+                    padding=10,
+                    border=ft.border.only(right=ft.BorderSide(1, "grey300"))
+                ),
+                
+                # Right Column: Preview & JSON
+                ft.Container(
+                    content=ft.Column([
+                        ft.Tabs(
+                            selected_index=0,
+                            animation_duration=300,
+                            tabs=[
+                                ft.Tab(
+                                    text="Preview",
+                                    icon="visibility",
+                                    content=passes_preview_container
+                                ),
+                                ft.Tab(
+                                    text="JSON Data",
+                                    icon="code",
+                                    content=passes_json_container
+                                ),
+                            ],
+                            expand=True
+                        )
+                    ], expand=True),
+                    expand=True,
+                    padding=10
+                )
+            ], expand=True, vertical_alignment=ft.CrossAxisAlignment.START)
+            
+        ], spacing=10, expand=True), # Main Column expands
+        padding=20,
+        expand=True # Main Container expands
+    )
+
+    # Add the new tab to the existing tabs
+    tabs.tabs.append(
+        ft.Tab(text="Manage Passes", icon="contact_page", content=manage_passes_content)
+    )
+
+    # Sync and load on startup
+    startup_sync_passes()
+    load_passes()
 
     page.add(
         ft.Row([

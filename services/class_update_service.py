@@ -57,6 +57,24 @@ def propagate_class_update_to_passes(
         # Fetch all passes for this class
         passes = db_manager.get_passes_by_class(class_id)
         result["total_count"] = len(passes)
+
+        # region agent log
+        try:
+            import json as _json, time as _time
+            with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                _ts = int(_time.time() * 1000)
+                _f.write(_json.dumps({
+                    "id": f"log_{_ts}",
+                    "timestamp": _ts,
+                    "location": "services/class_update_service.py:propagate_class_update_to_passes:passes_fetched",
+                    "message": "Fetched passes for class",
+                    "data": {"class_id": class_id, "total_passes": len(passes)},
+                    "runId": "initial",
+                    "hypothesisId": "H2"
+                }) + "\n")
+        except Exception:
+            pass
+        # endregion
         
         if not passes:
             logger.info(f"No passes found for class {class_id}, nothing to update")
@@ -80,6 +98,28 @@ def propagate_class_update_to_passes(
                 holder_name = pass_obj.get('holder_name', '')
                 holder_email = pass_obj.get('holder_email', '')
                 pass_data = pass_obj.get('pass_data', {})
+
+                # region agent log
+                try:
+                    import json as _json, time as _time
+                    with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                        _ts = int(_time.time() * 1000)
+                        _f.write(_json.dumps({
+                            "id": f"log_{_ts}",
+                            "timestamp": _ts,
+                            "location": "services/class_update_service.py:propagate_class_update_to_passes:before_update_pass",
+                            "message": "About to call wallet_client.update_pass_object",
+                            "data": {
+                                "class_id": class_id,
+                                "object_id": object_id,
+                                "holder_email": holder_email
+                            },
+                            "runId": "initial",
+                            "hypothesisId": "H3"
+                        }) + "\n")
+                except Exception:
+                    pass
+                # endregion
                 
                 # Update the pass object in Google Wallet
                 logger.debug(f"Updating pass object: {full_object_id}")
@@ -99,6 +139,27 @@ def propagate_class_update_to_passes(
                     status="Sent",
                     message="Pass updated successfully via Google Wallet API"
                 )
+
+                # region agent log
+                try:
+                    import json as _json, time as _time
+                    with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                        _ts = int(_time.time() * 1000)
+                        _f.write(_json.dumps({
+                            "id": f"log_{_ts}",
+                            "timestamp": _ts,
+                            "location": "services/class_update_service.py:propagate_class_update_to_passes:after_update_pass",
+                            "message": "Successfully updated pass in Google Wallet",
+                            "data": {
+                                "class_id": class_id,
+                                "object_id": object_id
+                            },
+                            "runId": "initial",
+                            "hypothesisId": "H3"
+                        }) + "\n")
+                except Exception:
+                    pass
+                # endregion
                 
                 result["updated_count"] += 1
                 logger.debug(f"Successfully updated pass: {object_id}")
@@ -115,6 +176,28 @@ def propagate_class_update_to_passes(
                     status="Failed",
                     message=str(e)
                 )
+
+                # region agent log
+                try:
+                    import json as _json, time as _time
+                    with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                        _ts = int(_time.time() * 1000)
+                        _f.write(_json.dumps({
+                            "id": f"log_{_ts}",
+                            "timestamp": _ts,
+                            "location": "services/class_update_service.py:propagate_class_update_to_passes:on_error",
+                            "message": "Error while updating pass in Google Wallet",
+                            "data": {
+                                "class_id": class_id,
+                                "object_id": object_id,
+                                "error": str(e)
+                            },
+                            "runId": "initial",
+                            "hypothesisId": "H3"
+                        }) + "\n")
+                except Exception:
+                    pass
+                # endregion
                 
                 logger.error(error_msg, exc_info=True)
                 # Continue with other passes (best-effort)

@@ -187,7 +187,25 @@ async def update_class(class_id: str, class_data: ClassUpdate):
         
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
-        
+
+        # region agent log
+        try:
+            import json as _json, time as _time
+            with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                _ts = int(_time.time() * 1000)
+                _f.write(_json.dumps({
+                    "id": f"log_{_ts}",
+                    "timestamp": _ts,
+                    "location": "api/api.py:update_class:before_db_update",
+                    "message": "About to update class in DB",
+                    "data": {"class_id": class_id, "update_keys": list(update_data.keys())},
+                    "runId": "initial",
+                    "hypothesisId": "H1"
+                }) + "\n")
+        except Exception:
+            pass
+        # endregion
+
         # Step 1: Update local database
         success = db.update_class(class_id, **update_data)
         
@@ -204,6 +222,24 @@ async def update_class(class_id: str, class_data: ClassUpdate):
                     class_data=updated_class['class_json'],
                     class_type=updated_class.get('class_type', 'Generic')
                 )
+
+                # region agent log
+                try:
+                    import json as _json, time as _time
+                    with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                        _ts = int(_time.time() * 1000)
+                        _f.write(_json.dumps({
+                            "id": f"log_{_ts}",
+                            "timestamp": _ts,
+                            "location": "api/api.py:update_class:before_propagate",
+                            "message": "Calling propagate_class_update_to_passes",
+                            "data": {"class_id": class_id},
+                            "runId": "initial",
+                            "hypothesisId": "H1"
+                        }) + "\n")
+                except Exception:
+                    pass
+                # endregion
                 
                 # 3b: Propagate updates to all pass objects (triggers pass-level notifications)
                 logger.info(f"Propagating class '{class_id}' updates to affected passes")
@@ -213,6 +249,24 @@ async def update_class(class_id: str, class_data: ClassUpdate):
                     db_manager=db,
                     wallet_client=wallet_client
                 )
+
+                # region agent log
+                try:
+                    import json as _json, time as _time
+                    with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                        _ts = int(_time.time() * 1000)
+                        _f.write(_json.dumps({
+                            "id": f"log_{_ts}",
+                            "timestamp": _ts,
+                            "location": "api/api.py:update_class:after_propagate",
+                            "message": "Finished propagate_class_update_to_passes",
+                            "data": propagation_result,
+                            "runId": "initial",
+                            "hypothesisId": "H2"
+                        }) + "\n")
+                except Exception:
+                    pass
+                # endregion
                 
                 # Build response message
                 updated_count = propagation_result["updated_count"]
@@ -251,7 +305,7 @@ async def update_class(class_id: str, class_data: ClassUpdate):
         else:
             # No Google Wallet sync needed/possible
             reason = "WalletClient not available" if not wallet_client else "No class_json found"
-            logger.info(f"Class '{class_id}' updated locally only. Reason: {reason}")
+            logger.warning(f"Class '{class_id}' updated locally only. Reason: {reason}. Google Wallet sync is DISABLED.")
             return MessageResponse(
                 message=f"Class '{class_id}' updated locally only (no wallet sync).",
                 success=True
@@ -538,6 +592,8 @@ async def update_pass(object_id: str, pass_data: PassUpdate):
             except Exception as e:
                 logger.error(f"Failed to sync updated pass to Google Wallet: {e}")
                 wallet_message = f" ⚠️ Google Wallet sync failed: {str(e)}"
+        else:
+            wallet_message = " ⚠️ Google Wallet sync disabled (Check server logs)."
 
         if db_success:
             return MessageResponse(
@@ -642,7 +698,11 @@ async def sync_passes():
                 full_object_id = google_pass.get('id')
                 # Extract local ID (suffix) for database consistency if needed, 
                 # but we usually store the full object_id in Passes_Table
-                object_id = full_object_id
+                # UPDATE: User requested to strip issuer ID prefix from object_id
+                if full_object_id and full_object_id.startswith(configs.ISSUER_ID + "."):
+                    object_id = full_object_id.split(".", 1)[1]
+                else:
+                    object_id = full_object_id
                 
                 # Check if pass already exists locally
                 existing_pass = db.get_pass(object_id)

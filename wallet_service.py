@@ -467,6 +467,30 @@ class WalletClient:
             # Ensure IDs have issuer prefix
             full_object_id = self._prepare_ids_to_try(object_id)[0]
             full_class_id = self._prepare_ids_to_try(class_id)[0]
+
+            # region agent log
+            try:
+                import json as _json, time as _time
+                with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                    _ts = int(_time.time() * 1000)
+                    _f.write(_json.dumps({
+                        "id": f"log_{_ts}",
+                        "timestamp": _ts,
+                        "location": "wallet_service.py:update_pass_object:entry",
+                        "message": "Entering update_pass_object",
+                        "data": {
+                            "object_id": object_id,
+                            "full_object_id": full_object_id,
+                            "class_id": class_id,
+                            "full_class_id": full_class_id,
+                            "class_type": class_type
+                        },
+                        "runId": "initial",
+                        "hypothesisId": "H4"
+                    }) + "\n")
+            except Exception:
+                pass
+            # endregion
             
             # Build the updated pass object using existing builder methods
             if class_type == "EventTicket":
@@ -494,15 +518,54 @@ class WalletClient:
                     full_object_id, full_class_id, holder_name, holder_email, pass_data
                 )
                 resource = self.service.genericobject()
-            
+
             # Use patch to update the object (more forgiving than full update)
-            return resource.patch(
+            result = resource.patch(
                 resourceId=full_object_id,
                 body=object_data
             ).execute()
+
+            # region agent log
+            try:
+                import json as _json, time as _time
+                with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                    _ts = int(_time.time() * 1000)
+                    _f.write(_json.dumps({
+                        "id": f"log_{_ts}",
+                        "timestamp": _ts,
+                        "location": "wallet_service.py:update_pass_object:success",
+                        "message": "Successfully patched pass object in Google Wallet",
+                        "data": {"full_object_id": full_object_id, "class_type": class_type},
+                        "runId": "initial",
+                        "hypothesisId": "H4"
+                    }) + "\n")
+            except Exception:
+                pass
+            # endregion
+
+            return result
             
         except HttpError as e:
             error_details = e.content.decode('utf-8') if hasattr(e, 'content') else str(e)
+
+            # region agent log
+            try:
+                import json as _json, time as _time
+                with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
+                    _ts = int(_time.time() * 1000)
+                    _f.write(_json.dumps({
+                        "id": f"log_{_ts}",
+                        "timestamp": _ts,
+                        "location": "wallet_service.py:update_pass_object:error",
+                        "message": "HttpError while updating pass object",
+                        "data": {"object_id": object_id, "error": error_details},
+                        "runId": "initial",
+                        "hypothesisId": "H4"
+                    }) + "\n")
+            except Exception:
+                pass
+            # endregion
+
             raise Exception(f"Error updating pass object '{object_id}': {error_details}")
     
     def build_event_ticket_object(self, object_id, class_id, holder_name, holder_email, pass_data):

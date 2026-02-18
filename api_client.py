@@ -136,6 +136,16 @@ class APIClient:
         except Exception as e:
             print(f"Error fetching pass: {e}")
             return None
+
+    def get_passes_by_class(self, class_id: str) -> List[Dict[str, Any]]:
+        """Fetch all passes belonging to a specific class"""
+        try:
+            response = requests.get(f"{self.base_url}/passes/class/{class_id}")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching passes for class '{class_id}': {e}")
+            return []
     
     def update_pass(self, object_id: str, 
                     holder_name: Optional[str] = None,

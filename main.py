@@ -200,9 +200,16 @@ def main(page: ft.Page):
             page.update()
 
     # --- Manage Passes State ---
+    manage_passes_class_dropdown = ft.Dropdown(
+        label="Select Class",
+        hint_text="Choose a class first",
+        width=400,
+        options=[]
+    )
+
     manage_passes_dropdown = ft.Dropdown(
         label="Select Pass Object",
-        hint_text="Choose a pass to manage",
+        hint_text="Select a class first",
         width=400,
         options=[]
     )
@@ -513,28 +520,109 @@ def main(page: ft.Page):
         page.update()
 
 
-    def load_passes():
-        """Load passes from local database into dropdown"""
-        print("DEBUG: load_passes called")
+    def load_passes_classes():
+        """Load classes into the Manage Passes class dropdown"""
+        print("DEBUG: load_passes_classes called")
         try:
-            passes = api_client.get_passes() if api_client else []
-            print(f"DEBUG: Fetched {len(passes) if passes else 0} passes for dropdown")
-            
+            classes = api_client.get_classes() if api_client else []
+            if classes and len(classes) > 0:
+                options = []
+                for cls in classes:
+                    class_id = cls["class_id"]
+                    class_type = cls.get('class_type', 'Unknown')
+                    options.append(ft.dropdown.Option(
+                        key=class_id,
+                        text=f"{class_id} ({class_type})"
+                    ))
+                manage_passes_class_dropdown.options = options
+                manage_passes_class_dropdown.value = None
+                manage_passes_class_dropdown.hint_text = "Choose a class"
+                passes_status.value = f"✅ Loaded {len(classes)} class(es). Select a class to see its passes."
+                passes_status.color = "green"
+            else:
+                manage_passes_class_dropdown.options = []
+                manage_passes_class_dropdown.value = None
+                manage_passes_class_dropdown.hint_text = "No classes available"
+                passes_status.value = "ℹ️ No classes found. Create one in 'Template Builder' tab."
+                passes_status.color = "blue"
+            # Reset pass dropdown
+            manage_passes_dropdown.options = []
+            manage_passes_dropdown.value = None
+            manage_passes_dropdown.hint_text = "Select a class first"
+            page.update()
+        except Exception as e:
+            print(f"DEBUG: Error loading classes for passes tab: {e}")
+            passes_status.value = f"❌ Error loading classes: {e}"
+            passes_status.color = "red"
+            page.update()
+
+    def load_passes_for_class(class_id: str):
+        """Load passes for a specific class into the pass dropdown"""
+        print(f"DEBUG: load_passes_for_class called with class_id={class_id}")
+        try:
+            passes = api_client.get_passes_by_class(class_id) if api_client else []
+            print(f"DEBUG: Fetched {len(passes) if passes else 0} passes for class {class_id}")
+
             if passes and len(passes) > 0:
                 options = []
                 for p in passes:
                     object_id = p["object_id"]
                     holder = p.get('holder_name', 'Unknown')
-                    option = ft.dropdown.Option(
+                    options.append(ft.dropdown.Option(
                         key=object_id,
                         text=f"{object_id} ({holder})"
-                    )
-                    options.append(option)
-                
+                    ))
+                manage_passes_dropdown.options = options
+                manage_passes_dropdown.value = None
+                manage_passes_dropdown.hint_text = "Choose a pass"
+                passes_status.value = f"✅ {len(passes)} pass(es) found for this class."
+                passes_status.color = "green"
+            else:
+                manage_passes_dropdown.options = []
+                manage_passes_dropdown.value = None
+                manage_passes_dropdown.hint_text = "No passes for this class"
+                passes_status.value = "ℹ️ No passes found for this class."
+                passes_status.color = "blue"
+
+            page.update()
+        except Exception as e:
+            print(f"DEBUG: Error loading passes for class: {e}")
+            passes_status.value = f"❌ Error loading passes: {e}"
+            passes_status.color = "red"
+            page.update()
+
+    def on_passes_class_change(e):
+        """Handle class selection change in Manage Passes tab"""
+        selected_class = manage_passes_class_dropdown.value
+        if selected_class:
+            load_passes_for_class(selected_class)
+        else:
+            manage_passes_dropdown.options = []
+            manage_passes_dropdown.value = None
+            manage_passes_dropdown.hint_text = "Select a class first"
+            page.update()
+
+    # Wire up the class dropdown on_change handler
+    manage_passes_class_dropdown.on_change = on_passes_class_change
+
+    def load_passes():
+        """Load passes from local database into dropdown (legacy - loads all passes)"""
+        print("DEBUG: load_passes called")
+        try:
+            passes = api_client.get_passes() if api_client else []
+            print(f"DEBUG: Fetched {len(passes) if passes else 0} passes for dropdown")
+
+            if passes and len(passes) > 0:
+                options = []
+                for p in passes:
+                    object_id = p["object_id"]
+                    holder = p.get('holder_name', 'Unknown')
+                    options.append(ft.dropdown.Option(
+                        key=object_id,
+                        text=f"{object_id} ({holder})"
+                    ))
                 manage_passes_dropdown.options = options
                 manage_passes_dropdown.value = passes[0]["object_id"] if passes else None
-                # manage_passes_dropdown.hint_text = "" # Don't clear hint text, keeps it usable if cleared
-                
                 passes_status.value = f"✅ Loaded {len(passes)} pass(es) from local database"
                 passes_status.color = "green"
             else:
@@ -544,9 +632,8 @@ def main(page: ft.Page):
                 manage_passes_dropdown.hint_text = "No passes available"
                 passes_status.value = "ℹ️ No passes found. Create one in 'Pass Generator' tab or sync from Google Wallet."
                 passes_status.color = "blue"
-            
+
             page.update()
-            
         except Exception as e:
             print(f"DEBUG: Error loading passes: {e}")
             import traceback
@@ -606,17 +693,49 @@ def main(page: ft.Page):
             passes_current_json = json_data.copy()
             
             # Select editable fields
-            # Select editable fields
             field_mappings = {
                 "holder_name": {"label": "Holder Name", "type": "text"},
                 "holder_email": {"label": "Holder Email", "type": "text"},
                 "status": {"label": "Status", "type": "select", "options": ["Active", "Completed", "Expired"]},
+                "messageType": {"label": "Message Type", "type": "select", "options": ["TEXT", "TEXT_AND_NOTIFY"]},
             }
+            
+            # Add messageType to current JSON if not present
+            if "messageType" not in json_data:
+                json_data["messageType"] = "TEXT_AND_NOTIFY"  # Default value
+                passes_current_json["messageType"] = "TEXT_AND_NOTIFY"
+            
+            # Extract event date/time from template for EventTicket types
+            template_event_date = None
+            template_event_time = None
+            if class_type == "EventTicket" and class_info and class_info.get("class_json"):
+                class_json = class_info["class_json"]
+                if "dateTime" in class_json:
+                    date_time_obj = class_json.get("dateTime", {})
+                    if "start" in date_time_obj:
+                        start_datetime = date_time_obj.get("start", "")
+                        if "T" in start_datetime:
+                            template_event_date, template_event_time = start_datetime.split("T")
+                            template_event_time = template_event_time.split(":")[0] + ":" + template_event_time.split(":")[1]  # HH:MM
+            
+            # Add read-only date/time fields for EventTicket
+            if class_type == "EventTicket":
+                # Add date/time to JSON data if from template
+                if template_event_date:
+                    json_data["event_date"] = template_event_date
+                    passes_current_json["event_date"] = template_event_date
+                if template_event_time:
+                    json_data["event_time"] = template_event_time
+                    passes_current_json["event_time"] = template_event_time
+                    
+                # Add as read-only fields
+                field_mappings["event_date"] = {"label": "Event Date", "type": "text", "read_only": True}
+                field_mappings["event_time"] = {"label": "Event Time", "type": "text", "read_only": True}
             
             # Add dynamic fields from pass_data keys
             if p_data.get("pass_data"):
                 for key in p_data["pass_data"].keys():
-                     if key not in ["holder_name", "holder_email", "status", "id", "classId"]:
+                     if key not in ["holder_name", "holder_email", "status", "id", "classId", "event_date", "event_time", "messageType"]:
                          field_mappings[key] = {
                              "label": key.replace("_", " ").title(),
                              "type": "text"
@@ -683,10 +802,17 @@ def main(page: ft.Page):
             holder_name = updated_data.pop("holder_name", None)
             holder_email = updated_data.pop("holder_email", None)
             status = updated_data.pop("status", None)
+            message_type = updated_data.pop("messageType", "TEXT_AND_NOTIFY")  # Extract messageType
             
             pass_data = updated_data
             pass_data.pop("id", None)
             pass_data.pop("classId", None)
+            
+            # Include messageType in pass_data for API
+            pass_data["messageType"] = message_type
+            
+            # Note: event_date and event_time are read-only and come from template,
+            # but they can remain in pass_data for reference
             
             response = api_client.update_pass(
                 object_id=object_id,
@@ -1388,20 +1514,29 @@ def main(page: ft.Page):
             
             # Selection Row
             ft.Container(
-                content=ft.Row([
-                    ft.Column([
-                        ft.Text("Select Pass to Edit", size=14, weight="bold", color="blue"),
-                        ft.Row([
-                            manage_passes_dropdown,
-                            ft.ElevatedButton("Load Pass", icon="download", on_click=show_pass)
+                content=ft.Column([
+                    ft.Row([
+                        ft.Column([
+                            ft.Text("1. Select Class", size=14, weight="bold", color="blue"),
+                            manage_passes_class_dropdown,
+                        ]),
+                        ft.VerticalDivider(width=20, color="transparent"),
+                        ft.Column([
+                            ft.Text("Status", size=14, weight="bold", color="blue"),
+                            passes_status
                         ])
-                    ]),
-                    ft.VerticalDivider(width=20, color="transparent"),
-                    ft.Column([
-                        ft.Text("Status", size=14, weight="bold", color="blue"),
-                        passes_status
-                    ])
-                ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START),
+                    ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START),
+                    ft.Divider(height=10),
+                    ft.Row([
+                        ft.Column([
+                            ft.Text("2. Select Pass to Edit", size=14, weight="bold", color="blue"),
+                            ft.Row([
+                                manage_passes_dropdown,
+                                ft.ElevatedButton("Load Pass", icon="download", on_click=show_pass)
+                            ])
+                        ]),
+                    ], alignment=ft.MainAxisAlignment.START),
+                ], spacing=5),
                 padding=10,
                 bgcolor="grey50",
                 border_radius=10,
@@ -1472,7 +1607,7 @@ def main(page: ft.Page):
 
     # Sync and load on startup
     startup_sync_passes()
-    load_passes()
+    load_passes_classes()
 
     page.add(
         ft.Row([

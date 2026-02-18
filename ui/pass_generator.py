@@ -15,9 +15,8 @@ PASS_TYPE_FIELDS = {
         {"name": "subheader", "label": "Subheader", "type": "text", "hint": "e.g., Premium Access"},
     ],
     "EventTicket": [
-        {"name": "event_name", "label": "Event Name", "type": "text", "hint": "e.g., Concert 2024"},
-        {"name": "event_date", "label": "Event Date", "type": "text", "hint": "e.g., 2024-12-25"},
-        {"name": "event_time", "label": "Event Time", "type": "text", "hint": "e.g., 19:00"},
+        {"name": "event_date", "label": "Event Date", "type": "text", "hint": "e.g., 2024-12-25", "template_field": True},
+        {"name": "event_time", "label": "Event Time", "type": "text", "hint": "e.g., 19:00", "template_field": True},
         {"name": "seat_number", "label": "Seat Number", "type": "text", "hint": "e.g., A12"},
         {"name": "section", "label": "Section", "type": "text", "hint": "e.g., Lower Bowl"},
         {"name": "gate", "label": "Gate", "type": "text", "hint": "e.g., Gate 3"},
@@ -56,6 +55,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     template_dropdown_ref = ft.Ref[ft.Dropdown]()
     holder_name_ref = ft.Ref[ft.TextField]()
     holder_email_ref = ft.Ref[ft.TextField]()
+    message_type_ref = ft.Ref[ft.Dropdown]()  # For notification behavior
     status_ref = ft.Ref[ft.Text]()
     result_container_ref = ft.Ref[ft.Container]()
     
@@ -70,12 +70,18 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
         padding=20
     )
     
-    # Current selected class data
+    # Current selected class data and custom color
     current_class_data = {"class_type": None}
+    custom_color_state = {"background_color": "#4285f4"}  # Default color
+    
+    # Color picker component (will be initialized after color change callback)
+    color_picker_component = None
+    color_picker_container = ft.Container(content=None)
     
     def build_preview(class_data: Dict, pass_data: Dict):
         """Build visual pass preview"""
-        bg_color = class_data.get("base_color", "#4285f4")
+        # Use custom color if set, otherwise use template color
+        bg_color = custom_color_state.get("background_color", class_data.get("base_color", "#4285f4"))
         logo_url = class_data.get("logo_url")
         header_text = class_data.get("header_text", "Business Name")
         card_title = class_data.get("card_title", "Pass Title")
@@ -100,9 +106,14 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
         class_type = class_data.get("class_type", "Generic")
         
         if class_type == "EventTicket":
-            detail_lines.append(f"Event: {pass_data.get('event_name', 'TBD')}")
-            detail_lines.append(f"Date: {pass_data.get('event_date', 'TBD')}")
-            detail_lines.append(f"Seat: {pass_data.get('seat_number', 'TBD')}")
+            # Event name and date come from template, not pass data
+            # Show ticket-specific info (seat, section, time, etc.)
+            if 'seat_number' in pass_data and pass_data.get('seat_number'):
+                detail_lines.append(f"Seat: {pass_data.get('seat_number', 'TBD')}")
+            if 'event_time' in pass_data and pass_data.get('event_time'):
+                detail_lines.append(f"Time: {pass_data.get('event_time', 'TBD')}")
+            if 'gate' in pass_data and pass_data.get('gate'):
+                detail_lines.append(f"Gate: {pass_data.get('gate', 'TBD')}")
         elif class_type == "LoyaltyCard":
             detail_lines.append(f"Points: {pass_data.get('points_balance', '0')}")
             detail_lines.append(f"Tier: {pass_data.get('tier_level', 'Standard')}")
@@ -166,6 +177,10 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 )
             ], spacing=0)
         )
+    
+    def on_color_change():
+        """Handle color change from color picker"""
+        update_preview()
     
     def update_preview():
         """Update preview based on current form values"""
@@ -244,6 +259,19 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 elif "cardTitle" in class_json:
                     card_title = class_json.get("cardTitle", {}).get("defaultValue", {}).get("value", "Title")
             
+            # Extract event date and time from template (for EventTicket)
+            template_event_date = None
+            template_event_time = None
+            if class_type == "EventTicket" and "dateTime" in class_json:
+                date_time_obj = class_json.get("dateTime", {})
+                # Check for start date/time
+                if "start" in date_time_obj:
+                    start_datetime = date_time_obj.get("start", "")
+                    # Format: "2024-12-25T19:00:00" -> split into date and time
+                    if "T" in start_datetime:
+                        template_event_date, template_event_time = start_datetime.split("T")
+                        template_event_time = template_event_time.split(":")[0] + ":" + template_event_time.split(":")[1]  # HH:MM
+            
             # Store current class data for preview
             current_class_data.clear()
             current_class_data.update({
@@ -254,6 +282,37 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 "header_text": header_text,
                 "card_title": card_title
             })
+            
+            # Initialize custom color with template color
+            custom_color_state["background_color"] = base_color
+            
+            # Create/update color picker with the template's base color
+            nonlocal color_picker_component
+            
+            # Create a simple state object that mimics template_state interface
+            class SimpleColorState:
+                def __init__(self, initial_color, on_change_callback):
+                    self.color = initial_color
+                    self.on_change = on_change_callback
+                
+                def get(self, key, default=None):
+                    if key == "background_color":
+                        return self.color
+                    return default
+                
+                def update(self, key, value):
+                    if key == "background_color":
+                        self.color = value
+                        custom_color_state["background_color"] = value
+                        if self.on_change:
+                            self.on_change()
+            
+            color_state = SimpleColorState(base_color, on_color_change)
+            
+            # Import and use the function-based color picker
+            from ui.components.color_picker import create_color_picker
+            color_picker_component = create_color_picker(page, color_state, on_color_change)
+            color_picker_container.content = color_picker_component
             
             # Clear dynamic fields
             dynamic_fields_container.controls.clear()
@@ -267,10 +326,22 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 field_ref = ft.Ref[ft.TextField]()
                 dynamic_field_refs[field_config["name"]] = field_ref
                 
+                # Pre-populate template fields with values from class
+                initial_value = ""
+                is_readonly = False
+                if field_config.get("template_field", False):
+                    is_readonly = True  # Template fields are read-only
+                    if field_config["name"] == "event_date" and template_event_date:
+                        initial_value = template_event_date
+                    elif field_config["name"] == "event_time" and template_event_time:
+                        initial_value = template_event_time
+                
                 field = ft.TextField(
                     ref=field_ref,
                     label=field_config["label"],
                     hint_text=field_config["hint"],
+                    value=initial_value,  # Pre-fill with template value if available
+                    read_only=is_readonly,  # Make template fields read-only
                     width=400,
                     on_change=lambda e: update_preview()
                 )
@@ -375,6 +446,12 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
             # Get class type from current class data
             class_type = current_class_data.get("class_type", "Generic")
             
+            # Get custom color from state
+            custom_color = custom_color_state.get("background_color")
+            
+            # Get message type from dropdown
+            message_type = message_type_ref.current.value if message_type_ref.current else "TEXT_AND_NOTIFY"
+            
             # Build the appropriate pass object for Google Wallet
             if class_type == "EventTicket":
                 google_pass_object = wallet_client.build_event_ticket_object(
@@ -382,7 +459,9 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                     class_id=class_id,
                     holder_name=holder_name_ref.current.value,
                     holder_email=holder_email_ref.current.value,
-                    pass_data=pass_data
+                    pass_data=pass_data,
+                    custom_color=custom_color,
+                    message_type=message_type
                 )
             elif class_type == "LoyaltyCard":
                 google_pass_object = wallet_client.build_loyalty_object(
@@ -390,7 +469,9 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                     class_id=class_id,
                     holder_name=holder_name_ref.current.value,
                     holder_email=holder_email_ref.current.value,
-                    pass_data=pass_data
+                    pass_data=pass_data,
+                    custom_color=custom_color,
+                    message_type=message_type
                 )
             else:
                 google_pass_object = wallet_client.build_generic_object(
@@ -398,7 +479,9 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                     class_id=class_id,
                     holder_name=holder_name_ref.current.value,
                     holder_email=holder_email_ref.current.value,
-                    pass_data=pass_data
+                    pass_data=pass_data,
+                    custom_color=custom_color,
+                    message_type=message_type
                 )
             
             # Create pass object in Google Wallet
@@ -534,6 +617,27 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                     hint_text="e.g., john@example.com",
                     width=400
                 ),
+                
+                ft.Container(height=5),
+                
+                ft.Dropdown(
+                    ref=message_type_ref,
+                    label="Notification Type",
+                    hint_text="Choose notification behavior",
+                    width=400,
+                    value="TEXT_AND_NOTIFY",  # Default with notifications
+                    options=[
+                        ft.dropdown.Option(key="TEXT", text="Text Only (No Notification)"),
+                        ft.dropdown.Option(key="TEXT_AND_NOTIFY", text="Text + Push Notification"),
+                    ]
+                ),
+                
+                ft.Container(height=10),
+                
+                # Color Picker Section
+                ft.Text("Customize Card Color", size=16, weight=ft.FontWeight.BOLD),
+                ft.Text("Choose a custom color or keep the template default", size=10, color="grey"),
+                color_picker_container,
                 
                 ft.Container(height=10),
                 

@@ -169,10 +169,81 @@ class WalletClient:
         """
         List all pass objects from Google Wallet across all object types
         
+        This method first fetches all classes, then for each class it fetches
+        the associated pass objects. This is more reliable than trying to list
+        all objects without filtering by class.
+        
         Returns:
             List of pass objects with their type information
         """
         all_objects = []
+        
+        # Step 1: Get all classes to know which ones exist
+        try:
+            all_classes = self.list_all_classes()
+            print(f"DEBUG: Found {len(all_classes)} classes to check for objects")
+        except Exception as e:
+            print(f"ERROR: Failed to fetch classes: {e}")
+            return []
+        
+        # Step 2: For each class, fetch its objects
+        for cls in all_classes:
+            class_id = cls.get('id')
+            class_type = cls.get('class_type', 'Generic')
+            
+            # Map class type to the appropriate resource
+            resource_map = {
+                "EventTicket": self.service.eventticketobject(),
+                "LoyaltyCard": self.service.loyaltyobject(),
+                "Generic": self.service.genericobject(),
+                "GiftCard": self.service.giftcardobject(),
+                "TransitPass": self.service.transitobject()
+            }
+            
+            resource = resource_map.get(class_type)
+            if not resource:
+                print(f"DEBUG: Unknown class type '{class_type}' for class {class_id}, skipping")
+                continue
+            
+            try:
+                # List objects for this specific class
+                print(f"DEBUG: Listing {class_type} objects for class {class_id}...")
+                request = resource.list(classId=class_id)
+                response = request.execute()
+                
+                if 'resources' in response:
+                    count = len(response['resources'])
+                    print(f"DEBUG: Found {count} {class_type} objects for class {class_id}")
+                    for obj in response['resources']:
+                        # Add object type information
+                        obj['class_type'] = class_type
+                        all_objects.append(obj)
+                        
+            except HttpError as e:
+                # Skip if this class has no objects or error
+                if e.resp.status != 404:
+                    print(f"Warning: Error listing {class_type} objects for class {class_id}: {e}")
+                continue
+            except Exception as e:
+                print(f"Error listing {class_type} objects for class {class_id}: {e}")
+                continue
+        
+        print(f"DEBUG: Total objects found across all classes: {len(all_objects)}")
+        return all_objects
+
+
+    def list_class_objects(self, class_id):
+        """
+        List all pass objects for a specific class ID
+        
+        Args:
+            class_id: Class ID (with or without issuer prefix)
+            
+        Returns:
+            List of pass objects (with 'id' and 'resource' keys) that belong to this class
+        """
+        # Ensure class_id has issuer prefix
+        full_class_id = self._prepare_ids_to_try(class_id)[0]
         
         # Define object types and their corresponding resources
         object_types = [
@@ -183,26 +254,24 @@ class WalletClient:
             ("TransitPass", self.service.transitobject()),
         ]
         
+        matching_objects = []
+        
         for obj_type, resource in object_types:
             try:
-                # List objects of this type with pagination
-                print(f"DEBUG: Listing {obj_type} objects...")
-                request = resource.list(issuerId=configs.ISSUER_ID)
+                # List objects of this type with pagination, filtered by class ID
+                print(f"DEBUG: Attempting to list {obj_type} objects for class {full_class_id}...")
+                request = resource.list(classId=full_class_id)
                 
-                while request is not None:
-                    response = request.execute()
-                    
-                    if 'resources' in response:
-                        count = len(response['resources'])
-                        print(f"DEBUG: Found {count} {obj_type} objects in current page")
-                        for obj in response['resources']:
-                            # Add object type information
-                            obj['class_type'] = obj_type
-                            all_objects.append(obj)
-                    else:
-                        print(f"DEBUG: No resources in response for {obj_type}")
-                    
-                    request = resource.list_next(previous_request=request, previous_response=response)
+                response = request.execute()
+                
+                if 'resources' in response:
+                    for obj in response['resources']:
+                        matching_objects.append({
+                            'id': obj['id'],
+                            'resource': resource,
+                            'class_type': obj_type,
+                            'data': obj
+                        })
                         
             except HttpError as e:
                 # Skip if this object type has no resources or error
@@ -213,7 +282,7 @@ class WalletClient:
                 print(f"Error listing {obj_type} objects: {e}")
                 continue
         
-        return all_objects
+        return matching_objects
 
     def verify_pass(self, object_id):
         """
@@ -568,7 +637,7 @@ class WalletClient:
 
             raise Exception(f"Error updating pass object '{object_id}': {error_details}")
     
-    def build_event_ticket_object(self, object_id, class_id, holder_name, holder_email, pass_data):
+    def build_event_ticket_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY"):
         """
         Build an EventTicket object structure for Google Wallet
         
@@ -578,6 +647,8 @@ class WalletClient:
             holder_name: Holder's name
             holder_email: Holder's email
             pass_data: Dictionary with pass-specific data (seat, gate, etc.)
+            custom_color: Optional hex color to override class color (e.g., "#FF5722")
+            message_type: Message type for notifications (TEXT or TEXT_AND_NOTIFY)
             
         Returns:
             Dictionary formatted for Google Wallet API
@@ -591,6 +662,18 @@ class WalletClient:
                 "confirmationCode": object_id.split('.')[-1] if '.' in object_id else object_id
             }
         }
+        
+        # Add custom background color if provided
+        if custom_color:
+            obj["hexBackgroundColor"] = custom_color
+        
+        # Add message with specified messageType
+        if message_type:
+            obj["messages"] = [{
+                "header": "Welcome",
+                "body": "Your pass has been created",
+                "messageType": message_type
+            }]
         
         # Add seat information if available
         if pass_data:
@@ -629,23 +712,8 @@ class WalletClient:
                     }
                 }
             
-            # Add text modules for event details
-            text_modules = []
-            if "event_name" in pass_data and pass_data["event_name"]:
-                text_modules.append({
-                    "header": "Event",
-                    "body": str(pass_data["event_name"]),
-                    "id": "event_info"
-                })
-            if "event_date" in pass_data and pass_data["event_date"]:
-                text_modules.append({
-                    "header": "Date",
-                    "body": str(pass_data["event_date"]),
-                    "id": "event_date"
-                })
-            
-            if text_modules:
-                obj["textModulesData"] = text_modules
+            # Note: event_name and event_date come from the class definition, not the object
+            # These should not be added here to avoid duplication
             
             # Add info modules for all other pass data
             info_label_values = []
@@ -692,7 +760,7 @@ class WalletClient:
         
         return obj
     
-    def build_loyalty_object(self, object_id, class_id, holder_name, holder_email, pass_data):
+    def build_loyalty_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY"):
         """Build a LoyaltyCard object structure"""
         obj = {
             "id": object_id,
@@ -701,6 +769,18 @@ class WalletClient:
             "accountName": holder_name,
             "accountId": holder_email
         }
+        
+        # Add custom background color if provided
+        if custom_color:
+            obj["hexBackgroundColor"] = custom_color
+        
+        # Add message with specified messageType
+        if message_type:
+            obj["messages"] = [{
+                "header": "Welcome",
+                "body": "Your loyalty card has been created",
+                "messageType": message_type
+            }]
         
         if pass_data:
             # Add loyalty points if available
@@ -767,7 +847,7 @@ class WalletClient:
         
         return obj
     
-    def build_generic_object(self, object_id, class_id, holder_name, holder_email, pass_data):
+    def build_generic_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY"):
         """Build a Generic object structure"""
         # Get cardTitle from pass_data, fallback to holder_name
         card_title_value = pass_data.get("header_value", holder_name) if pass_data else holder_name
@@ -789,6 +869,18 @@ class WalletClient:
                 }
             }
         }
+        
+        # Add custom background color if provided
+        if custom_color:
+            obj["hexBackgroundColor"] = custom_color
+        
+        # Add message with specified messageType
+        if message_type:
+            obj["messages"] = [{
+                "header": "Welcome",
+                "body": "Your pass has been created",
+                "messageType": message_type
+            }]
         
         if pass_data:
             # Add subheader if provided

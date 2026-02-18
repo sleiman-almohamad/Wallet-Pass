@@ -58,7 +58,11 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     message_type_ref = ft.Ref[ft.Dropdown]()  # For notification behavior
     status_ref = ft.Ref[ft.Text]()
     result_container_ref = ft.Ref[ft.Container]()
-    
+    json_container_ref = ft.Ref[ft.Container]()
+
+    # JSON editor state
+    json_editor = None
+
     # Container for dynamic fields
     dynamic_fields_container = ft.Column(spacing=10)
     dynamic_field_refs = {}  # Store refs for dynamic fields
@@ -184,20 +188,31 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     
     def update_preview():
         """Update preview based on current form values"""
+        nonlocal json_editor
         if not current_class_data.get("class_type"):
             return
-        
+
         # Collect pass data from form
         pass_data = {
             "holder_name": holder_name_ref.current.value if holder_name_ref.current else "John Doe"
         }
-        
+
         # Add dynamic field values
         for field_name, field_ref in dynamic_field_refs.items():
             if field_ref.current:
                 pass_data[field_name] = field_ref.current.value or ""
-        
+
+        # Update visual preview
         preview_container.content = build_preview(current_class_data, pass_data)
+
+        # Update JSON panel
+        if json_container_ref.current:
+            import json
+            from ui.components.json_editor import JSONEditor
+            display_json = {**current_class_data, **pass_data}
+            json_editor = JSONEditor(display_json, read_only=True)
+            json_container_ref.current.content = json_editor.build()
+
         page.update()
     
     def on_template_selected(e):
@@ -584,98 +599,116 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     ui = ft.Row([
         # Left Panel: Form
         ft.Container(
-            width=500,
+            width=420,
             content=ft.Column([
-                ft.Text("Pass Generator", size=24, weight=ft.FontWeight.BOLD),
-                ft.Text("Create individual passes for end users", size=12, color="grey"),
+                ft.Text("Pass Generator", size=22, weight=ft.FontWeight.BOLD),
+                ft.Text("Create individual passes for end users", size=11, color="grey"),
                 ft.Divider(),
-                
+
                 ft.Container(height=10),
-                
+
                 ft.Text("Select Template", size=16, weight=ft.FontWeight.BOLD),
                 ft.Dropdown(
                     ref=template_dropdown_ref,
                     label="Template Class",
                     hint_text="Choose a template",
-                    width=400,
+                    width=380,
                     on_change=on_template_selected
                 ),
-                
+
                 ft.Container(height=10),
-                
+
                 ft.Text("Pass Holder Information", size=16, weight=ft.FontWeight.BOLD),
                 ft.TextField(
                     ref=holder_name_ref,
                     label="Name *",
                     hint_text="e.g., John Doe",
-                    width=400,
+                    width=380,
                     on_change=lambda e: update_preview()
                 ),
                 ft.TextField(
                     ref=holder_email_ref,
                     label="Email *",
                     hint_text="e.g., john@example.com",
-                    width=400
+                    width=380
                 ),
-                
+
                 ft.Container(height=5),
-                
+
                 ft.Dropdown(
                     ref=message_type_ref,
                     label="Notification Type",
                     hint_text="Choose notification behavior",
-                    width=400,
-                    value="TEXT_AND_NOTIFY",  # Default with notifications
+                    width=380,
+                    value="TEXT_AND_NOTIFY",
                     options=[
                         ft.dropdown.Option(key="TEXT", text="Text Only (No Notification)"),
                         ft.dropdown.Option(key="TEXT_AND_NOTIFY", text="Text + Push Notification"),
                     ]
                 ),
-                
+
                 ft.Container(height=10),
-                
+
                 # Color Picker Section
                 ft.Text("Customize Card Color", size=16, weight=ft.FontWeight.BOLD),
                 ft.Text("Choose a custom color or keep the template default", size=10, color="grey"),
                 color_picker_container,
-                
+
                 ft.Container(height=10),
-                
+
                 ft.Text("Pass Details", size=16, weight=ft.FontWeight.BOLD),
                 dynamic_fields_container,
-                
-                ft.Container(height=20),
-                
+
+                ft.Divider(height=20),
+
                 ft.ElevatedButton(
                     "Generate Pass",
                     icon="add_card",
                     on_click=generate_pass,
-                    width=400,
+                    width=380,
                     style=ft.ButtonStyle(bgcolor="blue", color="white")
                 ),
-                
+
                 ft.Container(height=10),
-                
+
                 ft.Text(ref=status_ref, value="", size=12),
-                
+
                 ft.Container(height=10),
-                
+
                 ft.Container(ref=result_container_ref, content=None)
-                
+
             ], spacing=10, scroll="auto"),
-            padding=20
+            padding=15,
+            bgcolor="white"
         ),
-        
-        # Right Panel: Preview
+
+        # Middle Panel: JSON Data
+        ft.Container(
+            width=320,
+            content=ft.Column([
+                ft.Text("JSON Data", size=18, weight=ft.FontWeight.BOLD),
+                ft.Text("Live pass JSON", size=10, color="grey"),
+                ft.Container(height=10),
+                ft.Container(
+                    ref=json_container_ref,
+                    content=ft.Text("Select a template to see JSON", color="grey", size=11),
+                    expand=True
+                )
+            ], scroll="auto"),
+            padding=15,
+            bgcolor="grey50"
+        ),
+
+        # Right Panel: Visual Preview
         ft.Container(
             expand=True,
             content=ft.Column([
-                ft.Text("Live Preview", size=20, weight=ft.FontWeight.BOLD),
-                ft.Text("See how the pass will look", size=12, color="grey"),
+                ft.Text("Visual Preview", size=18, weight=ft.FontWeight.BOLD),
+                ft.Text("How your pass will look", size=10, color="grey"),
                 ft.Container(height=20),
                 preview_container
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll="auto"),
-            padding=20,
+            padding=15,
             bgcolor="grey100"
         )
     ], expand=True, spacing=0)

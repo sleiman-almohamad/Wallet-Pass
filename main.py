@@ -1504,100 +1504,97 @@ def main(page: ft.Page):
     # Build Manage Passes Tab Content
     # Build Manage Passes Tab Content
     manage_passes_content = ft.Container(
-        content=ft.Column([
-            # Header Section
-            ft.Row([
-                ft.Text("Manage Pass Objects", size=24, weight="bold", color="blueGrey800"),
-                ft.IconButton("sync", on_click=sync_passes_manual, tooltip="Refresh passes from Google Wallet")
-            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ft.Divider(),
-            
-            # Selection Row
+        content=ft.Row([
+            # Left Panel: Controls and Edit Fields
             ft.Container(
+                width=420,
                 content=ft.Column([
+                    ft.Text("Manage Pass Objects", size=22, weight=ft.FontWeight.BOLD),
+                    ft.Text("Select, preview, and edit your pass objects", size=11, color="grey"),
+                    ft.Divider(),
+
                     ft.Row([
-                        ft.Column([
-                            ft.Text("1. Select Class", size=14, weight="bold", color="blue"),
-                            manage_passes_class_dropdown,
-                        ]),
-                        ft.VerticalDivider(width=20, color="transparent"),
-                        ft.Column([
-                            ft.Text("Status", size=14, weight="bold", color="blue"),
-                            passes_status
-                        ])
-                    ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START),
-                    ft.Divider(height=10),
-                    ft.Row([
-                        ft.Column([
-                            ft.Text("2. Select Pass to Edit", size=14, weight="bold", color="blue"),
-                            ft.Row([
-                                manage_passes_dropdown,
-                                ft.ElevatedButton("Load Pass", icon="download", on_click=show_pass)
-                            ])
-                        ]),
-                    ], alignment=ft.MainAxisAlignment.START),
-                ], spacing=5),
-                padding=10,
-                bgcolor="grey50",
-                border_radius=10,
-                border=ft.border.all(1, "grey200")
+                        ft.IconButton("sync", on_click=sync_passes_manual, tooltip="Refresh passes from Google Wallet"),
+                        ft.Text("Sync from Google Wallet", size=11, color="grey"),
+                    ]),
+
+                    ft.Container(height=5),
+
+                    # Step 1: Class dropdown
+                    ft.Text("1. Select Class", size=13, weight=ft.FontWeight.W_500, color="blue700"),
+                    manage_passes_class_dropdown,
+
+                    ft.Container(height=5),
+
+                    # Step 2: Pass dropdown + Load button
+                    ft.Text("2. Select Pass", size=13, weight=ft.FontWeight.W_500, color="blue700"),
+                    manage_passes_dropdown,
+                    ft.ElevatedButton(
+                        "Load Pass",
+                        icon="download",
+                        on_click=show_pass,
+                        width=380,
+                        style=ft.ButtonStyle(bgcolor="green", color="white")
+                    ),
+
+                    passes_status,
+
+                    ft.Divider(height=20),
+
+                    ft.Text("Pass Details", size=16, weight=ft.FontWeight.BOLD),
+
+                    passes_object_id_field,
+                    passes_class_id_field,
+
+                    ft.Container(height=5),
+                    ft.Text("Editable Fields", size=14, weight=ft.FontWeight.W_500, color="grey700"),
+
+                    passes_form_container,
+
+                    ft.Divider(height=20),
+
+                    ft.ElevatedButton(
+                        "Update Pass & Sync",
+                        icon="save",
+                        on_click=update_pass_object_handler,
+                        width=380,
+                        style=ft.ButtonStyle(bgcolor="blue", color="white")
+                    ),
+
+                    ft.Container(height=10),
+
+                ], spacing=8, scroll="auto"),
+                padding=15,
+                bgcolor="white"
             ),
-            
-            ft.Divider(),
-            
-            # Edit Section (Expands to fill remaining space)
-            ft.Row([
-                # Left Column: Form
-                ft.Container(
-                    content=ft.Column([
-                        ft.Text("Edit Pass Details", size=16, weight="bold", color="blue"),
-                        passes_object_id_field,
-                        passes_class_id_field,
-                        ft.Divider(),
-                        passes_form_container,
-                        ft.Container(height=20),
-                        ft.ElevatedButton(
-                            "Update Pass & Sync", 
-                            icon="save", 
-                            on_click=update_pass_object_handler,
-                            scale=1.1,
-                            style=ft.ButtonStyle(bgcolor="blue", color="white")
-                        ),
-                    ], scroll="auto", spacing=10, expand=True),
-                    width=450,
-                    padding=10,
-                    border=ft.border.only(right=ft.BorderSide(1, "grey300"))
-                ),
-                
-                # Right Column: Preview & JSON
-                ft.Container(
-                    content=ft.Column([
-                        ft.Tabs(
-                            selected_index=0,
-                            animation_duration=300,
-                            tabs=[
-                                ft.Tab(
-                                    text="Preview",
-                                    icon="visibility",
-                                    content=passes_preview_container
-                                ),
-                                ft.Tab(
-                                    text="JSON Data",
-                                    icon="code",
-                                    content=passes_json_container
-                                ),
-                            ],
-                            expand=True
-                        )
-                    ], expand=True),
-                    expand=True,
-                    padding=10
-                )
-            ], expand=True, vertical_alignment=ft.CrossAxisAlignment.START)
-            
-        ], spacing=10, expand=True), # Main Column expands
-        padding=20,
-        expand=True # Main Container expands
+
+            # Middle Panel: JSON Data
+            ft.Container(
+                width=320,
+                content=ft.Column([
+                    ft.Text("JSON Data", size=18, weight=ft.FontWeight.BOLD),
+                    ft.Text("Complete pass JSON", size=10, color="grey"),
+                    ft.Container(height=10),
+                    passes_json_container
+                ], scroll="auto"),
+                padding=15,
+                bgcolor="grey50"
+            ),
+
+            # Right Panel: Visual Preview
+            ft.Container(
+                expand=True,
+                content=ft.Column([
+                    ft.Text("Visual Preview", size=18, weight=ft.FontWeight.BOLD),
+                    ft.Text("How your pass will look", size=10, color="grey"),
+                    ft.Container(height=20),
+                    passes_preview_container
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                padding=15,
+                bgcolor="grey100"
+            )
+        ], expand=True, spacing=0),
+        expand=True
     )
 
     # Add the new tab to the existing tabs

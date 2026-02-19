@@ -138,7 +138,7 @@ class APIClient:
             return None
 
     def get_passes_by_class(self, class_id: str) -> List[Dict[str, Any]]:
-        """Fetch all passes belonging to a specific class"""
+        """Fetch all passes belonging to a specific class (from local DB)"""
         try:
             response = requests.get(f"{self.base_url}/passes/class/{class_id}")
             response.raise_for_status()
@@ -146,7 +146,28 @@ class APIClient:
         except Exception as e:
             print(f"Error fetching passes for class '{class_id}': {e}")
             return []
-    
+
+    def get_passes_by_class_from_google(self, class_id: str) -> List[Dict[str, Any]]:
+        """Fetch all passes for a class LIVE from Google Wallet API (no local DB)"""
+        try:
+            response = requests.get(f"{self.base_url}/passes/google/class/{class_id}")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching passes from Google Wallet for class '{class_id}': {e}")
+            return []
+
+    def get_pass_from_google(self, object_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch a single pass LIVE from Google Wallet API (no local DB)"""
+        try:
+            response = requests.get(f"{self.base_url}/passes/google/object/{object_id}")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching pass '{object_id}' from Google Wallet: {e}")
+            return None
+
+
     def update_pass(self, object_id: str, 
                     holder_name: Optional[str] = None,
                     holder_email: Optional[str] = None,

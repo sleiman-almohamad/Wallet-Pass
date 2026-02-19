@@ -557,11 +557,14 @@ def main(page: ft.Page):
             page.update()
 
     def load_passes_for_class(class_id: str):
-        """Load passes for a specific class into the pass dropdown"""
+        """Load passes for a specific class LIVE from Google Wallet API"""
         print(f"DEBUG: load_passes_for_class called with class_id={class_id}")
+        passes_status.value = "⏳ Fetching passes from Google Wallet..."
+        passes_status.color = "blue"
+        page.update()
         try:
-            passes = api_client.get_passes_by_class(class_id) if api_client else []
-            print(f"DEBUG: Fetched {len(passes) if passes else 0} passes for class {class_id}")
+            passes = api_client.get_passes_by_class_from_google(class_id) if api_client else []
+            print(f"DEBUG: Fetched {len(passes) if passes else 0} passes from Google Wallet for class {class_id}")
 
             if passes and len(passes) > 0:
                 options = []
@@ -652,18 +655,18 @@ def main(page: ft.Page):
             page.update()
             return
         
-        passes_status.value = "⏳ Loading pass details..."
+        passes_status.value = "⏳ Loading pass from Google Wallet..."
         passes_status.color = "blue"
         page.update()
         
         try:
             object_id = manage_passes_dropdown.value
             
-            # Fetch pass data from local database
-            p_data = api_client.get_pass(object_id) if api_client else None
+            # Fetch pass data LIVE from Google Wallet API
+            p_data = api_client.get_pass_from_google(object_id) if api_client else None
             
             if not p_data:
-                passes_status.value = f"❌ Pass '{object_id}' not found in database"
+                passes_status.value = f"❌ Pass '{object_id}' not found in Google Wallet"
                 passes_status.color = "red"
                 page.update()
                 return
@@ -672,21 +675,27 @@ def main(page: ft.Page):
             passes_object_id_field.value = object_id
             passes_class_id_field.value = p_data.get("class_id")
             
-            # Get class details to determine type
+            # Class info still comes from local DB (template data lives there)
             class_info = api_client.get_class(p_data["class_id"])
-            class_type = class_info.get("class_type", "Generic") if class_info else "Generic"
+            # Fallback: use class_type returned by Google Wallet endpoint if local DB lookup fails
+            class_type = (
+                (class_info.get("class_type") if class_info else None)
+                or p_data.get("class_type", "Generic")
+            )
             passes_current_class_type = class_type
             
             # Prepare current JSON for editing
+            # p_data comes from Google Wallet (already normalised by _normalize_google_pass)
+            class_id_local = p_data.get("class_id", "")
             json_data = {
                 "id": object_id,
-                "classId": f"{configs.ISSUER_ID}.{p_data['class_id']}",
+                "classId": f"{configs.ISSUER_ID}.{class_id_local}",
                 "holder_name": p_data.get("holder_name"),
                 "holder_email": p_data.get("holder_email"),
                 "status": p_data.get("status")
             }
             
-            # Add dynamic fields from pass_data
+            # Add dynamic fields from pass_data (live GW fields)
             if p_data.get("pass_data"):
                 json_data.update(p_data["pass_data"])
             
@@ -770,7 +779,7 @@ def main(page: ft.Page):
             else:
                  passes_preview_container.content = ft.Text("Class info not found for preview")
             
-            passes_status.value = f"✅ Pass loaded. Edit fields and click 'Update Pass' to save."
+            passes_status.value = f"✅ Pass loaded from Google Wallet. Edit fields and click 'Update Pass' to save."
             passes_status.color = "green"
             
         except Exception as ex:

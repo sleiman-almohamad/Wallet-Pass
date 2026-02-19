@@ -506,6 +506,64 @@ async def get_passes(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@app.get("/passes/google/class/{class_id}", tags=["Passes"])
+async def get_passes_from_google_by_class(class_id: str):
+    """
+    Fetch all pass objects for a class **live from Google Wallet API**.
+    No local database is involved in the read.
+    """
+    if not wallet_client:
+        raise HTTPException(status_code=503, detail="Google Wallet service not initialized")
+    try:
+        raw_objects = wallet_client.list_class_objects(class_id)
+        # list_class_objects returns [{'id':..., 'data':..., 'class_type':...}, ...]
+        result = []
+        for item in raw_objects:
+            gw_obj = item.get("data", {})
+            if not gw_obj:
+                continue
+            normalised = _normalize_google_pass(gw_obj)
+            normalised["class_type"] = item.get("class_type", "Generic")
+            result.append(normalised)
+        return result
+    except Exception as e:
+        logger.error(f"Error fetching passes from Google Wallet for class '{class_id}': {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/passes/google/object/{object_id}", tags=["Passes"])
+async def get_pass_from_google(object_id: str):
+    """
+    Fetch a single pass object **live from Google Wallet API**.
+    Tries all object resource types (Generic, EventTicket, Loyalty, etc.).
+    No local database is involved in the read.
+    """
+    if not wallet_client:
+        raise HTTPException(status_code=503, detail="Google Wallet service not initialized")
+
+    full_object_id = f"{configs.ISSUER_ID}.{object_id}" if not object_id.startswith(configs.ISSUER_ID) else object_id
+
+    object_resources = [
+        ("Generic",     wallet_client.service.genericobject()),
+        ("EventTicket", wallet_client.service.eventticketobject()),
+        ("LoyaltyCard", wallet_client.service.loyaltyobject()),
+        ("GiftCard",    wallet_client.service.giftcardobject()),
+        ("TransitPass", wallet_client.service.transitobject()),
+    ]
+
+    for class_type, resource in object_resources:
+        try:
+            gw_obj = resource.get(resourceId=full_object_id).execute()
+            normalised = _normalize_google_pass(gw_obj)
+            normalised["class_type"] = class_type
+            return normalised
+        except Exception:
+            continue
+
+    raise HTTPException(status_code=404, detail=f"Pass '{object_id}' not found in Google Wallet")
+
+
 @app.get("/passes/{object_id}", response_model=PassResponse, tags=["Passes"])
 async def get_pass(object_id: str):
     """Retrieve a specific pass by object ID"""
@@ -798,6 +856,56 @@ async def sync_passes():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ========================================================================
+# Google Wallet Live Read Endpoints (no local DB write)
+# ========================================================================
+
+def _normalize_google_pass(gw_obj: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Convert a raw Google Wallet pass object into a normalised dict that
+    matches the shape the Manage Passes UI expects.
+    """
+    full_object_id = gw_obj.get("id", "")
+    # Strip issuer prefix  e.g. "3388000000022...<issuer>.ABC" → "ABC"
+    if full_object_id.startswith(configs.ISSUER_ID + "."):
+        object_id = full_object_id.split(".", 1)[1]
+    else:
+        object_id = full_object_id
+
+    class_id_full = gw_obj.get("classId", "")
+    if class_id_full.startswith(configs.ISSUER_ID + "."):
+        local_class_id = class_id_full.split(".", 1)[1]
+    else:
+        local_class_id = class_id_full
+
+    # Extract holder name from whichever field is present
+    holder_name = (
+        gw_obj.get("ticketHolderName")
+        or gw_obj.get("accountName")
+        or gw_obj.get("passengerName")
+        or "Unknown Holder"
+    )
+    holder_email = gw_obj.get("accountId") or f"unknown_{object_id}@example.com"
+    status = "Active" if gw_obj.get("state") == "ACTIVE" else "Expired"
+
+    # Everything else goes into pass_data
+    pass_data = copy.deepcopy(gw_obj)
+    for key in ("id", "classId", "ticketHolderName", "accountName",
+                "accountId", "passengerName", "state"):
+        pass_data.pop(key, None)
+
+    return {
+        "object_id": object_id,
+        "class_id": local_class_id,
+        "holder_name": holder_name,
+        "holder_email": holder_email,
+        "status": status,
+        "pass_data": pass_data,
+        "created_at": None,
+        "updated_at": None,
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("api.api:app", host="0.0.0.0", port=8000, reload=True)
+

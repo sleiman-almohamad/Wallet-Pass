@@ -81,60 +81,41 @@ def sync_classes_from_google():
         print(f"\n📦 Processing: {class_id} ({class_type})")
         
         try:
-            # Parse metadata from Google Wallet class
+            # Parse all fields from Google Wallet class
             metadata = parse_google_wallet_class(google_class)
+            # Use the parser's class_type (more reliable detection)
+            class_type = metadata.get('class_type', class_type)
             
-            # Extract visual properties
-            base_color = metadata.get("base_color")
-            logo_url = metadata.get("logo_url")
-            
-            # Extract text fields based on class type
-            issuer_name = None
-            header_text = None
-            card_title = None
-            
-            if class_type == "LoyaltyCard":
-                issuer_name = google_class.get("localizedIssuerName", {}).get("defaultValue", {}).get("value")
-                card_title = google_class.get("localizedProgramName", {}).get("defaultValue", {}).get("value")
-            elif class_type == "EventTicket":
-                issuer_name = google_class.get("issuerName")
-                card_title = google_class.get("eventName", {}).get("defaultValue", {}).get("value")
-            elif class_type == "Generic":
-                issuer_name = google_class.get("issuerName")
-                header_text = google_class.get("header", {}).get("defaultValue", {}).get("value")
-                card_title = google_class.get("cardTitle", {}).get("defaultValue", {}).get("value")
+            # Build kwargs for API calls (all fields the parser extracted)
+            class_kwargs = {
+                'class_id': class_id,
+                'class_type': class_type,
+                'issuer_name': metadata.get('issuer_name'),
+                'base_color': metadata.get('base_color'),
+                'logo_url': metadata.get('logo_url'),
+                'hero_image_url': metadata.get('hero_image_url'),
+                'header_text': metadata.get('header_text'),
+                'card_title': metadata.get('card_title'),
+                'event_name': metadata.get('event_name'),
+                'venue_name': metadata.get('venue_name'),
+                'venue_address': metadata.get('venue_address'),
+                'event_start': metadata.get('event_start'),
+                'program_name': metadata.get('program_name'),
+                'transit_type': metadata.get('transit_type'),
+                'transit_operator_name': metadata.get('transit_operator_name'),
+            }
             
             # Check if class already exists in local database
             existing = api_client.get_class(class_id)
             
             if existing:
-                # Update existing class
                 print(f"   ⚠️  Class exists, updating...")
-                api_client.update_class(
-                    class_id=class_id,
-                    class_type=class_type,
-                    base_color=base_color,
-                    logo_url=logo_url,
-                    issuer_name=issuer_name,
-                    header_text=header_text,
-                    card_title=card_title,
-                    class_json=google_class
-                )
+                api_client.update_class(**class_kwargs)
                 print(f"   ✅ Updated: {class_id}")
                 updated += 1
             else:
-                # Create new class
                 print(f"   ➕ Creating new class...")
-                api_client.create_class(
-                    class_id=class_id,
-                    class_type=class_type,
-                    base_color=base_color,
-                    logo_url=logo_url,
-                    issuer_name=issuer_name,
-                    header_text=header_text,
-                    card_title=card_title,
-                    class_json=google_class
-                )
+                api_client.create_class(**class_kwargs)
                 print(f"   ✅ Imported: {class_id}")
                 imported += 1
                 

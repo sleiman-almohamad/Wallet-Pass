@@ -514,7 +514,7 @@ class WalletClient:
             error_details = e.content.decode('utf-8') if hasattr(e, 'content') else str(e)
             raise Exception(f"Error updating pass class '{class_id}': {error_details}")
     
-    def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket"):
+    def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket", status=None):
         """
         Update an individual pass object in Google Wallet
         
@@ -564,27 +564,27 @@ class WalletClient:
             # Build the updated pass object using existing builder methods
             if class_type == "EventTicket":
                 object_data = self.build_event_ticket_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
                 )
                 resource = self.service.eventticketobject()
             elif class_type == "LoyaltyCard":
                 object_data = self.build_loyalty_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
                 )
                 resource = self.service.loyaltyobject()
             elif class_type == "GiftCard":
                 object_data = self.build_generic_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
                 )
                 resource = self.service.giftcardobject()
             elif class_type == "TransitPass":
                 object_data = self.build_generic_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
                 )
                 resource = self.service.transitobject()
             else:  # Generic
                 object_data = self.build_generic_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
                 )
                 resource = self.service.genericobject()
 
@@ -637,7 +637,7 @@ class WalletClient:
 
             raise Exception(f"Error updating pass object '{object_id}': {error_details}")
     
-    def build_event_ticket_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY"):
+    def build_event_ticket_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY", status=None):
         """
         Build an EventTicket object structure for Google Wallet
         
@@ -653,13 +653,25 @@ class WalletClient:
         Returns:
             Dictionary formatted for Google Wallet API
         """
+        # Check for explicit custom values from pass_data (from UI) early
+        pd = pass_data or {}
+        custom_ticket_holder = pd.get("ticketHolderName") or pd.get("ticket_holder_name") or holder_name
+        custom_conf_code = pd.get("confirmationCode") or pd.get("confirmation_code") or (object_id.split('.')[-1] if '.' in object_id else object_id)
+
+        # Map local status to Google Wallet state
+        gw_state = "ACTIVE"
+        if status:
+            s_upper = status.upper()
+            if s_upper in ["ACTIVE", "COMPLETED", "EXPIRED", "INACTIVE"]:
+                gw_state = s_upper
+
         obj = {
             "id": object_id,
             "classId": class_id,
-            "state": "ACTIVE",
-            "ticketHolderName": holder_name,
+            "state": gw_state,
+            "ticketHolderName": custom_ticket_holder,
             "reservationInfo": {
-                "confirmationCode": object_id.split('.')[-1] if '.' in object_id else object_id
+                "confirmationCode": custom_conf_code
             }
         }
         
@@ -677,11 +689,13 @@ class WalletClient:
         
         # Add seat information if available
         if pass_data:
-            if "seat_number" in pass_data or "seat" in pass_data:
-                seat_value = pass_data.get("seat_number") or pass_data.get("seat", "")
+            seat_value = pass_data.get("seatNumber") or pass_data.get("seat_number") or pass_data.get("seat", "")
+            if seat_value:
                 obj["seatInfo"] = {
                     "seat": {
+                        "kind": "walletobjects#localizedString",
                         "defaultValue": {
+                            "kind": "walletobjects#translatedString",
                             "language": "en-US",
                             "value": str(seat_value)
                         }
@@ -690,7 +704,9 @@ class WalletClient:
             if "gate" in pass_data:
                 obj["seatInfo"] = obj.get("seatInfo", {})
                 obj["seatInfo"]["gate"] = {
+                    "kind": "walletobjects#localizedString",
                     "defaultValue": {
+                        "kind": "walletobjects#translatedString",
                         "language": "en-US",
                         "value": str(pass_data["gate"])
                     }
@@ -698,7 +714,9 @@ class WalletClient:
             if "row" in pass_data:
                 obj["seatInfo"] = obj.get("seatInfo", {})
                 obj["seatInfo"]["row"] = {
+                    "kind": "walletobjects#localizedString",
                     "defaultValue": {
+                        "kind": "walletobjects#translatedString",
                         "language": "en-US",
                         "value": str(pass_data["row"])
                     }
@@ -706,7 +724,9 @@ class WalletClient:
             if "section" in pass_data:
                 obj["seatInfo"] = obj.get("seatInfo", {})
                 obj["seatInfo"]["section"] = {
+                    "kind": "walletobjects#localizedString",
                     "defaultValue": {
+                        "kind": "walletobjects#translatedString",
                         "language": "en-US",
                         "value": str(pass_data["section"])
                     }
@@ -760,12 +780,18 @@ class WalletClient:
         
         return obj
     
-    def build_loyalty_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY"):
-        """Build a LoyaltyCard object structure"""
+    def build_loyalty_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY", status=None):
+        # Map local status to Google Wallet state
+        gw_state = "ACTIVE"
+        if status:
+            s_upper = status.upper()
+            if s_upper in ["ACTIVE", "COMPLETED", "EXPIRED", "INACTIVE"]:
+                gw_state = s_upper
+                
         obj = {
             "id": object_id,
             "classId": class_id,
-            "state": "ACTIVE",
+            "state": gw_state,
             "accountName": holder_name,
             "accountId": holder_email
         }
@@ -847,28 +873,39 @@ class WalletClient:
         
         return obj
     
-    def build_generic_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY"):
-        """Build a Generic object structure"""
-        # Get cardTitle from pass_data, fallback to holder_name
-        card_title_value = pass_data.get("header_value", holder_name) if pass_data else holder_name
+    def build_generic_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY", status=None):
+        # Extract explicit generic fields sent by UI
+        pd = pass_data or {}
+        header_text = pd.get("header_value", holder_name) # Fallback to holder_name
+        subheader_text = pd.get("subheader_value", "")
         
+        # Map local status to Google Wallet state
+        gw_state = "ACTIVE"
+        if status:
+            s_upper = status.upper()
+            if s_upper in ["ACTIVE", "COMPLETED", "EXPIRED", "INACTIVE"]:
+                gw_state = s_upper
+                
         obj = {
             "id": object_id,
             "classId": class_id,
-            "state": "ACTIVE",
+            "state": gw_state,
             "header": {
                 "defaultValue": {
                     "language": "en-US",
-                    "value": holder_name
-                }
-            },
-            "cardTitle": {
-                "defaultValue": {
-                    "language": "en-US",
-                    "value": card_title_value
+                    "value": header_text
                 }
             }
         }
+        
+        # Subheader maps to cardTitle in Google Wallet Generic Objects
+        if subheader_text:
+            obj["cardTitle"] = {
+                "defaultValue": {
+                    "language": "en-US",
+                    "value": subheader_text
+                }
+            }
         
         # Add custom background color if provided
         if custom_color:
@@ -883,14 +920,6 @@ class WalletClient:
             }]
         
         if pass_data:
-            # Add subheader if provided
-            if "subheader" in pass_data and pass_data["subheader"]:
-                obj["subheader"] = {
-                    "defaultValue": {
-                        "language": "en-US",
-                        "value": pass_data["subheader"]
-                    }
-                }
             
             # Add text modules for any text-heavy fields
             text_modules = []

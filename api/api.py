@@ -122,14 +122,41 @@ async def health_check():
 async def create_class(class_data: ClassCreate):
     """Create a new pass class"""
     try:
+        # Extract relational fields from class_json if provided
+        if class_data.class_json:
+            from google_wallet_parser import parse_google_wallet_class
+            parsed_metadata = parse_google_wallet_class(class_data.class_json)
+            # Override any None values in class_data with parsed values
+            if class_data.issuer_name is None: class_data.issuer_name = parsed_metadata.get('issuer_name')
+            if class_data.base_color is None: class_data.base_color = parsed_metadata.get('base_color')
+            if class_data.logo_url is None: class_data.logo_url = parsed_metadata.get('logo_url')
+            if class_data.hero_image_url is None: class_data.hero_image_url = parsed_metadata.get('hero_image_url')
+            if class_data.header_text is None: class_data.header_text = parsed_metadata.get('header_text')
+            if class_data.card_title is None: class_data.card_title = parsed_metadata.get('card_title')
+            if class_data.event_name is None: class_data.event_name = parsed_metadata.get('event_name')
+            if class_data.venue_name is None: class_data.venue_name = parsed_metadata.get('venue_name')
+            if class_data.venue_address is None: class_data.venue_address = parsed_metadata.get('venue_address')
+            if class_data.event_start is None: class_data.event_start = parsed_metadata.get('event_start')
+            if class_data.program_name is None: class_data.program_name = parsed_metadata.get('program_name')
+            if class_data.transit_type is None: class_data.transit_type = parsed_metadata.get('transit_type')
+            if class_data.transit_operator_name is None: class_data.transit_operator_name = parsed_metadata.get('transit_operator_name')
+
         success = db.create_class(
             class_id=class_data.class_id,
             class_type=class_data.class_type,
+            issuer_name=class_data.issuer_name,
             base_color=class_data.base_color,
             logo_url=class_data.logo_url,
-            issuer_name=class_data.issuer_name,
+            hero_image_url=class_data.hero_image_url,
             header_text=class_data.header_text,
             card_title=class_data.card_title,
+            event_name=class_data.event_name,
+            venue_name=class_data.venue_name,
+            venue_address=class_data.venue_address,
+            event_start=class_data.event_start,
+            program_name=class_data.program_name,
+            transit_type=class_data.transit_type,
+            transit_operator_name=class_data.transit_operator_name,
             class_json=class_data.class_json
         )
         
@@ -188,6 +215,15 @@ async def update_class(class_id: str, class_data: ClassUpdate):
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
 
+        # Extract relational fields from class_json if provided
+        if "class_json" in update_data and update_data["class_json"]:
+            from google_wallet_parser import parse_google_wallet_class
+            parsed_metadata = parse_google_wallet_class(update_data["class_json"])
+            # Merge parsed metadata into update_data, avoiding overwriting explicit fields
+            for key, value in parsed_metadata.items():
+                if key not in update_data and value is not None:
+                    update_data[key] = value
+
         # region agent log
         try:
             import json as _json, time as _time
@@ -205,6 +241,10 @@ async def update_class(class_id: str, class_data: ClassUpdate):
         except Exception:
             pass
         # endregion
+
+        # Remove class_id from update_data to avoid 'multiple values' error
+        if "class_id" in update_data:
+            update_data.pop("class_id")
 
         # Step 1: Update local database
         success = db.update_class(class_id, **update_data)
@@ -370,18 +410,23 @@ async def sync_classes_from_google():
                 if existing_class:
                     # Update parameters
                     logger.info(f"Updating local class: {class_id}")
-                    # We always overwrite local with cloud data for sync
                     success = db.update_class(
                         class_id=class_id,
                         class_type=metadata['class_type'],
-                        base_color=metadata['base_color'],
-                        logo_url=metadata['logo_url'],
-                        issuer_name=metadata['issuer_name'],
-                        header_text=metadata['header_text'],
-                        card_title=metadata['card_title'],
-                        class_json=clean_google_class  # IMPORTANT: Save the cleaned JSON
+                        issuer_name=metadata.get('issuer_name'),
+                        base_color=metadata.get('base_color'),
+                        logo_url=metadata.get('logo_url'),
+                        hero_image_url=metadata.get('hero_image_url'),
+                        header_text=metadata.get('header_text'),
+                        card_title=metadata.get('card_title'),
+                        event_name=metadata.get('event_name'),
+                        venue_name=metadata.get('venue_name'),
+                        venue_address=metadata.get('venue_address'),
+                        event_start=metadata.get('event_start'),
+                        program_name=metadata.get('program_name'),
+                        transit_type=metadata.get('transit_type'),
+                        transit_operator_name=metadata.get('transit_operator_name'),
                     )
-                    # Count as updated (even if idempotent, our fix earlier handles db.update_class returning False)
                     updated_count += 1
                 else:
                     # Create new class
@@ -389,12 +434,19 @@ async def sync_classes_from_google():
                     success = db.create_class(
                         class_id=class_id,
                         class_type=metadata['class_type'],
-                        base_color=metadata['base_color'],
-                        logo_url=metadata['logo_url'],
-                        issuer_name=metadata['issuer_name'],
-                        header_text=metadata['header_text'],
-                        card_title=metadata['card_title'],
-                        class_json=clean_google_class
+                        issuer_name=metadata.get('issuer_name'),
+                        base_color=metadata.get('base_color'),
+                        logo_url=metadata.get('logo_url'),
+                        hero_image_url=metadata.get('hero_image_url'),
+                        header_text=metadata.get('header_text'),
+                        card_title=metadata.get('card_title'),
+                        event_name=metadata.get('event_name'),
+                        venue_name=metadata.get('venue_name'),
+                        venue_address=metadata.get('venue_address'),
+                        event_start=metadata.get('event_start'),
+                        program_name=metadata.get('program_name'),
+                        transit_type=metadata.get('transit_type'),
+                        transit_operator_name=metadata.get('transit_operator_name'),
                     )
                     if success:
                         new_count += 1
@@ -608,50 +660,61 @@ async def get_passes_by_email(email: str):
 
 
 @app.put("/passes/{object_id}", response_model=MessageResponse, tags=["Passes"])
-async def update_pass(object_id: str, pass_data: PassUpdate):
-    """Update a pass and sync to Google Wallet"""
+async def update_pass(object_id: str, pass_update: PassUpdate, sync_to_google: bool = True):
+    """Update a pass and optionally sync to Google Wallet"""
     try:
         # Check if pass exists
         existing_pass = db.get_pass(object_id)
         if not existing_pass:
             raise HTTPException(status_code=404, detail=f"Pass '{object_id}' not found")
         
-        # 1. Update local database
-        update_data = pass_data.model_dump(exclude_unset=True)
-        if not update_data:
+        # Build kwargs for db.update_pass
+        db_kwargs = {}
+        
+        if pass_update.holder_name is not None:
+            db_kwargs['holder_name'] = pass_update.holder_name
+        if pass_update.holder_email is not None:
+            db_kwargs['holder_email'] = pass_update.holder_email
+        if pass_update.status is not None:
+            db_kwargs['status'] = pass_update.status.value
+        if pass_update.pass_data is not None:
+            db_kwargs['pass_data'] = pass_update.pass_data
+            
+        logger.info(f"Updating pass '{object_id}' with db_kwargs keys: {list(db_kwargs.keys())}")
+        if 'pass_data' in db_kwargs:
+            logger.info(f"  pass_data keys: {list(db_kwargs['pass_data'].keys())}")
+        
+        if not db_kwargs:
             raise HTTPException(status_code=400, detail="No fields to update")
         
-        if 'status' in update_data:
-            update_data['status'] = update_data['status'].value
+        db_success = db.update_pass(object_id, **db_kwargs)
         
-        db_success = db.update_pass(object_id, **update_data)
-        
-        # 2. Sync to Google Wallet if client is available
+        # 2. Sync to Google Wallet if requested and client is available
         wallet_message = ""
-        if wallet_client:
-            try:
-                # Refresh data to get latest state from DB (combining existing + update)
-                updated_pass = db.get_pass(object_id)
-                class_info = db.get_class(updated_pass['class_id'])
+        if sync_to_google:
+            if wallet_client:
+                try:
+                    updated_pass = db.get_pass(object_id)
+                    class_info = db.get_class(updated_pass['class_id'])
                 
-                if class_info:
-                    logger.info(f"Syncing pass '{object_id}' to Google Wallet")
-                    wallet_client.update_pass_object(
-                        object_id=object_id,
-                        class_id=updated_pass['class_id'],
-                        holder_name=updated_pass['holder_name'],
-                        holder_email=updated_pass['holder_email'],
-                        pass_data=updated_pass.get('pass_data', {}),
-                        class_type=class_info.get('class_type', 'Generic')
-                    )
-                    wallet_message = " 📱 Synced to Google Wallet."
-                else:
-                    wallet_message = " ⚠️ Could not sync to Google Wallet (Class info missing)."
-            except Exception as e:
-                logger.error(f"Failed to sync updated pass to Google Wallet: {e}")
-                wallet_message = f" ⚠️ Google Wallet sync failed: {str(e)}"
-        else:
-            wallet_message = " ⚠️ Google Wallet sync disabled (Check server logs)."
+                    if class_info:
+                        logger.info(f"Syncing pass '{object_id}' to Google Wallet")
+                        wallet_client.update_pass_object(
+                            object_id=object_id,
+                            class_id=updated_pass['class_id'],
+                            holder_name=updated_pass['holder_name'],
+                            holder_email=updated_pass['holder_email'],
+                            pass_data=updated_pass.get('pass_data', {}),
+                            class_type=class_info.get('class_type', 'Generic')
+                        )
+                        wallet_message = " 📱 Synced to Google Wallet."
+                    else:
+                        wallet_message = " ⚠️ Could not sync to Google Wallet (Class info missing)."
+                except Exception as e:
+                    logger.error(f"Failed to sync updated pass to Google Wallet: {e}")
+                    wallet_message = f" ⚠️ Google Wallet sync failed: {str(e)}"
+            else:
+                wallet_message = " ⚠️ Google Wallet sync disabled (Check server logs)."
 
         if db_success:
             return MessageResponse(
@@ -664,7 +727,47 @@ async def update_pass(object_id: str, pass_data: PassUpdate):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error in update_pass: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/passes/{object_id}/push", response_model=MessageResponse, tags=["Passes"])
+async def push_pass_to_google(object_id: str):
+    """Explicitly push the current local database state of a pass to Google Wallet"""
+    try:
+        # Check if pass exists
+        existing_pass = db.get_pass(object_id)
+        if not existing_pass:
+            raise HTTPException(status_code=404, detail=f"Pass '{object_id}' not found")
+            
+        if not wallet_client:
+            raise HTTPException(status_code=503, detail="Google Wallet sync disabled (Check server logs).")
+            
+        class_info = db.get_class(existing_pass['class_id'])
+        if not class_info:
+            raise HTTPException(status_code=404, detail="Class info missing for this pass.")
+            
+        logger.info(f"Explicitly pushing pass '{object_id}' to Google Wallet")
+        wallet_client.update_pass_object(
+            object_id=object_id,
+            class_id=existing_pass['class_id'],
+            holder_name=existing_pass['holder_name'],
+            holder_email=existing_pass['holder_email'],
+            pass_data=existing_pass.get('pass_data', {}),
+            class_type=class_info.get('class_type', 'Generic'),
+            status=existing_pass.get('status')
+        )
+        
+        return MessageResponse(
+            message=f"📱 Pass '{object_id}' successfully synced to Google Wallet.",
+            success=True
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to push pass to Google Wallet: {e}")
+        raise HTTPException(status_code=500, detail=f"Google Wallet push failed: {str(e)}")
 
 
 @app.put("/passes/{object_id}/status", response_model=MessageResponse, tags=["Passes"])
@@ -824,8 +927,41 @@ async def sync_passes():
                     logger.info(f"Creating local pass: {object_id}")
                     # Ensure class exists locally before creating pass (FK constraint)
                     if not db.get_class(local_class_id):
-                         logger.warning(f"Class '{local_class_id}' not found for pass '{object_id}'. Skipping pass sync.")
-                         continue
+                        # Auto-create the missing class from Google Wallet
+                        logger.warning(f"Class '{local_class_id}' not found locally. Auto-syncing from Google...")
+                        try:
+                            from google_wallet_parser import parse_google_wallet_class
+                            # Fetch class data from Google
+                            full_class_id = f"{configs.ISSUER_ID}.{local_class_id}"
+                            google_class_data = wallet_client.get_class(full_class_id)
+                            if google_class_data:
+                                meta = parse_google_wallet_class(google_class_data)
+                                db.create_class(
+                                    class_id=local_class_id,
+                                    class_type=meta['class_type'],
+                                    issuer_name=meta.get('issuer_name'),
+                                    base_color=meta.get('base_color'),
+                                    logo_url=meta.get('logo_url'),
+                                    hero_image_url=meta.get('hero_image_url'),
+                                    header_text=meta.get('header_text'),
+                                    card_title=meta.get('card_title'),
+                                    event_name=meta.get('event_name'),
+                                    venue_name=meta.get('venue_name'),
+                                    venue_address=meta.get('venue_address'),
+                                    event_start=meta.get('event_start'),
+                                    program_name=meta.get('program_name'),
+                                    transit_type=meta.get('transit_type'),
+                                    transit_operator_name=meta.get('transit_operator_name'),
+                                )
+                                logger.info(f"Auto-created class '{local_class_id}'")
+                            else:
+                                logger.warning(f"Class '{local_class_id}' not found in Google Wallet either. Skipping pass.")
+                                errors.append(f"Class '{local_class_id}' missing for pass '{object_id}'")
+                                continue
+                        except Exception as class_err:
+                            logger.warning(f"Failed to auto-create class '{local_class_id}': {class_err}. Skipping pass.")
+                            errors.append(f"Failed to create class '{local_class_id}': {class_err}")
+                            continue
                          
                     db.create_pass(
                         object_id=object_id,

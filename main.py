@@ -557,14 +557,14 @@ def main(page: ft.Page):
             page.update()
 
     def load_passes_for_class(class_id: str):
-        """Load passes for a specific class LIVE from Google Wallet API"""
+        """Load passes for a specific class from local database"""
         print(f"DEBUG: load_passes_for_class called with class_id={class_id}")
-        passes_status.value = "⏳ Fetching passes from Google Wallet..."
+        passes_status.value = "⏳ Fetching passes from local database..."
         passes_status.color = "blue"
         page.update()
         try:
-            passes = api_client.get_passes_by_class_from_google(class_id) if api_client else []
-            print(f"DEBUG: Fetched {len(passes) if passes else 0} passes from Google Wallet for class {class_id}")
+            passes = api_client.get_passes_by_class(class_id) if api_client else []
+            print(f"DEBUG: Fetched {len(passes) if passes else 0} passes from local DB for class {class_id}")
 
             if passes and len(passes) > 0:
                 options = []
@@ -654,19 +654,18 @@ def main(page: ft.Page):
             passes_status.color = "red"
             page.update()
             return
-        
-        passes_status.value = "⏳ Loading pass from Google Wallet..."
+        passes_status.value = "⏳ Loading pass from local database..."
         passes_status.color = "blue"
         page.update()
         
         try:
             object_id = manage_passes_dropdown.value
             
-            # Fetch pass data LIVE from Google Wallet API
-            p_data = api_client.get_pass_from_google(object_id) if api_client else None
+            # Fetch pass data from local database
+            p_data = api_client.get_pass(object_id) if api_client else None
             
             if not p_data:
-                passes_status.value = f"❌ Pass '{object_id}' not found in Google Wallet"
+                passes_status.value = f"❌ Pass '{object_id}' not found in database"
                 passes_status.color = "red"
                 page.update()
                 return
@@ -675,9 +674,9 @@ def main(page: ft.Page):
             passes_object_id_field.value = object_id
             passes_class_id_field.value = p_data.get("class_id")
             
-            # Class info still comes from local DB (template data lives there)
+            # Class info from local DB
             class_info = api_client.get_class(p_data["class_id"])
-            # Fallback: use class_type returned by Google Wallet endpoint if local DB lookup fails
+            # Fallback: use class_type returned if DB lookup fails
             class_type = (
                 (class_info.get("class_type") if class_info else None)
                 or p_data.get("class_type", "Generic")
@@ -685,7 +684,6 @@ def main(page: ft.Page):
             passes_current_class_type = class_type
             
             # Prepare current JSON for editing
-            # p_data comes from Google Wallet (already normalised by _normalize_google_pass)
             class_id_local = p_data.get("class_id", "")
             json_data = {
                 "id": object_id,
@@ -740,11 +738,51 @@ def main(page: ft.Page):
                 # Add as read-only fields
                 field_mappings["event_date"] = {"label": "Event Date", "type": "text", "read_only": True}
                 field_mappings["event_time"] = {"label": "Event Time", "type": "text", "read_only": True}
+                
+                # Extract local database scalar fields directly
+                pd = p_data.get("pass_data", {})
+                
+                # ticketHolderName
+                passes_current_json["ticket_holder_name"] = str(pd.get("ticketHolderName", ""))
+                field_mappings["ticket_holder_name"] = {"label": "Ticket Holder Name", "type": "text"}
+                
+                # confirmationCode
+                passes_current_json["confirmation_code"] = str(pd.get("confirmationCode", ""))
+                field_mappings["confirmation_code"] = {"label": "Confirmation Code", "type": "text"}
+                
+                # seatInfo fields
+                passes_current_json["seat"] = str(pd.get("seatNumber", ""))
+                passes_current_json["section"] = str(pd.get("section", ""))
+                passes_current_json["gate"] = str(pd.get("gate", ""))
+                
+                field_mappings["seat"] = {"label": "Seat", "type": "text"}
+                field_mappings["section"] = {"label": "Section", "type": "text"}
+                field_mappings["gate"] = {"label": "Gate", "type": "text"}
+                
+            elif class_type == "Generic":
+                pd = p_data.get("pass_data", {})
+                    
+                passes_current_json["header_value"] = str(pd.get("header_value", ""))
+                passes_current_json["subheader_value"] = str(pd.get("subheader_value", ""))
+                
+                field_mappings["header_value"] = {"label": "Header Value", "type": "text"}
+                field_mappings["subheader_value"] = {"label": "Subheader Value", "type": "text"}
             
             # Add dynamic fields from pass_data keys
             if p_data.get("pass_data"):
+                # Exclude standard local structural fields
+                ignored_keys = {
+                    "holder_name", "holder_email", "status", "id", "classId", 
+                    "event_date", "event_time", "messageType", "kind", "classReference",
+                    "version", "hasUsers", "hasLinkedDevice", "smartTapRedemptionValue",
+                    "state", "barcode", "messages", "locations", "reservationInfo", 
+                    "seatInfo", "ticketHolderName", "textModulesData", "linksModuleData",
+                    "imageModulesData", "groupingInfo", "issuerId", "reviewStatus",
+                    "confirmationCode", "seatNumber", "section", "gate",
+                    "header_value", "subheader_value", "header", "subheader"
+                }
                 for key in p_data["pass_data"].keys():
-                     if key not in ["holder_name", "holder_email", "status", "id", "classId", "event_date", "event_time", "messageType"]:
+                     if key not in ignored_keys:
                          field_mappings[key] = {
                              "label": key.replace("_", " ").title(),
                              "type": "text"
@@ -791,7 +829,7 @@ def main(page: ft.Page):
         page.update()
 
     def update_pass_object_handler(e):
-        """Update pass locally and sync to Google Wallet"""
+        """Update pass locally (without syncing to Google Wallet immediately)"""
         nonlocal passes_current_json, passes_dynamic_form
         
         if not passes_object_id_field.value:
@@ -800,43 +838,73 @@ def main(page: ft.Page):
             page.update()
             return
 
-        passes_status.value = "⏳ Updating pass and syncing..."
+        passes_status.value = "⏳ Saving pass to local database..."
         passes_status.color = "blue"
         page.update()
         
         try:
             object_id = passes_object_id_field.value
-            updated_data = passes_dynamic_form.get_json_data() if passes_dynamic_form else {}
             
-            holder_name = updated_data.pop("holder_name", None)
-            holder_email = updated_data.pop("holder_email", None)
-            status = updated_data.pop("status", None)
-            message_type = updated_data.pop("messageType", "TEXT_AND_NOTIFY")  # Extract messageType
+            # Get ALL form data as a flat dict
+            form_data = passes_dynamic_form.get_json_data() if passes_dynamic_form else {}
+            print(f"DEBUG UPDATE: Raw form_data = {form_data}")
             
-            pass_data = updated_data
-            pass_data.pop("id", None)
-            pass_data.pop("classId", None)
+            # Extract top-level fields
+            holder_name = form_data.pop("holder_name", None)
+            holder_email = form_data.pop("holder_email", None)
+            status = form_data.pop("status", None)
             
-            # Include messageType in pass_data for API
-            pass_data["messageType"] = message_type
+            # Remove non-data fields
+            form_data.pop("id", None)
+            form_data.pop("classId", None)
+            form_data.pop("event_date", None)
+            form_data.pop("event_time", None)
             
-            # Note: event_date and event_time are read-only and come from template,
-            # but they can remain in pass_data for reference
+            # What remains is pass_data for the child tables
+            pass_data = form_data
+            print(f"DEBUG UPDATE: holder_name={holder_name}, holder_email={holder_email}, status={status}")
+            print(f"DEBUG UPDATE: pass_data = {pass_data}")
             
             response = api_client.update_pass(
                 object_id=object_id,
                 holder_name=holder_name,
                 holder_email=holder_email,
                 status=status,
-                pass_data=pass_data
+                pass_data=pass_data,
+                sync_to_google=False
             )
             
-            passes_status.value = response.get("message", "✅ Pass updated successfully!")
+            passes_status.value = response.get("message", "✅ Pass updated locally successfully!")
+            passes_status.color = "green"
+        except Exception as ex:
+            import traceback
+            traceback.print_exc()
+            passes_status.value = f"❌ Error: {str(ex)}"
+            passes_status.color = "red"
+        page.update()
+
+    def push_to_google_wallet_handler(e):
+        """Push the current pass state to Google Wallet"""
+        if not passes_object_id_field.value:
+            passes_status.value = "❌ No pass loaded"
+            passes_status.color = "red"
+            page.update()
+            return
+
+        passes_status.value = "⏳ Pushing pass to Google Wallet..."
+        passes_status.color = "blue"
+        page.update()
+        
+        try:
+            object_id = passes_object_id_field.value
+            response = api_client.push_pass_to_google(object_id=object_id)
+            passes_status.value = response.get("message", "✅ Pass pushed to Google Wallet successfully!")
             passes_status.color = "green"
         except Exception as ex:
             passes_status.value = f"❌ Error: {str(ex)}"
             passes_status.color = "red"
         page.update()
+
 
     def sync_passes_manual(e):
         """Manual trigger for pass sync"""
@@ -1563,9 +1631,19 @@ def main(page: ft.Page):
                     ft.Divider(height=20),
 
                     ft.ElevatedButton(
-                        "Update Pass & Sync",
+                        "Save to Local DB",
                         icon="save",
                         on_click=update_pass_object_handler,
+                        width=380,
+                        style=ft.ButtonStyle(bgcolor="orange", color="white")
+                    ),
+
+                    ft.Container(height=10),
+
+                    ft.ElevatedButton(
+                        "Update in Google Wallet API",
+                        icon="cloud_upload",
+                        on_click=push_to_google_wallet_handler,
                         width=380,
                         style=ft.ButtonStyle(bgcolor="blue", color="white")
                     ),

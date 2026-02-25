@@ -34,59 +34,95 @@ class APIClient:
             return None
     
     def create_class(self, class_id: str, class_type: str, 
+                    issuer_name: Optional[str] = None,
                     base_color: Optional[str] = None, 
                     logo_url: Optional[str] = None,
-                    issuer_name: Optional[str] = None,
+                    hero_image_url: Optional[str] = None,
                     header_text: Optional[str] = None,
                     card_title: Optional[str] = None,
-                    class_json: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                    event_name: Optional[str] = None,
+                    venue_name: Optional[str] = None,
+                    venue_address: Optional[str] = None,
+                    event_start: Optional[str] = None,
+                    program_name: Optional[str] = None,
+                    transit_type: Optional[str] = None,
+                    transit_operator_name: Optional[str] = None,
+                    class_json: Optional[Dict[str, Any]] = None,
+                    **extra) -> Dict[str, Any]:
         """Create a new class"""
         data = {
             "class_id": class_id,
             "class_type": class_type,
+            "issuer_name": issuer_name,
             "base_color": base_color,
             "logo_url": logo_url,
-            "issuer_name": issuer_name,
+            "hero_image_url": hero_image_url,
             "header_text": header_text,
             "card_title": card_title,
+            "event_name": event_name,
+            "venue_name": venue_name,
+            "venue_address": venue_address,
+            "event_start": event_start,
+            "program_name": program_name,
+            "transit_type": transit_type,
+            "transit_operator_name": transit_operator_name,
             "class_json": class_json
         }
         try:
             response = requests.post(f"{self.base_url}/classes/", json=data)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            try:
+                error_detail = response.json()
+            except:
+                error_detail = response.text
+            raise Exception(f"HTTP Error creating class. Detail: {error_detail}. Status: {response.status_code}. Data: {data}")
         except Exception as e:
             raise Exception(f"Error creating class: {e}")
     
     def update_class(self, class_id: str, 
                     class_type: Optional[str] = None,
+                    issuer_name: Optional[str] = None,
                     base_color: Optional[str] = None, 
                     logo_url: Optional[str] = None,
-                    issuer_name: Optional[str] = None,
+                    hero_image_url: Optional[str] = None,
                     header_text: Optional[str] = None,
                     card_title: Optional[str] = None,
-                    class_json: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                    event_name: Optional[str] = None,
+                    venue_name: Optional[str] = None,
+                    venue_address: Optional[str] = None,
+                    event_start: Optional[str] = None,
+                    program_name: Optional[str] = None,
+                    transit_type: Optional[str] = None,
+                    transit_operator_name: Optional[str] = None,
+                    class_json: Optional[Dict[str, Any]] = None,
+                    **extra) -> Dict[str, Any]:
         """Update an existing class"""
         data = {}
-        if class_type is not None:
-            data["class_type"] = class_type
-        if base_color is not None:
-            data["base_color"] = base_color
-        if logo_url is not None:
-            data["logo_url"] = logo_url
-        if issuer_name is not None:
-            data["issuer_name"] = issuer_name
-        if header_text is not None:
-            data["header_text"] = header_text
-        if card_title is not None:
-            data["card_title"] = card_title
-        if class_json is not None:
-            data["class_json"] = class_json
+        for field_name, field_val in [
+            ("class_type", class_type), ("issuer_name", issuer_name),
+            ("base_color", base_color), ("logo_url", logo_url),
+            ("hero_image_url", hero_image_url), ("header_text", header_text),
+            ("card_title", card_title), ("event_name", event_name),
+            ("venue_name", venue_name), ("venue_address", venue_address),
+            ("event_start", event_start), ("program_name", program_name),
+            ("transit_type", transit_type), ("transit_operator_name", transit_operator_name),
+            ("class_json", class_json)
+        ]:
+            if field_val is not None:
+                data[field_name] = field_val
         
         try:
             response = requests.put(f"{self.base_url}/classes/{class_id}", json=data)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            try:
+                error_detail = response.json()
+            except:
+                error_detail = response.text
+            raise Exception(f"HTTP Error updating class. Detail: {error_detail}. Status: {response.status_code}. Data: {data}")
         except Exception as e:
             raise Exception(f"Error updating class: {e}")
 
@@ -172,7 +208,8 @@ class APIClient:
                     holder_name: Optional[str] = None,
                     holder_email: Optional[str] = None,
                     status: Optional[str] = None,
-                    pass_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                    pass_data: Optional[Dict[str, Any]] = None,
+                    sync_to_google: bool = True) -> Dict[str, Any]:
         """Update an existing pass"""
         data = {}
         if holder_name is not None:
@@ -184,8 +221,9 @@ class APIClient:
         if pass_data is not None:
             data["pass_data"] = pass_data
         
+        url = f"{self.base_url}/passes/{object_id}?sync_to_google={'true' if sync_to_google else 'false'}"
         try:
-            response = requests.put(f"{self.base_url}/passes/{object_id}", json=data)
+            response = requests.put(url, json=data)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as e:
@@ -193,6 +231,18 @@ class APIClient:
             raise Exception(f"Error updating pass: {error_detail}")
         except Exception as e:
             raise Exception(f"Error updating pass: {e}")
+
+    def push_pass_to_google(self, object_id: str) -> Dict[str, Any]:
+        """Push a pass to Google Wallet using the local database state"""
+        try:
+            response = requests.post(f"{self.base_url}/passes/{object_id}/push")
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise Exception(f"Error pushing pass to Google: {error_detail}")
+        except Exception as e:
+            raise Exception(f"Error pushing pass to Google: {e}")
 
     def sync_classes(self) -> Dict[str, Any]:
         """Trigger sync of all classes from Google Wallet to local database"""

@@ -59,8 +59,19 @@ API_PID=$!
 echo "   API PID: $API_PID"
 echo "   API logs: /tmp/api.log"
 
-# Wait a moment for API to start
-sleep 3
+# Wait for API to be ready (up to 30 seconds)
+echo "⏳ Waiting for FastAPI server to be ready..."
+for i in $(seq 1 30); do
+    if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+        echo "✅ FastAPI server is ready!"
+        break
+    fi
+    if [ "$i" -eq 30 ]; then
+        echo "⚠️  FastAPI server did not start within 30 seconds. Check /tmp/api.log"
+        echo "   Continuing anyway..."
+    fi
+    sleep 1
+done
 
 # Start the Flet GUI application
 echo ""

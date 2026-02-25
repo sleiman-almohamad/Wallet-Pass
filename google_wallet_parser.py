@@ -5,22 +5,30 @@ Extracts field definitions and metadata from Google Wallet class JSON
 
 def parse_google_wallet_class(class_json):
     """
-    Parse Google Wallet class JSON to extract metadata
-    
-    Args:
-        class_json: The class object from Google Wallet API
-        
-    Returns:
-        Dictionary with extracted metadata
+    Parse Google Wallet class JSON to extract metadata for relational storage.
+    Returns fields for both parent (Classes_Table) and child tables.
     """
     metadata = {
+        # Parent table fields
         'class_id': class_json.get('id', ''),
         'class_type': 'Generic',
+        'issuer_name': None,
         'base_color': None,
         'logo_url': None,
-        'issuer_name': None,
+        'hero_image_url': None,
+        # Generic child fields
         'header_text': None,
-        'card_title': None
+        'card_title': None,
+        # EventTicket child fields
+        'event_name': None,
+        'venue_name': None,
+        'venue_address': None,
+        'event_start': None,
+        # Loyalty child fields
+        'program_name': None,
+        # Transit child fields
+        'transit_type': None,
+        'transit_operator_name': None,
     }
     
     # Strip issuer ID prefix if present
@@ -38,32 +46,56 @@ def parse_google_wallet_class(class_json):
     elif 'transitType' in class_json:
         metadata['class_type'] = 'TransitPass'
     
-    # Extract background color
+    # ---- Common (parent) fields ----
     if 'hexBackgroundColor' in class_json:
         metadata['base_color'] = class_json['hexBackgroundColor']
     
-    # Extract logo URL
-    if 'logo' in class_json:
-        logo = class_json['logo']
-        if 'sourceUri' in logo and 'uri' in logo['sourceUri']:
-            metadata['logo_url'] = logo['sourceUri']['uri']
-            
-    # Extract Issuer Name
+    # Logo URL (different JSON path per type)
+    if 'programLogo' in class_json:
+        metadata['logo_url'] = class_json['programLogo'].get('sourceUri', {}).get('uri')
+    elif 'logo' in class_json:
+        metadata['logo_url'] = class_json['logo'].get('sourceUri', {}).get('uri')
+    
+    # Hero image URL
+    if 'heroImage' in class_json:
+        metadata['hero_image_url'] = class_json['heroImage'].get('sourceUri', {}).get('uri')
+    
+    # Issuer name
     if 'localizedIssuerName' in class_json:
         metadata['issuer_name'] = class_json['localizedIssuerName'].get('defaultValue', {}).get('value')
     elif 'issuerName' in class_json:
         metadata['issuer_name'] = class_json['issuerName']
-        
-    # Extract Header Text and Card Title based on headers
-    if 'localizedProgramName' in class_json: # Loyalty
-        metadata['card_title'] = class_json['localizedProgramName'].get('defaultValue', {}).get('value')
-    elif 'eventName' in class_json: # Event
-        metadata['card_title'] = class_json['eventName'].get('defaultValue', {}).get('value')
-    elif 'cardTitle' in class_json: # Generic
-        metadata['card_title'] = class_json['cardTitle'].get('defaultValue', {}).get('value')
-        
-    if 'header' in class_json: # Generic header
+    
+    # ---- Type-specific fields ----
+    # Generic
+    if 'header' in class_json:
         metadata['header_text'] = class_json['header'].get('defaultValue', {}).get('value')
+    if 'cardTitle' in class_json:
+        metadata['card_title'] = class_json['cardTitle'].get('defaultValue', {}).get('value')
+    
+    # EventTicket
+    if 'eventName' in class_json:
+        metadata['event_name'] = class_json['eventName'].get('defaultValue', {}).get('value')
+    if 'venue' in class_json:
+        venue = class_json['venue']
+        if isinstance(venue, dict):
+            metadata['venue_name'] = venue.get('name', {}).get('defaultValue', {}).get('value')
+            metadata['venue_address'] = venue.get('address', {}).get('defaultValue', {}).get('value')
+    if 'dateTime' in class_json:
+        metadata['event_start'] = class_json['dateTime'].get('start')
+    
+    # Loyalty
+    if 'localizedProgramName' in class_json:
+        metadata['program_name'] = class_json['localizedProgramName'].get('defaultValue', {}).get('value')
+    elif 'programName' in class_json:
+        metadata['program_name'] = class_json['programName'].get('defaultValue', {}).get('value') if isinstance(class_json['programName'], dict) else class_json['programName']
+    
+    # Transit
+    if 'transitType' in class_json:
+        metadata['transit_type'] = class_json['transitType']
+    if 'transitOperatorName' in class_json:
+        tn = class_json['transitOperatorName']
+        metadata['transit_operator_name'] = tn.get('defaultValue', {}).get('value') if isinstance(tn, dict) else tn
         
     return metadata
 

@@ -201,7 +201,7 @@ async def get_class(class_id: str):
 
 
 @app.put("/classes/{class_id}", response_model=MessageResponse, tags=["Classes"])
-async def update_class(class_id: str, class_data: ClassUpdate):
+async def update_class(class_id: str, class_data: ClassUpdate, sync_to_google: bool = True):
     """Update a pass class and propagate changes to all associated passes"""
     try:
         # Check if class exists
@@ -249,10 +249,17 @@ async def update_class(class_id: str, class_data: ClassUpdate):
         # Step 1: Update local database
         success = db.update_class(class_id, **update_data)
         
-        # Step 2: Get the updated class data for Google Wallet sync
+        # Step 2: If sync_to_google is False, just return local success
+        if not sync_to_google:
+            return MessageResponse(
+                message=f"✅ Template '{class_id}' saved to local database.",
+                success=True
+            )
+        
+        # Step 3: Get the updated class data for Google Wallet sync
         updated_class = db.get_class(class_id)
         
-        # Step 3: Sync to Google Wallet and propagate to passes
+        # Step 4: Sync to Google Wallet and propagate to passes
         if wallet_client and updated_class.get('class_json'):
             try:
                 # 3a: Upsert the class in Google Wallet (Creates if missing, Updates if exists)

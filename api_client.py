@@ -97,6 +97,7 @@ class APIClient:
                     transit_type: Optional[str] = None,
                     transit_operator_name: Optional[str] = None,
                     class_json: Optional[Dict[str, Any]] = None,
+                    sync_to_google: bool = True,
                     **extra) -> Dict[str, Any]:
         """Update an existing class"""
         data = {}
@@ -114,7 +115,11 @@ class APIClient:
                 data[field_name] = field_val
         
         try:
-            response = requests.put(f"{self.base_url}/classes/{class_id}", json=data)
+            response = requests.put(
+                f"{self.base_url}/classes/{class_id}",
+                json=data,
+                params={"sync_to_google": sync_to_google}
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as e:

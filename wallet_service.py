@@ -514,6 +514,82 @@ class WalletClient:
             error_details = e.content.decode('utf-8') if hasattr(e, 'content') else str(e)
             raise Exception(f"Error updating pass class '{class_id}': {error_details}")
     
+    def _build_notification_message(self, header="Pass Updated", body="Your pass has been updated."):
+        """Build a unique notification message that triggers a push notification.
+        
+        Google Wallet only triggers push notifications for messages with:
+        - A unique `id` (not a duplicate of a previous message)
+        - `messageType: TEXT_AND_NOTIFY`
+        - A `displayInterval` with start/end timestamps
+        """
+        import time as _time
+        from datetime import datetime, timedelta
+        
+        now = datetime.utcnow()
+        return {
+            "id": f"update_notif_{int(_time.time())}",
+            "header": header,
+            "body": body,
+            "kind": "walletobjects#walletObjectMessage",
+            "messageType": "TEXT_AND_NOTIFY",
+            "displayInterval": {
+                "start": {"date": (now - timedelta(minutes=1)).isoformat() + "Z"},
+                "end": {"date": (now + timedelta(hours=1)).isoformat() + "Z"}
+            }
+        }
+    
+    def send_push_notification(self, full_object_id, resource, message_header="📱 Pass Updated", message_body="Your pass information has been updated."):
+        """
+        Trigger a push notification using the EXACT same approach as debug_notification.py.
+        
+        This is the proven pattern:
+        1. Fetch current pass data FROM Google (to get existing messages)
+        2. APPEND a new unique message to the existing messages list
+        3. Change groupingId to force Android to re-evaluate
+        4. Send ONE minimal patch
+        """
+        import time as _time
+        import uuid
+        from datetime import datetime, timedelta
+        
+        try:
+            # 1. Get current state from Google
+            current_data = resource.get(resourceId=full_object_id).execute()
+            
+            # 2. Build unique notification message
+            now = datetime.utcnow()
+            message_id = f"update_notif_{int(_time.time())}"
+            new_message = {
+                "header": message_header,
+                "body": message_body,
+                "kind": "walletobjects#walletObjectMessage",
+                "id": message_id,
+                "messageType": "TEXT_AND_NOTIFY",
+                "displayInterval": {
+                    "start": {"date": (now - timedelta(minutes=1)).isoformat() + "Z"},
+                    "end": {"date": (now + timedelta(hours=1)).isoformat() + "Z"}
+                }
+            }
+            
+            # 3. APPEND to existing messages (key difference from our old approach!)
+            existing_messages = current_data.get("messages", [])
+            existing_messages.append(new_message)
+            
+            # 4. Build minimal patch body (exactly like debug_notification.py)
+            patch_body = {
+                "state": "ACTIVE",
+                "groupingId": f"group_{int(_time.time())}",
+                "messages": existing_messages
+            }
+            
+            # 5. Send single minimal patch
+            resource.patch(resourceId=full_object_id, body=patch_body).execute()
+            print(f"NOTIFICATION: Push notification sent for {full_object_id}")
+            
+        except Exception as e:
+            print(f"NOTIFICATION WARNING: Failed to send push notification for {full_object_id}: {e}")
+            # Don't raise - notification failure shouldn't block the data update
+    
     def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket", status=None):
         """
         Update an individual pass object in Google Wallet
@@ -588,11 +664,15 @@ class WalletClient:
                 )
                 resource = self.service.genericobject()
 
-            # Use patch to update the object (more forgiving than full update)
+            # Patch the pass data (remove static builder messages to avoid conflicts)
+            object_data.pop("messages", None)
             result = resource.patch(
                 resourceId=full_object_id,
                 body=object_data
             ).execute()
+            
+            # Trigger push notification using the proven approach
+            self.send_push_notification(full_object_id, resource)
 
             # region agent log
             try:

@@ -590,7 +590,71 @@ class WalletClient:
             print(f"NOTIFICATION WARNING: Failed to send push notification for {full_object_id}: {e}")
             # Don't raise - notification failure shouldn't block the data update
     
-    def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket", status=None):
+    def send_notification_only(self, object_id, class_type, message_header, message_body):
+        """
+        Send a push notification to a pass holder with ONLY a message append.
+        
+        Unlike send_push_notification, this does NOT change groupingId or state,
+        which avoids triggering duplicate "data changed" notifications from Google.
+        It only appends a TEXT_AND_NOTIFY message to the existing messages list.
+        
+        Args:
+            object_id: Pass object ID (with or without issuer prefix)
+            class_type: Type of pass (EventTicket, LoyaltyCard, Generic, etc.)
+            message_header: Notification header text
+            message_body: Notification body text
+        """
+        import time as _time
+        from datetime import datetime, timedelta
+        
+        full_object_id = self._prepare_ids_to_try(object_id)[0]
+        
+        # Resolve the correct Google Wallet resource
+        if class_type == "EventTicket":
+            resource = self.service.eventticketobject()
+        elif class_type == "LoyaltyCard":
+            resource = self.service.loyaltyobject()
+        elif class_type == "GiftCard":
+            resource = self.service.giftcardobject()
+        elif class_type == "TransitPass":
+            resource = self.service.transitobject()
+        else:
+            resource = self.service.genericobject()
+        
+        try:
+            # 1. Fetch current pass to get existing messages
+            current_data = resource.get(resourceId=full_object_id).execute()
+            
+            # 2. Build the notification message
+            now = datetime.utcnow()
+            new_message = {
+                "header": message_header,
+                "body": message_body,
+                "kind": "walletobjects#walletObjectMessage",
+                "id": f"notif_{int(_time.time())}",
+                "messageType": "TEXT_AND_NOTIFY",
+                "displayInterval": {
+                    "start": {"date": (now - timedelta(minutes=1)).isoformat() + "Z"},
+                    "end": {"date": (now + timedelta(hours=24)).isoformat() + "Z"}
+                }
+            }
+            
+            # 3. Append to existing messages
+            existing_messages = current_data.get("messages", [])
+            existing_messages.append(new_message)
+            
+            # 4. Minimal patch — ONLY update messages, nothing else
+            patch_body = {
+                "messages": existing_messages
+            }
+            
+            resource.patch(resourceId=full_object_id, body=patch_body).execute()
+            print(f"NOTIFICATION: Custom notification sent for {full_object_id}")
+            
+        except Exception as e:
+            print(f"NOTIFICATION WARNING: Failed to send notification for {full_object_id}: {e}")
+    
+    def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket", status=None, notification_message=None):
         """
         Update an individual pass object in Google Wallet
         
@@ -604,6 +668,8 @@ class WalletClient:
             holder_email: Email of the pass holder
             pass_data: Dictionary with pass-specific data (custom fields)
             class_type: Type of pass (EventTicket, LoyaltyCard, Generic)
+            status: Optional pass status
+            notification_message: Optional custom notification body message
             
         Returns:
             Updated object from Google Wallet API
@@ -672,7 +738,14 @@ class WalletClient:
             ).execute()
             
             # Trigger push notification using the proven approach
-            self.send_push_notification(full_object_id, resource)
+            if notification_message:
+                self.send_push_notification(
+                    full_object_id, resource,
+                    message_header="Mertesacker Home Office",
+                    message_body=notification_message
+                )
+            else:
+                self.send_push_notification(full_object_id, resource)
 
             # region agent log
             try:

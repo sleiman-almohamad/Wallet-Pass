@@ -98,6 +98,7 @@ class APIClient:
                     transit_operator_name: Optional[str] = None,
                     class_json: Optional[Dict[str, Any]] = None,
                     sync_to_google: bool = True,
+                    notification_message: Optional[str] = None,
                     **extra) -> Dict[str, Any]:
         """Update an existing class"""
         data = {}
@@ -115,10 +116,14 @@ class APIClient:
                 data[field_name] = field_val
         
         try:
+            params = {"sync_to_google": sync_to_google}
+            if notification_message:
+                params["notification_message"] = notification_message
+            
             response = requests.put(
                 f"{self.base_url}/classes/{class_id}",
                 json=data,
-                params={"sync_to_google": sync_to_google}
+                params=params
             )
             response.raise_for_status()
             return response.json()

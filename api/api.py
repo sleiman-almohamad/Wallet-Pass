@@ -201,7 +201,7 @@ async def get_class(class_id: str):
 
 
 @app.put("/classes/{class_id}", response_model=MessageResponse, tags=["Classes"])
-async def update_class(class_id: str, class_data: ClassUpdate, sync_to_google: bool = True):
+async def update_class(class_id: str, class_data: ClassUpdate, sync_to_google: bool = True, notification_message: Optional[str] = None):
     """Update a pass class and propagate changes to all associated passes"""
     try:
         # Check if class exists
@@ -262,13 +262,15 @@ async def update_class(class_id: str, class_data: ClassUpdate, sync_to_google: b
         # Step 4: Sync to Google Wallet and propagate to passes
         if wallet_client and updated_class.get('class_json'):
             try:
-                # 3a: Upsert the class in Google Wallet (Creates if missing, Updates if exists)
-                # This ensures we don't fail if the class was only local before
-                logger.info(f"Syncing class '{class_id}' to Google Wallet")
-                wallet_client.create_pass_class(
-                    class_data=updated_class['class_json'],
-                    class_type=updated_class.get('class_type', 'Generic')
-                )
+                # Only sync the class to Google Wallet when there's no custom notification message.
+                # Patching the class triggers an automatic Google notification to all pass holders,
+                # which would cause a duplicate if we also send an explicit message notification.
+                if not notification_message:
+                    logger.info(f"Syncing class '{class_id}' to Google Wallet")
+                    wallet_client.create_pass_class(
+                        class_data=updated_class['class_json'],
+                        class_type=updated_class.get('class_type', 'Generic')
+                    )
 
                 # region agent log
                 try:
@@ -294,7 +296,8 @@ async def update_class(class_id: str, class_data: ClassUpdate, sync_to_google: b
                     class_id=class_id,
                     updated_class=updated_class,
                     db_manager=db,
-                    wallet_client=wallet_client
+                    wallet_client=wallet_client,
+                    notification_message=notification_message
                 )
 
                 # region agent log

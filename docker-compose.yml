@@ -4,7 +4,7 @@ services:
   mariadb:
     image: mariadb:latest
     container_name: wallet_passes_mariadb
-    restart: always
+    restart: "no"
     environment:
       MYSQL_ROOT_PASSWORD: 123456789
       MYSQL_DATABASE: wallet_passes
@@ -26,7 +26,7 @@ services:
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: wallet_passes_phpmyadmin
-    restart: always
+    restart: "no"
     environment:
       PMA_HOST: mariadb
       PMA_PORT: 3306

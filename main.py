@@ -326,6 +326,16 @@ def main(page: ft.Page):
         scroll="auto"
     )
     
+    # Notification message field for Google Wallet sync
+    notification_message_field = ft.TextField(
+        label="Notification Message (optional)",
+        hint_text="Enter message to send to pass holders...",
+        width=350,
+        multiline=True,
+        min_lines=2,
+        max_lines=4,
+    )
+    
     # (Old build_preview and update_preview functions removed - using build_manage_preview instead)
     
     def load_template_classes():
@@ -546,16 +556,23 @@ def main(page: ft.Page):
             # Get current JSON from dynamic form
             updated_json = manage_dynamic_form.get_json_data()
             
+            # Get optional notification message
+            notification_body = notification_message_field.value.strip() if notification_message_field.value else None
+            
             # Sync to Google Wallet API (updates DB + syncs + sends notifications)
             response = api_client.update_class(
                 class_id=class_id_suffix,
                 class_type=class_type,
                 class_json=updated_json,
-                sync_to_google=True
+                sync_to_google=True,
+                notification_message=notification_body
             )
             
             manage_status.value = response.get("message", "✅ Template synced to Google Wallet!")
             manage_status.color = "green"
+            
+            # Clear the notification message field after successful sync
+            notification_message_field.value = ""
             
         except Exception as ex:
             import traceback
@@ -1159,6 +1176,11 @@ def main(page: ft.Page):
                     ),
                     
                     ft.Container(height=10),
+                    
+                    ft.Text("Push Notification", size=14, weight=ft.FontWeight.W_500, color="grey700"),
+                    notification_message_field,
+                    
+                    ft.Container(height=5),
                     
                     ft.ElevatedButton(
                         "Insert to Google Wallet",

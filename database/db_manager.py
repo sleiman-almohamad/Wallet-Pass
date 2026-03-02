@@ -1,112 +1,112 @@
 """
-Database Manager for Wallet Passes
-Provides CRUD operations for Classes_Table and Passes_Table
+Database Manager for Wallet Passes — SQLAlchemy ORM edition
+Provides CRUD operations for Classes_Table, Passes_Table, and Notifications_Table
 """
 
-import mysql.connector
-from mysql.connector import Error
 import json
 from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
-import configs
+
+from sqlalchemy.orm import Session
+
+from database.models import (
+    SessionLocal,
+    ClassesTable, GenericClassFields, EventTicketClassFields,
+    LoyaltyClassFields, TransitClassFields,
+    PassesTable, EventTicketFields, GenericFields,
+    PassTextModules, PassMessages,
+    NotificationsTable,
+)
 
 
 class DatabaseManager:
-    """Manages database connections and operations for wallet passes"""
-    
+    """Manages database operations for wallet passes using SQLAlchemy ORM"""
+
     def __init__(self):
-        """Initialize database manager with configuration from configs.py"""
-        self.config = {
-            'host': configs.DB_HOST,
-            'port': configs.DB_PORT,
-            'user': configs.DB_USER,
-            'password': configs.DB_PASSWORD,
-            'database': configs.DB_NAME
-        }
-    
+        """Initialize database manager (engine/session come from models.py)"""
+        pass
+
     @contextmanager
-    def get_connection(self):
-        """Context manager for database connections"""
-        conn = None
+    def get_session(self):
+        """Context manager for SQLAlchemy sessions"""
+        session: Session = SessionLocal()
         try:
-            conn = mysql.connector.connect(**self.config)
-            yield conn
-            conn.commit()
-        except Error as e:
-            if conn:
-                conn.rollback()
+            yield session
+            session.commit()
+        except Exception as e:
+            session.rollback()
             raise Exception(f"Database error: {e}")
         finally:
-            if conn:
-                conn.close()
-    
+            session.close()
+
+    # Keep legacy alias so any callers using get_connection still work
+    get_connection = get_session
+
     # ========================================================================
     # Classes_Table Operations (Parent + Child Tables)
     # ========================================================================
-    
-    def create_class(self, class_id: str, class_type: str, 
-                    issuer_name: Optional[str] = None,
-                    base_color: Optional[str] = None, 
-                    logo_url: Optional[str] = None,
-                    hero_image_url: Optional[str] = None,
-                    # Generic-specific
-                    header_text: Optional[str] = None,
-                    card_title: Optional[str] = None,
-                    # EventTicket-specific
-                    event_name: Optional[str] = None,
-                    venue_name: Optional[str] = None,
-                    venue_address: Optional[str] = None,
-                    event_start: Optional[str] = None,
-                    # Loyalty-specific
-                    program_name: Optional[str] = None,
-                    # Transit-specific
-                    transit_type: Optional[str] = None,
-                    transit_operator_name: Optional[str] = None,
-                    # Legacy compat (ignored for storage)
-                    class_json: Optional[Dict[str, Any]] = None,
-                    **extra) -> bool:
+
+    def create_class(self, class_id: str, class_type: str,
+                     issuer_name: Optional[str] = None,
+                     base_color: Optional[str] = None,
+                     logo_url: Optional[str] = None,
+                     hero_image_url: Optional[str] = None,
+                     # Generic-specific
+                     header_text: Optional[str] = None,
+                     card_title: Optional[str] = None,
+                     # EventTicket-specific
+                     event_name: Optional[str] = None,
+                     venue_name: Optional[str] = None,
+                     venue_address: Optional[str] = None,
+                     event_start: Optional[str] = None,
+                     # Loyalty-specific
+                     program_name: Optional[str] = None,
+                     # Transit-specific
+                     transit_type: Optional[str] = None,
+                     transit_operator_name: Optional[str] = None,
+                     # Legacy compat (ignored for storage)
+                     class_json: Optional[Dict[str, Any]] = None,
+                     **extra) -> bool:
         """Create a new pass class in parent + child tables."""
-        with self.get_connection() as conn:
-            cursor = conn.cursor(buffered=True)
+        with self.get_session() as session:
             # 1. Insert parent row
-            cursor.execute(
-                """INSERT INTO Classes_Table 
-                   (class_id, class_type, issuer_name, base_color, logo_url, hero_image_url) 
-                   VALUES (%s, %s, %s, %s, %s, %s)""",
-                (class_id, class_type, issuer_name, base_color, logo_url, hero_image_url)
+            parent = ClassesTable(
+                class_id=class_id, class_type=class_type,
+                issuer_name=issuer_name, base_color=base_color,
+                logo_url=logo_url, hero_image_url=hero_image_url,
             )
+            session.add(parent)
+            session.flush()
+
             # 2. Insert child row based on type
             if class_type == 'Generic':
-                cursor.execute(
-                    "INSERT INTO GenericClass_Fields (class_id, header, card_title) VALUES (%s, %s, %s)",
-                    (class_id, header_text, card_title)
-                )
+                session.add(GenericClassFields(
+                    class_id=class_id, header=header_text, card_title=card_title,
+                ))
             elif class_type == 'EventTicket':
-                cursor.execute(
-                    """INSERT INTO EventTicketClass_Fields 
-                       (class_id, event_name, venue_name, venue_address, event_start) 
-                       VALUES (%s, %s, %s, %s, %s)""",
-                    (class_id, event_name, venue_name, venue_address, event_start)
-                )
+                session.add(EventTicketClassFields(
+                    class_id=class_id, event_name=event_name,
+                    venue_name=venue_name, venue_address=venue_address,
+                    event_start=event_start,
+                ))
             elif class_type == 'LoyaltyCard':
-                cursor.execute(
-                    "INSERT INTO LoyaltyClass_Fields (class_id, program_name) VALUES (%s, %s)",
-                    (class_id, program_name)
-                )
+                session.add(LoyaltyClassFields(
+                    class_id=class_id, program_name=program_name,
+                ))
             elif class_type == 'TransitPass':
-                cursor.execute(
-                    "INSERT INTO TransitClass_Fields (class_id, transit_type, transit_operator_name) VALUES (%s, %s, %s)",
-                    (class_id, transit_type, transit_operator_name)
-                )
+                session.add(TransitClassFields(
+                    class_id=class_id, transit_type=transit_type,
+                    transit_operator_name=transit_operator_name,
+                ))
             # GiftCard has no child table
-            return cursor.rowcount > 0
-    
+            return True
+
     def _build_class_json(self, result: dict) -> dict:
         """Helper: synthesize class_json from relational columns using json_templates."""
         from json_templates import get_template
         class_type = result.get("class_type", "Generic")
         class_id = result.get("class_id", "")
-        
+
         args = {
             "background_color": result.get("base_color"),
             "logo_url": result.get("logo_url"),
@@ -114,7 +114,7 @@ class DatabaseManager:
             "hero_image_url": result.get("hero_image_url"),
             "issuer_name": result.get("issuer_name"),
         }
-        
+
         # Add type-specific args
         if class_type == "Generic":
             args["header_text"] = result.get("header")
@@ -128,415 +128,437 @@ class DatabaseManager:
             args["program_name"] = result.get("program_name")
         elif class_type == "TransitPass":
             args["transit_type"] = result.get("transit_type")
-        
+
         args_clean = {k: v for k, v in args.items() if v is not None}
         return get_template(class_type, class_id, **args_clean)
-    
+
+    def _class_row_to_dict(self, cls: ClassesTable) -> dict:
+        """Convert a ClassesTable ORM instance (with eager children) to a flat dict."""
+        d: Dict[str, Any] = {
+            "class_id": cls.class_id,
+            "class_type": cls.class_type,
+            "issuer_name": cls.issuer_name,
+            "base_color": cls.base_color,
+            "logo_url": cls.logo_url,
+            "hero_image_url": cls.hero_image_url,
+            "created_at": cls.created_at,
+            "updated_at": cls.updated_at,
+        }
+        # Flatten child fields
+        if cls.generic_fields:
+            d["header"] = cls.generic_fields.header
+            d["card_title"] = cls.generic_fields.card_title
+        else:
+            d["header"] = None
+            d["card_title"] = None
+
+        if cls.event_ticket_fields:
+            d["event_name"] = cls.event_ticket_fields.event_name
+            d["venue_name"] = cls.event_ticket_fields.venue_name
+            d["venue_address"] = cls.event_ticket_fields.venue_address
+            d["event_start"] = cls.event_ticket_fields.event_start
+        else:
+            d["event_name"] = None
+            d["venue_name"] = None
+            d["venue_address"] = None
+            d["event_start"] = None
+
+        if cls.loyalty_fields:
+            d["program_name"] = cls.loyalty_fields.program_name
+        else:
+            d["program_name"] = None
+
+        if cls.transit_fields:
+            d["transit_type"] = cls.transit_fields.transit_type
+            d["transit_operator_name"] = cls.transit_fields.transit_operator_name
+        else:
+            d["transit_type"] = None
+            d["transit_operator_name"] = None
+
+        d["class_json"] = self._build_class_json(d)
+        return d
+
     def get_class(self, class_id: str) -> Optional[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor(dictionary=True, buffered=True)
-            cursor.execute(
-                """SELECT c.*,
-                          g.header, g.card_title,
-                          e.event_name, e.venue_name, e.venue_address, e.event_start,
-                          l.program_name,
-                          t.transit_type, t.transit_operator_name
-                   FROM Classes_Table c
-                   LEFT JOIN GenericClass_Fields g ON c.class_id = g.class_id
-                   LEFT JOIN EventTicketClass_Fields e ON c.class_id = e.class_id
-                   LEFT JOIN LoyaltyClass_Fields l ON c.class_id = l.class_id
-                   LEFT JOIN TransitClass_Fields t ON c.class_id = t.class_id
-                   WHERE c.class_id = %s""",
-                (class_id,)
-            )
-            result = cursor.fetchone()
-            if result:
-                result['class_json'] = self._build_class_json(result)
-            return result
-    
+        with self.get_session() as session:
+            cls = session.get(ClassesTable, class_id)
+            if not cls:
+                return None
+            return self._class_row_to_dict(cls)
+
     def get_all_classes(self) -> List[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor(dictionary=True, buffered=True)
-            cursor.execute(
-                """SELECT c.*,
-                          g.header, g.card_title,
-                          e.event_name, e.venue_name, e.venue_address, e.event_start,
-                          l.program_name,
-                          t.transit_type, t.transit_operator_name
-                   FROM Classes_Table c
-                   LEFT JOIN GenericClass_Fields g ON c.class_id = g.class_id
-                   LEFT JOIN EventTicketClass_Fields e ON c.class_id = e.class_id
-                   LEFT JOIN LoyaltyClass_Fields l ON c.class_id = l.class_id
-                   LEFT JOIN TransitClass_Fields t ON c.class_id = t.class_id
-                   ORDER BY c.created_at DESC"""
+        with self.get_session() as session:
+            rows = (
+                session.query(ClassesTable)
+                .order_by(ClassesTable.created_at.desc())
+                .all()
             )
-            results = cursor.fetchall()
-            for result in results:
-                result['class_json'] = self._build_class_json(result)
-            return results
-    
+            return [self._class_row_to_dict(r) for r in rows]
+
     def update_class(self, class_id: str, **kwargs) -> bool:
         """Update class across parent + child tables."""
-        with self.get_connection() as conn:
-            cursor = conn.cursor(buffered=True)
-            
+        with self.get_session() as session:
+            cls = session.get(ClassesTable, class_id)
+            if not cls:
+                return False
+
             # 1. Update parent table fields
-            parent_fields = ['class_type', 'issuer_name', 'base_color', 'logo_url', 'hero_image_url']
-            parent_updates = {k: v for k, v in kwargs.items() if k in parent_fields}
-            
-            if parent_updates:
-                set_clause = ", ".join([f"{k} = %s" for k in parent_updates.keys()])
-                values = list(parent_updates.values()) + [class_id]
-                cursor.execute(f"UPDATE Classes_Table SET {set_clause} WHERE class_id = %s", values)
-            
+            for k in ['class_type', 'issuer_name', 'base_color', 'logo_url', 'hero_image_url']:
+                if k in kwargs:
+                    setattr(cls, k, kwargs[k])
+
             # 2. Determine class_type for child table routing
-            class_type = kwargs.get('class_type')
-            if not class_type:
-                cursor.execute("SELECT class_type FROM Classes_Table WHERE class_id = %s", (class_id,))
-                row = cursor.fetchone()
-                class_type = row[0] if row else 'Generic'
-            
-            # 3. Update child table
+            class_type = kwargs.get('class_type') or cls.class_type
+
+            # 3. Update / upsert child table
             if class_type == 'Generic':
-                child_fields = {'header': kwargs.get('header_text'), 'card_title': kwargs.get('card_title')}
-                child_fields = {k: v for k, v in child_fields.items() if v is not None}
-                if child_fields:
-                    cursor.execute("SELECT class_id FROM GenericClass_Fields WHERE class_id = %s", (class_id,))
-                    if cursor.fetchone():
-                        s = ", ".join([f"{k} = %s" for k in child_fields])
-                        cursor.execute(f"UPDATE GenericClass_Fields SET {s} WHERE class_id = %s", list(child_fields.values()) + [class_id])
-                    else:
-                        cursor.execute("INSERT INTO GenericClass_Fields (class_id, header, card_title) VALUES (%s, %s, %s)",
-                                       (class_id, child_fields.get('header'), child_fields.get('card_title')))
-                        
-            elif class_type == 'EventTicket':
-                child_fields = {
-                    'event_name': kwargs.get('event_name'), 'venue_name': kwargs.get('venue_name'),
-                    'venue_address': kwargs.get('venue_address'), 'event_start': kwargs.get('event_start')
+                child_vals = {
+                    'header': kwargs.get('header_text'),
+                    'card_title': kwargs.get('card_title'),
                 }
-                child_fields = {k: v for k, v in child_fields.items() if v is not None}
-                if child_fields:
-                    cursor.execute("SELECT class_id FROM EventTicketClass_Fields WHERE class_id = %s", (class_id,))
-                    if cursor.fetchone():
-                        s = ", ".join([f"{k} = %s" for k in child_fields])
-                        cursor.execute(f"UPDATE EventTicketClass_Fields SET {s} WHERE class_id = %s", list(child_fields.values()) + [class_id])
+                child_vals = {k: v for k, v in child_vals.items() if v is not None}
+                if child_vals:
+                    if cls.generic_fields:
+                        for k, v in child_vals.items():
+                            setattr(cls.generic_fields, k, v)
                     else:
-                        cursor.execute("INSERT INTO EventTicketClass_Fields (class_id, event_name, venue_name, venue_address, event_start) VALUES (%s, %s, %s, %s, %s)",
-                                       (class_id, child_fields.get('event_name'), child_fields.get('venue_name'), child_fields.get('venue_address'), child_fields.get('event_start')))
-                        
+                        cls.generic_fields = GenericClassFields(
+                            class_id=class_id, **child_vals,
+                        )
+
+            elif class_type == 'EventTicket':
+                child_vals = {
+                    'event_name': kwargs.get('event_name'),
+                    'venue_name': kwargs.get('venue_name'),
+                    'venue_address': kwargs.get('venue_address'),
+                    'event_start': kwargs.get('event_start'),
+                }
+                child_vals = {k: v for k, v in child_vals.items() if v is not None}
+                if child_vals:
+                    if cls.event_ticket_fields:
+                        for k, v in child_vals.items():
+                            setattr(cls.event_ticket_fields, k, v)
+                    else:
+                        cls.event_ticket_fields = EventTicketClassFields(
+                            class_id=class_id, **child_vals,
+                        )
+
             elif class_type == 'LoyaltyCard':
                 pn = kwargs.get('program_name')
                 if pn is not None:
-                    cursor.execute("SELECT class_id FROM LoyaltyClass_Fields WHERE class_id = %s", (class_id,))
-                    if cursor.fetchone():
-                        cursor.execute("UPDATE LoyaltyClass_Fields SET program_name = %s WHERE class_id = %s", (pn, class_id))
+                    if cls.loyalty_fields:
+                        cls.loyalty_fields.program_name = pn
                     else:
-                        cursor.execute("INSERT INTO LoyaltyClass_Fields (class_id, program_name) VALUES (%s, %s)", (class_id, pn))
-                        
+                        cls.loyalty_fields = LoyaltyClassFields(
+                            class_id=class_id, program_name=pn,
+                        )
+
             elif class_type == 'TransitPass':
-                child_fields = {'transit_type': kwargs.get('transit_type'), 'transit_operator_name': kwargs.get('transit_operator_name')}
-                child_fields = {k: v for k, v in child_fields.items() if v is not None}
-                if child_fields:
-                    cursor.execute("SELECT class_id FROM TransitClass_Fields WHERE class_id = %s", (class_id,))
-                    if cursor.fetchone():
-                        s = ", ".join([f"{k} = %s" for k in child_fields])
-                        cursor.execute(f"UPDATE TransitClass_Fields SET {s} WHERE class_id = %s", list(child_fields.values()) + [class_id])
+                child_vals = {
+                    'transit_type': kwargs.get('transit_type'),
+                    'transit_operator_name': kwargs.get('transit_operator_name'),
+                }
+                child_vals = {k: v for k, v in child_vals.items() if v is not None}
+                if child_vals:
+                    if cls.transit_fields:
+                        for k, v in child_vals.items():
+                            setattr(cls.transit_fields, k, v)
                     else:
-                        cursor.execute("INSERT INTO TransitClass_Fields (class_id, transit_type, transit_operator_name) VALUES (%s, %s, %s)",
-                                       (class_id, child_fields.get('transit_type'), child_fields.get('transit_operator_name')))
+                        cls.transit_fields = TransitClassFields(
+                            class_id=class_id, **child_vals,
+                        )
 
             return True
-    
+
     def delete_class(self, class_id: str) -> bool:
         """Delete class — CASCADE handles child tables automatically."""
-        with self.get_connection() as conn:
-            cursor = conn.cursor(buffered=True)
-            cursor.execute("DELETE FROM Classes_Table WHERE class_id = %s", (class_id,))
-            return cursor.rowcount > 0
-    
+        with self.get_session() as session:
+            cls = session.get(ClassesTable, class_id)
+            if not cls:
+                return False
+            session.delete(cls)
+            return True
+
     # ========================================================================
     # Passes_Table Operations (Relational)
     # ========================================================================
-    
-    def create_pass(self, object_id: str, class_id: str, 
-                   holder_name: str, holder_email: str,
-                   pass_data: Optional[Dict[str, Any]] = None,
-                   status: str = 'Active') -> bool:
+
+    def create_pass(self, object_id: str, class_id: str,
+                    holder_name: str, holder_email: str,
+                    pass_data: Optional[Dict[str, Any]] = None,
+                    status: str = 'Active') -> bool:
         """Create a new pass, splitting pass_data JSON into relational tables"""
-        # We need the class_type to insert into correct child tables
         class_info = self.get_class(class_id)
         if not class_info:
             return False
-            
+
         class_type = class_info.get('class_type', 'Generic')
         pd = pass_data or {}
 
-        with self.get_connection() as conn:
-            cursor = conn.cursor(buffered=True)
-            
-            # 1. Insert Core Pass Info
-            cursor.execute(
-                """INSERT INTO Passes_Table 
-                   (object_id, class_id, holder_name, holder_email, status, sync_status) 
-                   VALUES (%s, %s, %s, %s, %s, %s)""",
-                (object_id, class_id, holder_name, holder_email, status, 'pending')
+        with self.get_session() as session:
+            # 1. Core pass
+            pass_obj = PassesTable(
+                object_id=object_id, class_id=class_id,
+                holder_name=holder_name, holder_email=holder_email,
+                status=status, sync_status='pending',
             )
-            
-            # 2. Insert Scalar Type-Specific Info
+            session.add(pass_obj)
+            session.flush()
+
+            # 2. Type-specific fields
             if class_type == "EventTicket":
                 etd = pd.get('event_ticket_data', pd)
-                cursor.execute(
-                    """INSERT INTO EventTicket_Fields 
-                       (object_id, ticket_holder_name, confirmation_code, seat, section, gate) 
-                       VALUES (%s, %s, %s, %s, %s, %s)""",
-                    (object_id, 
-                     etd.get('ticketHolderName', etd.get('ticket_holder_name')),
-                     etd.get('confirmationCode', etd.get('confirmation_code')), 
-                     etd.get('seatNumber', etd.get('seat')), 
-                     etd.get('section'), 
-                     etd.get('gate'))
-                )
+                session.add(EventTicketFields(
+                    object_id=object_id,
+                    ticket_holder_name=etd.get('ticketHolderName', etd.get('ticket_holder_name')),
+                    confirmation_code=etd.get('confirmationCode', etd.get('confirmation_code')),
+                    seat=etd.get('seatNumber', etd.get('seat')),
+                    section=etd.get('section'),
+                    gate=etd.get('gate'),
+                ))
             else:
                 gd = pd.get('generic_data', pd)
-                cursor.execute(
-                    """INSERT INTO Generic_Fields 
-                       (object_id, header_value, subheader_value) 
-                       VALUES (%s, %s, %s)""",
-                    (object_id, gd.get('header_value', gd.get('header')), gd.get('subheader_value'))
-                )
-                
-            # 3. Insert Text Modules Array
+                session.add(GenericFields(
+                    object_id=object_id,
+                    header_value=gd.get('header_value', gd.get('header')),
+                    subheader_value=gd.get('subheader_value'),
+                ))
+
+            # 3. Text modules
             text_modules = pd.get('textModulesData', pd.get('text_modules', []))
             if isinstance(text_modules, list):
                 for idx, mod in enumerate(text_modules):
-                    cursor.execute(
-                        """INSERT INTO Pass_Text_Modules 
-                           (object_id, module_id, header, body, display_order) 
-                           VALUES (%s, %s, %s, %s, %s)""",
-                        (object_id, mod.get('id'), mod.get('header'), mod.get('body'), idx)
-                    )
-                    
-            # 4. Insert Messages Array
+                    session.add(PassTextModules(
+                        object_id=object_id, module_id=mod.get('id'),
+                        header=mod.get('header'), body=mod.get('body'),
+                        display_order=idx,
+                    ))
+
+            # 4. Messages
             messages = pd.get('messages', [])
             if isinstance(messages, list):
                 for msg in messages:
-                    # check dict displayInterval
                     start_val = msg.get('start_date')
                     end_val = msg.get('end_date')
                     interval = msg.get('displayInterval')
                     if isinstance(interval, dict):
                         start_val = interval.get('start', {}).get('date', start_val)
                         end_val = interval.get('end', {}).get('date', end_val)
-                        
-                    cursor.execute(
-                        """INSERT INTO Pass_Messages 
-                           (object_id, message_id, header, body, message_type, start_date, end_date) 
-                           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                        (object_id, msg.get('id'), msg.get('header'), msg.get('body'), msg.get('messageType'), start_val, end_val)
-                    )
-            
-            return True
-            
-    def _construct_pass_dictionary(self, core_result: dict, cursor) -> dict:
-        """Helper to fetch array children and construct the combined pass Pydantic struct"""
-        object_id = core_result['object_id']
-        
-        # Determine class type
-        cursor.execute("SELECT class_type FROM Classes_Table WHERE class_id = %s", (core_result['class_id'],))
-        c_res = cursor.fetchone()
-        class_type = c_res['class_type'] if c_res else 'Generic'
-        
-        # Fetch Type-Specific Fields
-        if class_type == "EventTicket":
-            cursor.execute("SELECT * FROM EventTicket_Fields WHERE object_id = %s", (object_id,))
-            et_fields = cursor.fetchone()
-            if et_fields:
-                core_result['event_ticket_data'] = {
-                    'ticketHolderName': et_fields['ticket_holder_name'],
-                    'confirmationCode': et_fields['confirmation_code'],
-                    'seatNumber': et_fields['seat'],
-                    'section': et_fields['section'],
-                    'gate': et_fields['gate']
-                }
-        else:
-            cursor.execute("SELECT * FROM Generic_Fields WHERE object_id = %s", (object_id,))
-            g_fields = cursor.fetchone()
-            if g_fields:
-                core_result['generic_data'] = {
-                    'header_value': g_fields['header_value'],
-                    'subheader_value': g_fields['subheader_value']
-                }
-                
-        # Fetch Text Modules
-        cursor.execute("SELECT * FROM Pass_Text_Modules WHERE object_id = %s ORDER BY display_order ASC", (object_id,))
-        text_mods = cursor.fetchall()
-        if text_mods:
-            core_result['textModulesData'] = [
-                {'id': m['module_id'], 'header': m['header'], 'body': m['body']} for m in text_mods
-            ]
-            
-        # Fetch Messages
-        cursor.execute("SELECT * FROM Pass_Messages WHERE object_id = %s", (object_id,))
-        msgs = cursor.fetchall()
-        if msgs:
-            core_result['messages'] = [
-                {
-                    'id': m['message_id'], 
-                    'header': m['header'], 
-                    'body': m['body'], 
-                    'messageType': m['message_type'],
-                    'start_date': m['start_date'],
-                    'end_date': m['end_date']
-                } for m in msgs
-            ]
-            
-        # Emulate legacy pass_data dict for backwards compatibility on UI rendering functions
-        core_result['pass_data'] = {}
-        if 'event_ticket_data' in core_result: core_result['pass_data'].update(core_result['event_ticket_data'])
-        if 'generic_data' in core_result: core_result['pass_data'].update(core_result['generic_data'])
-        if 'textModulesData' in core_result: core_result['pass_data']['textModulesData'] = core_result['textModulesData']
-        if 'messages' in core_result: core_result['pass_data']['messages'] = core_result['messages']
 
-        return core_result
-    
+                    session.add(PassMessages(
+                        object_id=object_id, message_id=msg.get('id'),
+                        header=msg.get('header'), body=msg.get('body'),
+                        message_type=msg.get('messageType'),
+                        start_date=start_val, end_date=end_val,
+                    ))
+
+            return True
+
+    def _construct_pass_dictionary(self, p: PassesTable, session: Session) -> dict:
+        """Helper to build the combined pass dict from ORM relationships."""
+        core: Dict[str, Any] = {
+            "object_id": p.object_id,
+            "class_id": p.class_id,
+            "holder_name": p.holder_name,
+            "holder_email": p.holder_email,
+            "status": p.status,
+            "sync_status": p.sync_status,
+            "last_synced_at": p.last_synced_at,
+            "created_at": p.created_at,
+            "updated_at": p.updated_at,
+        }
+
+        # Determine class type
+        parent_cls = p.parent_class
+        class_type = parent_cls.class_type if parent_cls else 'Generic'
+
+        # Type-specific fields
+        if class_type == "EventTicket" and p.event_ticket_fields:
+            et = p.event_ticket_fields
+            core['event_ticket_data'] = {
+                'ticketHolderName': et.ticket_holder_name,
+                'confirmationCode': et.confirmation_code,
+                'seatNumber': et.seat,
+                'section': et.section,
+                'gate': et.gate,
+            }
+        elif p.generic_fields:
+            gf = p.generic_fields
+            core['generic_data'] = {
+                'header_value': gf.header_value,
+                'subheader_value': gf.subheader_value,
+            }
+
+        # Text modules
+        if p.text_modules:
+            core['textModulesData'] = [
+                {'id': m.module_id, 'header': m.header, 'body': m.body}
+                for m in p.text_modules
+            ]
+
+        # Messages
+        if p.messages:
+            core['messages'] = [
+                {
+                    'id': m.message_id, 'header': m.header, 'body': m.body,
+                    'messageType': m.message_type,
+                    'start_date': m.start_date, 'end_date': m.end_date,
+                }
+                for m in p.messages
+            ]
+
+        # Legacy pass_data dict for backwards compatibility
+        core['pass_data'] = {}
+        if 'event_ticket_data' in core:
+            core['pass_data'].update(core['event_ticket_data'])
+        if 'generic_data' in core:
+            core['pass_data'].update(core['generic_data'])
+        if 'textModulesData' in core:
+            core['pass_data']['textModulesData'] = core['textModulesData']
+        if 'messages' in core:
+            core['pass_data']['messages'] = core['messages']
+
+        return core
+
     def get_pass(self, object_id: str) -> Optional[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor(dictionary=True, buffered=True)
-            cursor.execute("SELECT * FROM Passes_Table WHERE object_id = %s", (object_id,))
-            result = cursor.fetchone()
-            if not result:
+        with self.get_session() as session:
+            p = session.get(PassesTable, object_id)
+            if not p:
                 return None
-            return self._construct_pass_dictionary(result, cursor)
-            
+            return self._construct_pass_dictionary(p, session)
+
     def get_pass_by_id(self, pass_id: int) -> Optional[Dict[str, Any]]:
-        # This function should be deprecated since we removed `id` INT AUTO_INCREMENT
-        # but leaving a stub in case any stragglers call it (they shouldn't)
+        # Deprecated stub
         return None
-    
+
     def get_passes_by_class(self, class_id: str) -> List[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor(dictionary=True, buffered=True)
-            cursor.execute("SELECT * FROM Passes_Table WHERE class_id = %s ORDER BY created_at DESC", (class_id,))
-            results = cursor.fetchall()
-            return [self._construct_pass_dictionary(r, cursor) for r in results]
-    
+        with self.get_session() as session:
+            rows = (
+                session.query(PassesTable)
+                .filter(PassesTable.class_id == class_id)
+                .order_by(PassesTable.created_at.desc())
+                .all()
+            )
+            return [self._construct_pass_dictionary(r, session) for r in rows]
+
     def get_all_passes(self) -> List[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor(dictionary=True, buffered=True)
-            cursor.execute("SELECT * FROM Passes_Table ORDER BY created_at DESC")
-            results = cursor.fetchall()
-            return [self._construct_pass_dictionary(r, cursor) for r in results]
-    
+        with self.get_session() as session:
+            rows = (
+                session.query(PassesTable)
+                .order_by(PassesTable.created_at.desc())
+                .all()
+            )
+            return [self._construct_pass_dictionary(r, session) for r in rows]
+
     def get_active_passes(self) -> List[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor(dictionary=True, buffered=True)
-            cursor.execute("SELECT * FROM Passes_Table WHERE status = 'Active' ORDER BY created_at DESC")
-            results = cursor.fetchall()
-            return [self._construct_pass_dictionary(r, cursor) for r in results]
-            
+        with self.get_session() as session:
+            rows = (
+                session.query(PassesTable)
+                .filter(PassesTable.status == 'Active')
+                .order_by(PassesTable.created_at.desc())
+                .all()
+            )
+            return [self._construct_pass_dictionary(r, session) for r in rows]
+
     def get_passes_by_email(self, email: str) -> List[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor(dictionary=True, buffered=True)
-            cursor.execute("SELECT * FROM Passes_Table WHERE holder_email = %s ORDER BY created_at DESC", (email,))
-            results = cursor.fetchall()
-            return [self._construct_pass_dictionary(r, cursor) for r in results]
-    
+        with self.get_session() as session:
+            rows = (
+                session.query(PassesTable)
+                .filter(PassesTable.holder_email == email)
+                .order_by(PassesTable.created_at.desc())
+                .all()
+            )
+            return [self._construct_pass_dictionary(r, session) for r in rows]
+
     def update_pass(self, object_id: str, **kwargs) -> bool:
         """Update a pass across all relational tables"""
         print(f"DB DEBUG update_pass: object_id={object_id}")
         print(f"DB DEBUG update_pass: kwargs keys = {list(kwargs.keys())}")
-        
-        with self.get_connection() as conn:
-            cursor = conn.cursor(buffered=True)
-            
-            # 1. Update Core Fields in Passes_Table
+
+        with self.get_session() as session:
+            p = session.get(PassesTable, object_id)
+            if not p:
+                print(f"DB DEBUG: ERROR - pass not found in Passes_Table!")
+                return False
+
+            # 1. Core fields
             core_updates = {}
             for k in ['holder_name', 'holder_email', 'status', 'sync_status', 'last_synced_at']:
                 if k in kwargs:
                     core_updates[k] = kwargs[k]
-                    
+
             if core_updates:
                 print(f"DB DEBUG: Updating core fields: {core_updates}")
-                set_clause = ", ".join([f"{k} = %s" for k in core_updates.keys()])
-                values = list(core_updates.values()) + [object_id]
-                cursor.execute(f"UPDATE Passes_Table SET {set_clause} WHERE object_id = %s", values)
-                print(f"DB DEBUG: Core rows affected: {cursor.rowcount}")
-                
+                for k, v in core_updates.items():
+                    setattr(p, k, v)
+
             # 2. Handle pass_data (type-specific fields)
             pd = kwargs.get('pass_data')
             if pd and isinstance(pd, dict):
                 print(f"DB DEBUG: Processing pass_data: {pd}")
-                
-                # Determine class type
-                cursor.execute("SELECT class_id FROM Passes_Table WHERE object_id = %s", (object_id,))
-                c_id_res = cursor.fetchone()
-                if not c_id_res:
-                    print(f"DB DEBUG: ERROR - pass not found in Passes_Table!")
-                    return False
-                    
-                class_id = c_id_res[0]
-                cursor.execute("SELECT class_type FROM Classes_Table WHERE class_id = %s", (class_id,))
-                c_type_res = cursor.fetchone()
-                class_type = c_type_res[0] if c_type_res else "Generic"
+
+                class_type = p.parent_class.class_type if p.parent_class else "Generic"
                 print(f"DB DEBUG: class_type = {class_type}")
-                    
+
                 if class_type == "EventTicket":
-                    # Map flat UI keys to DB columns
                     ticket_holder_name = pd.get('ticket_holder_name', pd.get('ticketHolderName'))
                     confirmation_code = pd.get('confirmation_code', pd.get('confirmationCode'))
                     seat = pd.get('seat', pd.get('seatNumber'))
                     section = pd.get('section')
                     gate = pd.get('gate')
-                    
-                    print(f"DB DEBUG EventTicket: ticket_holder_name={ticket_holder_name}, confirmation_code={confirmation_code}, seat={seat}, section={section}, gate={gate}")
-                    
-                    cursor.execute(
-                        """INSERT INTO EventTicket_Fields 
-                           (object_id, ticket_holder_name, confirmation_code, seat, section, gate) 
-                           VALUES (%s, %s, %s, %s, %s, %s)
-                           ON DUPLICATE KEY UPDATE 
-                           ticket_holder_name=VALUES(ticket_holder_name), 
-                           confirmation_code=VALUES(confirmation_code), 
-                           seat=VALUES(seat), 
-                           section=VALUES(section), 
-                           gate=VALUES(gate)""",
-                        (object_id, ticket_holder_name, confirmation_code, seat, section, gate)
-                    )
-                    print(f"DB DEBUG EventTicket: rows affected: {cursor.rowcount}")
-                    
+
+                    print(f"DB DEBUG EventTicket: ticket_holder_name={ticket_holder_name}, "
+                          f"confirmation_code={confirmation_code}, seat={seat}, "
+                          f"section={section}, gate={gate}")
+
+                    if p.event_ticket_fields:
+                        et = p.event_ticket_fields
+                        et.ticket_holder_name = ticket_holder_name
+                        et.confirmation_code = confirmation_code
+                        et.seat = seat
+                        et.section = section
+                        et.gate = gate
+                    else:
+                        p.event_ticket_fields = EventTicketFields(
+                            object_id=object_id,
+                            ticket_holder_name=ticket_holder_name,
+                            confirmation_code=confirmation_code,
+                            seat=seat, section=section, gate=gate,
+                        )
                 else:
-                    # Generic pass type
                     header_value = pd.get('header_value', pd.get('header'))
                     subheader_value = pd.get('subheader_value')
-                    
-                    print(f"DB DEBUG Generic: header_value={header_value}, subheader_value={subheader_value}")
-                    
-                    cursor.execute(
-                        """INSERT INTO Generic_Fields 
-                           (object_id, header_value, subheader_value) 
-                           VALUES (%s, %s, %s)
-                           ON DUPLICATE KEY UPDATE 
-                           header_value=VALUES(header_value), 
-                           subheader_value=VALUES(subheader_value)""",
-                        (object_id, header_value, subheader_value)
-                    )
-                    print(f"DB DEBUG Generic: rows affected: {cursor.rowcount}")
-                            
-                # Update Text Modules Array
+
+                    print(f"DB DEBUG Generic: header_value={header_value}, "
+                          f"subheader_value={subheader_value}")
+
+                    if p.generic_fields:
+                        gf = p.generic_fields
+                        gf.header_value = header_value
+                        gf.subheader_value = subheader_value
+                    else:
+                        p.generic_fields = GenericFields(
+                            object_id=object_id,
+                            header_value=header_value,
+                            subheader_value=subheader_value,
+                        )
+
+                # Text modules (replace-all strategy)
                 if 'textModulesData' in pd or 'text_modules' in pd:
-                    cursor.execute("DELETE FROM Pass_Text_Modules WHERE object_id = %s", (object_id,))
+                    p.text_modules.clear()
+                    session.flush()
                     text_modules = pd.get('textModulesData', pd.get('text_modules', []))
                     if isinstance(text_modules, list):
                         for idx, mod in enumerate(text_modules):
-                            cursor.execute(
-                                """INSERT INTO Pass_Text_Modules (object_id, module_id, header, body, display_order) 
-                                   VALUES (%s, %s, %s, %s, %s)""",
-                                (object_id, mod.get('id'), mod.get('header'), mod.get('body'), idx)
-                            )
-                                
-                # Update Messages Array
+                            p.text_modules.append(PassTextModules(
+                                object_id=object_id, module_id=mod.get('id'),
+                                header=mod.get('header'), body=mod.get('body'),
+                                display_order=idx,
+                            ))
+
+                # Messages (replace-all strategy)
                 if 'messages' in pd:
-                    cursor.execute("DELETE FROM Pass_Messages WHERE object_id = %s", (object_id,))
+                    p.messages.clear()
+                    session.flush()
                     messages = pd.get('messages', [])
                     if isinstance(messages, list):
                         for msg in messages:
@@ -546,67 +568,65 @@ class DatabaseManager:
                             if isinstance(interval, dict):
                                 start_val = interval.get('start', {}).get('date', start_val)
                                 end_val = interval.get('end', {}).get('date', end_val)
-                                
-                            cursor.execute(
-                                """INSERT INTO Pass_Messages (object_id, message_id, header, body, message_type, start_date, end_date) 
-                                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                                (object_id, msg.get('id'), msg.get('header'), msg.get('body'), msg.get('messageType'), start_val, end_val)
-                            )
+
+                            p.messages.append(PassMessages(
+                                object_id=object_id, message_id=msg.get('id'),
+                                header=msg.get('header'), body=msg.get('body'),
+                                message_type=msg.get('messageType'),
+                                start_date=start_val, end_date=end_val,
+                            ))
 
             print(f"DB DEBUG: update_pass complete for {object_id}")
             return True
-    
+
     def update_pass_status(self, object_id: str, status: str) -> bool:
         if status not in ['Active', 'Expired']:
             raise ValueError("Status must be 'Active' or 'Expired'")
         return self.update_pass(object_id, status=status)
-    
+
     def delete_pass(self, object_id: str) -> bool:
-        # ON DELETE CASCADE handles child tables automatically
-        with self.get_connection() as conn:
-            cursor = conn.cursor(buffered=True)
-            cursor.execute("DELETE FROM Passes_Table WHERE object_id = %s", (object_id,))
-            return cursor.rowcount > 0
-    
+        """Delete pass — CASCADE handles child tables automatically."""
+        with self.get_session() as session:
+            p = session.get(PassesTable, object_id)
+            if not p:
+                return False
+            session.delete(p)
+            return True
+
     # ========================================================================
     # Notifications_Table Operations
     # ========================================================================
 
-    def create_notification(self, class_id: str, object_id: str, status: str, message: str) -> bool:
-        with self.get_connection() as conn:
-            cursor = conn.cursor(buffered=True)
-            cursor.execute(
-                """INSERT INTO Notifications_Table 
-                   (class_id, object_id, status, message) 
-                   VALUES (%s, %s, %s, %s)""",
-                (class_id, object_id, status, message)
-            )
-            return cursor.rowcount > 0
+    def create_notification(self, class_id: str, object_id: str,
+                            status: str, message: str) -> bool:
+        with self.get_session() as session:
+            session.add(NotificationsTable(
+                class_id=class_id, object_id=object_id,
+                status=status, message=message,
+            ))
+            return True
 
     # ========================================================================
     # Utility Methods
     # ========================================================================
-    
+
     def get_pass_with_class(self, object_id: str) -> Optional[Dict[str, Any]]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor(dictionary=True, buffered=True)
-            cursor.execute(
-                """SELECT p.*, c.class_type, c.class_json
-                   FROM Passes_Table p
-                   JOIN Classes_Table c ON p.class_id = c.class_id
-                   WHERE p.object_id = %s""",
-                (object_id,)
-            )
-            result = cursor.fetchone()
-            if not result:
+        with self.get_session() as session:
+            p = session.get(PassesTable, object_id)
+            if not p:
                 return None
-            return self._construct_pass_dictionary(result, cursor)
-            
+            result = self._construct_pass_dictionary(p, session)
+            if p.parent_class:
+                result['class_type'] = p.parent_class.class_type
+                result['class_json'] = None  # legacy column no longer exists
+            return result
+
     def test_connection(self) -> bool:
         try:
-            with self.get_connection() as conn:
-                cursor = conn.cursor(buffered=True)
-                cursor.execute("SELECT 1")
+            with self.get_session() as session:
+                session.execute(
+                    __import__('sqlalchemy').text("SELECT 1")
+                )
                 return True
         except Exception as e:
             print(f"Connection test failed: {e}")

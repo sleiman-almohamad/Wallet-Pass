@@ -103,7 +103,7 @@ class DatabaseManager:
 
     def _build_class_json(self, result: dict) -> dict:
         """Helper: synthesize class_json from relational columns using json_templates."""
-        from json_templates import get_template
+        from core.json_templates import get_template
         class_type = result.get("class_type", "Generic")
         class_id = result.get("class_id", "")
 

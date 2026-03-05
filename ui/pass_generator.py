@@ -5,7 +5,7 @@ Creates individual Google Wallet passes for end users
 
 import flet as ft
 from typing import Dict, List, Any, Optional
-from qr_generator import generate_qr_code
+from core.qr_generator import generate_qr_code
 
 
 # Field configurations for each pass type

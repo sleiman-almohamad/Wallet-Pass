@@ -196,20 +196,56 @@ Edit `configs.py` to customize:
 
 ```
 WalletPasses/
-├── main.py                 # Main Flet application
-├── api/                    # FastAPI backend
-│   ├── api.py             # API routes
-│   └── models.py          # Data models
-├── database/              # Database management
-├── ui/                    # UI components
-│   ├── class_builder.py   # Template Builder
-│   ├── pass_generator.py  # Pass Generator
-│   └── components/        # Reusable UI components
-├── wallet_service.py      # Google Wallet API client
-├── json_templates.py      # Pass templates
-├── start_all.sh          # Linux/Mac startup script
-├── start_all.bat         # Windows startup script
-└── docker-compose.yml    # Docker services config
+├── main.py                         # Entry point (41 lines — bootstrap only)
+├── configs.py                      # Global configuration (issuer ID, DB creds, etc.)
+│
+├── core/                           # Domain logic, schemas, templates
+│   ├── field_schemas.py            # Field definitions per pass type
+│   ├── json_templates.py           # JSON template manager
+│   ├── google_wallet_parser.py     # Parse Google Wallet class JSON
+│   └── qr_generator.py            # QR code generation
+│
+├── state/                          # Application state (observer pattern)
+│   ├── app_state.py                # Root AppState coordinator
+│   ├── google_state.py             # ManageTemplateState + ManagePassState
+│   └── apple_state.py              # Future Apple Wallet placeholder
+│
+├── views/                          # Flet UI screens
+│   ├── root_view.py                # Header + tabs assembly
+│   ├── manage_templates_view.py    # Manage Templates tab (3-panel layout)
+│   └── manage_passes_view.py       # Manage Passes tab (3-panel layout)
+│
+├── services/                       # External integrations
+│   ├── google_wallet_service.py    # Google Wallet API client (WalletClient)
+│   ├── api_client.py               # Local FastAPI backend client (APIClient)
+│   ├── class_update_service.py     # Propagate class updates to passes
+│   └── apple_wallet_service.py     # Future Apple Wallet placeholder
+│
+├── models/                         # Provider-agnostic domain dataclasses
+│   ├── passes.py                   # WalletPass
+│   └── notifications.py           # NotificationAttempt
+│
+├── utils/                          # Shared helpers
+│   ├── formatting.py               # Status message helpers
+│   └── validation.py               # Issuer ID validation
+│
+├── ui/                             # Self-contained tab modules
+│   ├── class_builder.py            # Template Builder tab
+│   ├── pass_generator.py           # Pass Generator tab
+│   └── components/                 # Reusable UI components
+│
+├── api/                            # FastAPI backend
+│   ├── api.py                      # REST endpoints
+│   └── models.py                   # Pydantic models
+│
+├── database/                       # Database layer
+│   ├── db_manager.py               # DatabaseManager (CRUD)
+│   ├── models.py                   # SQLAlchemy models
+│   └── schema.sql/                 # SQL schema
+│
+├── docker-compose.yml              # MariaDB + phpMyAdmin
+├── start_all.sh                    # Linux/Mac startup script
+└── start_all.bat                   # Windows startup script
 ```
 
 ## License

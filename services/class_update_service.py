@@ -6,7 +6,7 @@ Handles propagation of class/template updates to all affected pass objects
 import logging
 from typing import Dict, Any, List
 from database.db_manager import DatabaseManager
-from wallet_service import WalletClient
+from services.google_wallet_service import WalletClient
 
 # Configure logging
 logger = logging.getLogger(__name__)

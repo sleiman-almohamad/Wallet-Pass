@@ -4,7 +4,7 @@ Dynamic class creation with JSON templates, form generation, and live preview
 """
 
 import flet as ft
-from json_templates import JSONTemplateManager, get_template, get_editable_fields
+from core.json_templates import JSONTemplateManager, get_template, get_editable_fields
 from ui.components.json_form_mapper import DynamicForm, set_nested_value
 from ui.components.json_editor import JSONEditor
 import configs

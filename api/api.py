@@ -24,7 +24,7 @@ from api.models import (
 
 # Import service layer and wallet client
 from services.class_update_service import propagate_class_update_to_passes
-from wallet_service import WalletClient
+from services.google_wallet_service import WalletClient
 import logging
 
 # Configure logging
@@ -124,7 +124,7 @@ async def create_class(class_data: ClassCreate):
     try:
         # Extract relational fields from class_json if provided
         if class_data.class_json:
-            from google_wallet_parser import parse_google_wallet_class
+            from core.google_wallet_parser import parse_google_wallet_class
             parsed_metadata = parse_google_wallet_class(class_data.class_json)
             # Override any None values in class_data with parsed values
             if class_data.issuer_name is None: class_data.issuer_name = parsed_metadata.get('issuer_name')
@@ -217,7 +217,7 @@ async def update_class(class_id: str, class_data: ClassUpdate, sync_to_google: b
 
         # Extract relational fields from class_json if provided
         if "class_json" in update_data and update_data["class_json"]:
-            from google_wallet_parser import parse_google_wallet_class
+            from core.google_wallet_parser import parse_google_wallet_class
             parsed_metadata = parse_google_wallet_class(update_data["class_json"])
             # Merge parsed metadata into update_data, avoiding overwriting explicit fields
             for key, value in parsed_metadata.items():
@@ -390,7 +390,7 @@ async def sync_classes_from_google():
         errors = []
         
         # Import parser
-        from google_wallet_parser import parse_google_wallet_class
+        from core.google_wallet_parser import parse_google_wallet_class
         
         # 2. Process each class
         for google_class in google_classes:
@@ -940,7 +940,7 @@ async def sync_passes():
                         # Auto-create the missing class from Google Wallet
                         logger.warning(f"Class '{local_class_id}' not found locally. Auto-syncing from Google...")
                         try:
-                            from google_wallet_parser import parse_google_wallet_class
+                            from core.google_wallet_parser import parse_google_wallet_class
                             # Fetch class data from Google
                             full_class_id = f"{configs.ISSUER_ID}.{local_class_id}"
                             google_class_data = wallet_client.get_class(full_class_id)

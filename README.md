@@ -92,8 +92,41 @@ Once started, the following services are available:
 | **Flet App** | Desktop GUI | N/A |
 | **FastAPI** | http://localhost:8000 | N/A |
 | **API Docs** | http://localhost:8000/docs | N/A |
-| **phpMyAdmin** | http://localhost:8080 | root / 123456789 |
-| **MariaDB** | localhost:3306 | wallet_passes DB |
+| **phpMyAdmin** | http://localhost:8080 | See `.env` |
+| **MariaDB** | localhost:3306 | See `.env` |
+
+## Configuration
+
+All sensitive configuration (credentials, API keys, database passwords) is loaded from environment variables via a `.env` file. **The `.env` file is gitignored and never committed.**
+
+### First-Time Setup
+
+1. **Copy the example file** to create your own `.env`:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit `.env`** and fill in your real credentials:
+
+   ```dotenv
+   # Google Wallet
+   ISSUER_ID=your_issuer_id_here
+   KEY_FILE_PATH=your-service-account-key.json
+
+   # Database
+   DB_USER=root
+   DB_PASSWORD=your_db_password
+   ```
+
+3. **Place your Google Cloud service account key** (`.json` file) in the project root.
+
+### How It Works
+
+- `configs.py` reads all values from environment variables using `python-dotenv`.
+- Non-sensitive values like `DB_HOST`, `DB_PORT`, and `DB_NAME` have sensible defaults.
+- Sensitive values like `ISSUER_ID`, `KEY_FILE_PATH`, `DB_USER`, and `DB_PASSWORD` **must** be set in `.env` — they have no defaults.
+- `.env.example` is a template with placeholder values that is safe to commit and share.
 
 ## Database Sync
 
@@ -156,14 +189,6 @@ Verify existing passes:
 - Enter pass Object ID
 - View pass and class details
 - Visual preview of the pass
-
-## Configuration
-
-Edit `configs.py` to customize:
-- Google Wallet Issuer ID
-- Service account credentials path
-- Database connection settings
-- API server settings
 
 ## Troubleshooting
 

@@ -25,6 +25,10 @@ from api.models import (
 # Import service layer and wallet client
 from services.class_update_service import propagate_class_update_to_passes
 from services.google_wallet_service import WalletClient
+from exceptions import (
+    WalletPassError, DatabaseError, DuplicateRecordError,
+    GoogleWalletError, ValidationError,
+)
 import logging
 
 # Configure logging
@@ -168,6 +172,12 @@ async def create_class(class_data: ClassCreate):
         else:
             raise HTTPException(status_code=400, detail="Failed to create class")
             
+    except DuplicateRecordError as e:
+        raise HTTPException(status_code=409, detail=f"Class '{class_data.class_id}' already exists")
+    except DatabaseError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except WalletPassError as e:
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         if "Duplicate entry" in str(e):
             raise HTTPException(status_code=409, detail=f"Class '{class_data.class_id}' already exists")
@@ -363,8 +373,14 @@ async def update_class(class_id: str, class_data: ClassUpdate, sync_to_google: b
             
     except HTTPException:
         raise
-    except Exception as e:
+    except GoogleWalletError as e:
+        logger.error(f"Google Wallet error updating class '{class_id}': {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Google Wallet error: {str(e)}")
+    except WalletPassError as e:
         logger.error(f"Error updating class '{class_id}': {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error updating class '{class_id}': {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -539,6 +555,12 @@ async def create_pass(pass_data: PassCreate):
             
     except HTTPException:
         raise
+    except DuplicateRecordError as e:
+        raise HTTPException(status_code=409, detail=f"Pass '{pass_data.object_id}' already exists")
+    except DatabaseError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except WalletPassError as e:
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         if "Duplicate entry" in str(e):
             raise HTTPException(status_code=409, detail=f"Pass '{pass_data.object_id}' already exists")

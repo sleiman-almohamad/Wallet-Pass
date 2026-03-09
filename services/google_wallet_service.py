@@ -4,6 +4,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import configs
+from exceptions import GoogleWalletAPIError, GoogleWalletNotFoundError, GoogleWalletError
 import jwt
 from datetime import datetime, timedelta
 
@@ -87,7 +88,7 @@ class WalletClient:
         if last_error:
             raise last_error
         else:
-             raise Exception("Unknown error fetching object")
+             raise GoogleWalletNotFoundError("Unknown error fetching object")
 
     def get_class(self, class_id):
         """
@@ -124,9 +125,9 @@ class WalletClient:
         if last_error:
             # Decode error content for better debugging in the UI
             error_content = last_error.content.decode('utf-8') if hasattr(last_error, 'content') else str(last_error)
-            raise Exception(f"Google Error (404): Class not found.\nTried IDs: {ids_to_try}\nDetails: {error_content}")
+            raise GoogleWalletNotFoundError(f"Google Error (404): Class not found.\nTried IDs: {ids_to_try}\nDetails: {error_content}")
         else:
-             raise Exception("Unknown error fetching class")
+             raise GoogleWalletNotFoundError("Unknown error fetching class")
     
     def list_all_classes(self):
         """
@@ -335,7 +336,10 @@ class WalletClient:
             
             return resource.insert(body=object_data).execute()
         except HttpError as e:
-            raise Exception(f"Error creating pass object: {e}")
+            raise GoogleWalletAPIError(
+                f"Error creating pass object: {e}",
+                status_code=e.resp.status if hasattr(e, 'resp') else None,
+            ) from e
     
     def create_pass_class(self, class_data, class_type="Generic"):
         """
@@ -399,9 +403,16 @@ class WalletClient:
                     print(json.dumps(class_data, indent=2))
                     error_details = update_error.content.decode('utf-8') if hasattr(update_error, 'content') else str(update_error)
                     print(f"Error details: {error_details}")
-                    raise Exception(f"Error updating existing class: {update_error}\n\nClass data: {json.dumps(class_data, indent=2)}")
+                    raise GoogleWalletAPIError(
+                        f"Error updating existing class: {update_error}\n\nClass data: {json.dumps(class_data, indent=2)}",
+                        status_code=update_error.resp.status if hasattr(update_error, 'resp') else None,
+                        detail=error_details,
+                    ) from update_error
             else:
-                raise Exception(f"Error creating pass class: {e}")
+                raise GoogleWalletAPIError(
+                    f"Error creating pass class: {e}",
+                    status_code=e.resp.status if hasattr(e, 'resp') else None,
+                ) from e
     
     
     def generate_save_link(self, object_id, class_type="EventTicket"):
@@ -512,7 +523,11 @@ class WalletClient:
             
         except HttpError as e:
             error_details = e.content.decode('utf-8') if hasattr(e, 'content') else str(e)
-            raise Exception(f"Error updating pass class '{class_id}': {error_details}")
+            raise GoogleWalletAPIError(
+                f"Error updating pass class '{class_id}': {error_details}",
+                status_code=e.resp.status if hasattr(e, 'resp') else None,
+                detail=error_details,
+            ) from e
     
     def _build_notification_message(self, header="Pass Updated", body="Your pass has been updated."):
         """Build a unique notification message that triggers a push notification.
@@ -788,7 +803,11 @@ class WalletClient:
                 pass
             # endregion
 
-            raise Exception(f"Error updating pass object '{object_id}': {error_details}")
+            raise GoogleWalletAPIError(
+                f"Error updating pass object '{object_id}': {error_details}",
+                status_code=e.resp.status if hasattr(e, 'resp') else None,
+                detail=error_details,
+            ) from e
     
     def build_event_ticket_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY", status=None):
         """

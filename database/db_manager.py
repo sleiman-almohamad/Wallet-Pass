@@ -7,6 +7,8 @@ import json
 from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
 
+from exceptions import DatabaseError, ValidationError
+
 from sqlalchemy.orm import Session
 
 from database.models import (
@@ -35,7 +37,7 @@ class DatabaseManager:
             session.commit()
         except Exception as e:
             session.rollback()
-            raise Exception(f"Database error: {e}")
+            raise DatabaseError(f"Database error: {e}") from e
         finally:
             session.close()
 
@@ -581,7 +583,7 @@ class DatabaseManager:
 
     def update_pass_status(self, object_id: str, status: str) -> bool:
         if status not in ['Active', 'Expired']:
-            raise ValueError("Status must be 'Active' or 'Expired'")
+            raise ValidationError("Status must be 'Active' or 'Expired'")
         return self.update_pass(object_id, status=status)
 
     def delete_pass(self, object_id: str) -> bool:

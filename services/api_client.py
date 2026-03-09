@@ -5,6 +5,7 @@ Provides functions to interact with the FastAPI backend
 
 import requests
 from typing import List, Dict, Any, Optional
+from exceptions import APIClientHTTPError, APIClientError
 
 
 class APIClient:
@@ -77,9 +78,15 @@ class APIClient:
                 error_detail = response.json()
             except:
                 error_detail = response.text
-            raise Exception(f"HTTP Error creating class. Detail: {error_detail}. Status: {response.status_code}. Data: {data}")
+            raise APIClientHTTPError(
+                f"HTTP Error creating class. Detail: {error_detail}. Status: {response.status_code}. Data: {data}",
+                status_code=response.status_code,
+                detail=str(error_detail),
+            ) from e
+        except APIClientError:
+            raise
         except Exception as e:
-            raise Exception(f"Error creating class: {e}")
+            raise APIClientError(f"Error creating class: {e}") from e
     
     def update_class(self, class_id: str, 
                     class_type: Optional[str] = None,
@@ -132,9 +139,15 @@ class APIClient:
                 error_detail = response.json()
             except:
                 error_detail = response.text
-            raise Exception(f"HTTP Error updating class. Detail: {error_detail}. Status: {response.status_code}. Data: {data}")
+            raise APIClientHTTPError(
+                f"HTTP Error updating class. Detail: {error_detail}. Status: {response.status_code}. Data: {data}",
+                status_code=response.status_code,
+                detail=str(error_detail),
+            ) from e
+        except APIClientError:
+            raise
         except Exception as e:
-            raise Exception(f"Error updating class: {e}")
+            raise APIClientError(f"Error updating class: {e}") from e
 
     
     def create_pass(self, object_id: str, class_id: str, 
@@ -156,9 +169,15 @@ class APIClient:
             return response.json()
         except requests.exceptions.HTTPError as e:
             error_detail = e.response.json().get("detail", str(e))
-            raise Exception(f"Error creating pass: {error_detail}")
+            raise APIClientHTTPError(
+                f"Error creating pass: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except APIClientError:
+            raise
         except Exception as e:
-            raise Exception(f"Error creating pass: {e}")
+            raise APIClientError(f"Error creating pass: {e}") from e
     
     def get_passes(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch all passes, optionally filtered by status"""
@@ -238,9 +257,15 @@ class APIClient:
             return response.json()
         except requests.exceptions.HTTPError as e:
             error_detail = e.response.json().get("detail", str(e))
-            raise Exception(f"Error updating pass: {error_detail}")
+            raise APIClientHTTPError(
+                f"Error updating pass: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except APIClientError:
+            raise
         except Exception as e:
-            raise Exception(f"Error updating pass: {e}")
+            raise APIClientError(f"Error updating pass: {e}") from e
 
     def push_pass_to_google(self, object_id: str) -> Dict[str, Any]:
         """Push a pass to Google Wallet using the local database state"""
@@ -250,9 +275,15 @@ class APIClient:
             return response.json()
         except requests.exceptions.HTTPError as e:
             error_detail = e.response.json().get("detail", str(e))
-            raise Exception(f"Error pushing pass to Google: {error_detail}")
+            raise APIClientHTTPError(
+                f"Error pushing pass to Google: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except APIClientError:
+            raise
         except Exception as e:
-            raise Exception(f"Error pushing pass to Google: {e}")
+            raise APIClientError(f"Error pushing pass to Google: {e}") from e
 
     def sync_classes(self) -> Dict[str, Any]:
         """Trigger sync of all classes from Google Wallet to local database"""
@@ -262,9 +293,15 @@ class APIClient:
             return response.json()
         except requests.exceptions.HTTPError as e:
             error_detail = e.response.json().get("detail", str(e))
-            raise Exception(f"Sync failed: {error_detail}")
+            raise APIClientHTTPError(
+                f"Sync failed: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except APIClientError:
+            raise
         except Exception as e:
-            raise Exception(f"Sync failed: {e}")
+            raise APIClientError(f"Sync failed: {e}") from e
 
     def sync_passes(self) -> Dict[str, Any]:
         """Trigger sync of all pass objects from Google Wallet to local database"""
@@ -274,9 +311,15 @@ class APIClient:
             return response.json()
         except requests.exceptions.HTTPError as e:
             error_detail = e.response.json().get("detail", str(e))
-            raise Exception(f"Sync passes failed: {error_detail}")
+            raise APIClientHTTPError(
+                f"Sync passes failed: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except APIClientError:
+            raise
         except Exception as e:
-            raise Exception(f"Sync passes failed: {e}")
+            raise APIClientError(f"Sync passes failed: {e}") from e
 
     def check_health(self) -> Dict[str, Any]:
         """Check API health status"""

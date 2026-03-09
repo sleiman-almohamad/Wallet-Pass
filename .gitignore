@@ -11,3 +11,6 @@ wheels/
 
 # Google Wallet API
 wallet-pass-*.json
+
+# Environment variables
+.env

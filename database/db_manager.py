@@ -18,6 +18,8 @@ from database.models import (
     PassesTable, EventTicketFields, GenericFields,
     PassTextModules, PassMessages,
     NotificationsTable,
+    AppleClassesTable, ApplePassesTable,
+    AppleNotificationsTable, AppleDeviceRegistrations
 )
 
 
@@ -633,3 +635,193 @@ class DatabaseManager:
         except Exception as e:
             print(f"Connection test failed: {e}")
             return False
+
+    # ========================================================================
+    # Apple Wallet Operations
+    # ========================================================================
+
+    def create_apple_class(self, pass_type_id: str, team_id: str, pass_style: str, **kwargs) -> bool:
+        with self.get_session() as session:
+            cls = AppleClassesTable(
+                pass_type_id=pass_type_id,
+                team_id=team_id,
+                pass_style=pass_style,
+                organization_name=kwargs.get('organization_name'),
+                description=kwargs.get('description'),
+                background_color=kwargs.get('background_color'),
+                foreground_color=kwargs.get('foreground_color'),
+                label_color=kwargs.get('label_color'),
+                icon_url=kwargs.get('icon_url'),
+                logo_url=kwargs.get('logo_url'),
+                strip_url=kwargs.get('strip_url'),
+                template_json=kwargs.get('template_json')
+            )
+            session.add(cls)
+            return True
+
+    def _apple_class_to_dict(self, cls: AppleClassesTable) -> dict:
+        return {
+            "pass_type_id": cls.pass_type_id,
+            "team_id": cls.team_id,
+            "pass_style": cls.pass_style,
+            "organization_name": cls.organization_name,
+            "description": cls.description,
+            "background_color": cls.background_color,
+            "foreground_color": cls.foreground_color,
+            "label_color": cls.label_color,
+            "icon_url": cls.icon_url,
+            "logo_url": cls.logo_url,
+            "strip_url": cls.strip_url,
+            "template_json": cls.template_json,
+            "created_at": cls.created_at,
+            "updated_at": cls.updated_at,
+        }
+
+    def get_apple_class(self, pass_type_id: str) -> Optional[Dict[str, Any]]:
+        with self.get_session() as session:
+            cls = session.get(AppleClassesTable, pass_type_id)
+            if not cls:
+                return None
+            return self._apple_class_to_dict(cls)
+
+    def get_all_apple_classes(self) -> List[Dict[str, Any]]:
+        with self.get_session() as session:
+            rows = session.query(AppleClassesTable).order_by(AppleClassesTable.created_at.desc()).all()
+            return [self._apple_class_to_dict(r) for r in rows]
+
+    def update_apple_class(self, pass_type_id: str, **kwargs) -> bool:
+        with self.get_session() as session:
+            cls = session.get(AppleClassesTable, pass_type_id)
+            if not cls:
+                return False
+            for k, v in kwargs.items():
+                if hasattr(cls, k):
+                    setattr(cls, k, v)
+            return True
+
+    def delete_apple_class(self, pass_type_id: str) -> bool:
+        with self.get_session() as session:
+            cls = session.get(AppleClassesTable, pass_type_id)
+            if not cls:
+                return False
+            session.delete(cls)
+            return True
+
+    def create_apple_pass(self, serial_number: str, pass_type_id: str, holder_name: str, holder_email: str, auth_token: str, pass_data: dict = None) -> bool:
+        with self.get_session() as session:
+            p = ApplePassesTable(
+                serial_number=serial_number,
+                pass_type_id=pass_type_id,
+                holder_name=holder_name,
+                holder_email=holder_email,
+                auth_token=auth_token,
+                pass_data=pass_data or {}
+            )
+            session.add(p)
+            return True
+
+    def _apple_pass_to_dict(self, p: ApplePassesTable) -> dict:
+        return {
+            "serial_number": p.serial_number,
+            "pass_type_id": p.pass_type_id,
+            "holder_name": p.holder_name,
+            "holder_email": p.holder_email,
+            "status": p.status,
+            "auth_token": p.auth_token,
+            "pass_data": p.pass_data,
+            "created_at": p.created_at,
+            "updated_at": p.updated_at,
+        }
+
+    def get_apple_pass(self, serial_number: str) -> Optional[Dict[str, Any]]:
+        with self.get_session() as session:
+            p = session.get(ApplePassesTable, serial_number)
+            if not p:
+                return None
+            return self._apple_pass_to_dict(p)
+
+    def get_all_apple_passes(self) -> List[Dict[str, Any]]:
+        with self.get_session() as session:
+            rows = session.query(ApplePassesTable).order_by(ApplePassesTable.created_at.desc()).all()
+            return [self._apple_pass_to_dict(r) for r in rows]
+
+    def update_apple_pass(self, serial_number: str, **kwargs) -> bool:
+        with self.get_session() as session:
+            p = session.get(ApplePassesTable, serial_number)
+            if not p:
+                return False
+            for k, v in kwargs.items():
+                if hasattr(p, k):
+                    setattr(p, k, v)
+            return True
+
+    def delete_apple_pass(self, serial_number: str) -> bool:
+        with self.get_session() as session:
+            p = session.get(ApplePassesTable, serial_number)
+            if not p:
+                return False
+            session.delete(p)
+            return True
+
+    # ========================================================================
+    # Apple Device Registration Operations
+    # ========================================================================
+
+    def register_apple_device(self, device_library_id: str, push_token: str, pass_type_id: str, serial_number: str) -> bool:
+        with self.get_session() as session:
+            # Check if exists
+            existing = session.query(AppleDeviceRegistrations).filter_by(
+                device_library_id=device_library_id,
+                serial_number=serial_number
+            ).first()
+            
+            if existing:
+                # Update token if changed
+                if existing.push_token != push_token:
+                    existing.push_token = push_token
+            else:
+                reg = AppleDeviceRegistrations(
+                    device_library_id=device_library_id,
+                    push_token=push_token,
+                    pass_type_id=pass_type_id,
+                    serial_number=serial_number
+                )
+                session.add(reg)
+            return True
+
+    def unregister_apple_device(self, device_library_id: str, serial_number: str) -> bool:
+        with self.get_session() as session:
+            existing = session.query(AppleDeviceRegistrations).filter_by(
+                device_library_id=device_library_id,
+                serial_number=serial_number
+            ).first()
+            if existing:
+                session.delete(existing)
+                return True
+            return False
+
+    def get_registered_devices_for_pass(self, serial_number: str) -> List[str]:
+        """Returns list of push tokens for a given pass serial number."""
+        with self.get_session() as session:
+            rows = session.query(AppleDeviceRegistrations.push_token).filter_by(serial_number=serial_number).all()
+            return [r[0] for r in rows]
+
+    def get_serial_numbers_for_device(self, device_library_id: str, pass_type_id: str, passes_updated_since: str = None) -> List[str]:
+        """Returns list of serial numbers a device is registered for, optionally filtered by update time."""
+        with self.get_session() as session:
+            query = session.query(AppleDeviceRegistrations.serial_number).filter_by(
+                device_library_id=device_library_id,
+                pass_type_id=pass_type_id
+            )
+            
+            # If passes_updated_since is provided, we should join with passes table
+            if passes_updated_since:
+                query = query.join(
+                    ApplePassesTable, 
+                    AppleDeviceRegistrations.serial_number == ApplePassesTable.serial_number
+                ).filter(
+                    ApplePassesTable.updated_at >= passes_updated_since
+                )
+                
+            rows = query.all()
+            return [r[0] for r in rows]

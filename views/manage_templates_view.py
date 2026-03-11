@@ -6,6 +6,7 @@ Extracted from main.py — 3-panel layout for managing Google Wallet template cl
 import flet as ft
 from ui.components.json_editor import JSONEditor
 from ui.components.json_form_mapper import DynamicForm
+from ui.components.text_module_row_editor import TextModuleRowEditor
 from core.json_templates import get_editable_fields
 import configs
 
@@ -26,6 +27,14 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
     manage_dynamic_form = None
     manage_current_json = {}
     manage_current_class_type = None
+    manage_row_editor = None
+
+    # Left panel reference for resizing
+    left_panel = ft.Container(
+        width=380,
+        padding=15,
+        bgcolor="white"
+    )
 
     # ── UI Controls ──
     manage_templates_dropdown = ft.Dropdown(
@@ -284,7 +293,29 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 manage_preview_container.content = build_manage_preview(updated_json)
                 page.update()
 
-            manage_dynamic_form = DynamicForm(field_mappings, manage_current_json, on_manage_form_change)
+            custom_form_controls = []
+            nonlocal manage_row_editor
+            
+            if class_type == "Generic":
+                def on_rows_change(rows):
+                    nonlocal manage_current_json
+                    manage_current_json["text_module_rows"] = rows
+                    on_manage_form_change(manage_current_json)
+                
+                initial_rows = manage_current_json.get("text_module_rows", [])
+                if not initial_rows and "textModulesData" in manage_current_json:
+                    # Normally Manage templates reads local DB so it should have text_module_rows.
+                    # But if rehydrating from raw google JSON, we pass the flat structure.
+                    # We will rely on TextModuleRowEditor's "pass" mode parsing logic indirectly if needed, 
+                    # but here we are in "class" mode. The API handles fetching as row dicts.
+                    pass
+                manage_row_editor = TextModuleRowEditor(initial_rows, on_change=on_rows_change, mode="class")
+                custom_form_controls.append(ft.Divider())
+                custom_form_controls.append(manage_row_editor)
+            else:
+                manage_row_editor = None
+
+            manage_dynamic_form = DynamicForm(field_mappings, manage_current_json, on_manage_form_change, custom_controls=custom_form_controls)
             manage_form_container.controls = manage_dynamic_form.build()
 
             manage_json_editor = JSONEditor(manage_current_json, read_only=True)
@@ -310,11 +341,19 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
         _set_status("⏳ Saving template to local database...", "blue"); page.update()
         try:
             updated_json = manage_dynamic_form.get_json_data()
+            extras = {}
+            if manage_current_class_type == "Generic":
+                extras["multiple_devices_allowed"] = updated_json.get("multiple_devices_allowed")
+                extras["view_unlock_requirement"] = updated_json.get("view_unlock_requirement")
+                extras["enable_smart_tap"] = updated_json.get("enable_smart_tap")
+                extras["text_module_rows"] = updated_json.get("text_module_rows", [])
+
             response = api_client.update_class(
                 class_id=edit_class_id_field.value,
                 class_type=edit_class_type_field.value,
                 class_json=updated_json,
                 sync_to_google=False,
+                **extras
             )
             _set_status(response.get("message", "✅ Template saved to local database!"))
         except Exception as ex:
@@ -335,12 +374,20 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
         try:
             updated_json = manage_dynamic_form.get_json_data()
             notification_body = notification_message_field.value.strip() if notification_message_field.value else None
+            extras = {}
+            if manage_current_class_type == "Generic":
+                extras["multiple_devices_allowed"] = updated_json.get("multiple_devices_allowed")
+                extras["view_unlock_requirement"] = updated_json.get("view_unlock_requirement")
+                extras["enable_smart_tap"] = updated_json.get("enable_smart_tap")
+                extras["text_module_rows"] = updated_json.get("text_module_rows", [])
+
             response = api_client.update_class(
                 class_id=edit_class_id_field.value,
                 class_type=edit_class_type_field.value,
                 class_json=updated_json,
                 sync_to_google=True,
                 notification_message=notification_body,
+                **extras
             )
             _set_status(response.get("message", "✅ Template synced to Google Wallet!"))
             notification_message_field.value = ""
@@ -353,13 +400,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
     startup_sync_classes()
     load_template_classes()
 
-    # ── 3-panel layout ──
-    return ft.Container(
-        content=ft.Row([
-            # Left Panel: Controls and Edit Fields
-            ft.Container(
-                width=380,
-                content=ft.Column([
+    left_panel.content = ft.Column([
                     ft.Text("Manage Templates", size=22, weight=ft.FontWeight.BOLD),
                     ft.Text("Select, preview, and edit your pass templates", size=11, color="grey"),
                     ft.Divider(),
@@ -393,10 +434,30 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                     ),
                     ft.Container(height=10),
                     manage_status,
-                ], spacing=8, scroll="auto"),
-                padding=15, bgcolor="white",
-            ),
-            # Middle Panel: JSON Preview
+                ], spacing=8, scroll="auto")
+                
+    # Splitter logic
+    def on_pan_update(e: ft.DragUpdateEvent):
+        new_width = left_panel.width + e.delta_x
+        # Constrain width between 300 and 800 pixels
+        left_panel.width = max(300, min(800, new_width))
+        left_panel.update()
+
+    splitter = ft.GestureDetector(
+        mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
+        drag_interval=10,
+        on_pan_update=on_pan_update,
+        content=ft.Container(width=5, bgcolor="transparent")
+    )
+
+    # ── 3-panel layout ──
+    return ft.Container(
+        content=ft.Row([
+            # Left Panel: Controls and Edit Fields
+            left_panel,
+            splitter,
+            
+            # Middle Panel: JSON Configuration
             ft.Container(
                 width=320,
                 content=ft.Column([

@@ -6,6 +6,7 @@ Extracted from main.py — 3-panel layout for managing individual Google Wallet 
 import flet as ft
 from ui.components.json_editor import JSONEditor
 from ui.components.json_form_mapper import DynamicForm
+from ui.components.text_module_row_editor import TextModuleRowEditor
 import configs
 
 
@@ -25,6 +26,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
     passes_current_json = {}
     passes_current_class_type = None
     passes_dynamic_form = None
+    passes_row_editor_ref = [None]
 
     # ── UI Controls ──
     manage_passes_class_dropdown = ft.Dropdown(
@@ -379,7 +381,24 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                     passes_preview_container.content = ft.Text("No preview available")
                 page.update()
 
-            passes_dynamic_form = DynamicForm(field_mappings, passes_current_json, on_passes_form_change)
+            custom_form_controls = []
+            if class_type == "Generic":
+                def on_pass_rows_change(modules):
+                    nonlocal passes_current_json
+                    passes_current_json["textModulesData"] = modules
+                    on_passes_form_change(passes_current_json)
+
+                # Initialize from existing pass data if any
+                initial_pass_rows = passes_current_json.get("textModulesData", [])
+                row_editor = TextModuleRowEditor(initial_pass_rows, on_change=on_pass_rows_change, mode="pass")
+                passes_row_editor_ref[0] = row_editor
+                
+                custom_form_controls.append(ft.Divider())
+                custom_form_controls.append(row_editor)
+            else:
+                passes_row_editor_ref[0] = None
+
+            passes_dynamic_form = DynamicForm(field_mappings, passes_current_json, on_passes_form_change, custom_controls=custom_form_controls)
             passes_form_container.controls = passes_dynamic_form.build()
 
             passes_json_editor = JSONEditor(passes_current_json, read_only=True)
@@ -417,6 +436,10 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             form_data.pop("classId", None)
             form_data.pop("event_date", None)
             form_data.pop("event_time", None)
+
+            # Re-read textModulesData directly from component if Generic, or rely on pass_data
+            if passes_current_class_type == "Generic" and passes_row_editor_ref[0]:
+                form_data["textModulesData"] = passes_row_editor_ref[0].get_rows() if hasattr(passes_row_editor_ref[0], 'get_rows') else form_data.get("textModulesData", [])
 
             pass_data = form_data
 
@@ -462,54 +485,72 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
     startup_sync_passes()
     load_passes_classes()
 
+    # Build UI Left Panel
+    left_panel = ft.Container(
+        width=420,
+        content=ft.Column([
+            ft.Text("Manage Pass Objects", size=22, weight=ft.FontWeight.BOLD),
+            ft.Text("Select, preview, and edit your pass objects", size=11, color="grey"),
+            ft.Divider(),
+            ft.Row([
+                ft.IconButton("sync", on_click=sync_passes_manual, tooltip="Refresh passes from Google Wallet"),
+                ft.Text("Sync from Google Wallet", size=11, color="grey"),
+            ]),
+            ft.Container(height=5),
+            ft.Text("1. Select Class", size=13, weight=ft.FontWeight.W_500, color="blue700"),
+            manage_passes_class_dropdown,
+            ft.Container(height=5),
+            ft.Text("2. Select Pass", size=13, weight=ft.FontWeight.W_500, color="blue700"),
+            manage_passes_dropdown,
+            ft.ElevatedButton(
+                "Load Pass", icon="download", on_click=show_pass, width=380,
+                style=ft.ButtonStyle(bgcolor="green", color="white"),
+            ),
+            passes_status,
+            ft.Divider(height=20),
+            ft.Text("Pass Details", size=16, weight=ft.FontWeight.BOLD),
+            passes_object_id_field,
+            passes_class_id_field,
+            ft.Container(height=5),
+            ft.Text("Editable Fields", size=14, weight=ft.FontWeight.W_500, color="grey700"),
+            passes_form_container,
+            ft.Divider(height=20),
+            ft.ElevatedButton(
+                "Save to Local DB", icon="save",
+                on_click=update_pass_object_handler, width=380,
+                style=ft.ButtonStyle(bgcolor="orange", color="white"),
+            ),
+            ft.Container(height=10),
+            ft.ElevatedButton(
+                "Update in Google Wallet API", icon="cloud_upload",
+                on_click=push_to_google_wallet_handler, width=380,
+                style=ft.ButtonStyle(bgcolor="blue", color="white"),
+            ),
+            ft.Container(height=10),
+        ], spacing=8, scroll="auto"),
+        padding=15, bgcolor="white",
+    )
+
+    # Splitter logic
+    def on_pan_update(e: ft.DragUpdateEvent):
+        new_width = left_panel.width + e.delta_x
+        # Constrain width between 300 and 800 pixels
+        left_panel.width = max(300, min(800, new_width))
+        left_panel.update()
+
+    splitter = ft.GestureDetector(
+        mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
+        drag_interval=10,
+        on_pan_update=on_pan_update,
+        content=ft.Container(width=5, bgcolor="transparent")
+    )
+
     # ── 3-panel layout ──
     return ft.Container(
         content=ft.Row([
             # Left Panel
-            ft.Container(
-                width=420,
-                content=ft.Column([
-                    ft.Text("Manage Pass Objects", size=22, weight=ft.FontWeight.BOLD),
-                    ft.Text("Select, preview, and edit your pass objects", size=11, color="grey"),
-                    ft.Divider(),
-                    ft.Row([
-                        ft.IconButton("sync", on_click=sync_passes_manual, tooltip="Refresh passes from Google Wallet"),
-                        ft.Text("Sync from Google Wallet", size=11, color="grey"),
-                    ]),
-                    ft.Container(height=5),
-                    ft.Text("1. Select Class", size=13, weight=ft.FontWeight.W_500, color="blue700"),
-                    manage_passes_class_dropdown,
-                    ft.Container(height=5),
-                    ft.Text("2. Select Pass", size=13, weight=ft.FontWeight.W_500, color="blue700"),
-                    manage_passes_dropdown,
-                    ft.ElevatedButton(
-                        "Load Pass", icon="download", on_click=show_pass, width=380,
-                        style=ft.ButtonStyle(bgcolor="green", color="white"),
-                    ),
-                    passes_status,
-                    ft.Divider(height=20),
-                    ft.Text("Pass Details", size=16, weight=ft.FontWeight.BOLD),
-                    passes_object_id_field,
-                    passes_class_id_field,
-                    ft.Container(height=5),
-                    ft.Text("Editable Fields", size=14, weight=ft.FontWeight.W_500, color="grey700"),
-                    passes_form_container,
-                    ft.Divider(height=20),
-                    ft.ElevatedButton(
-                        "Save to Local DB", icon="save",
-                        on_click=update_pass_object_handler, width=380,
-                        style=ft.ButtonStyle(bgcolor="orange", color="white"),
-                    ),
-                    ft.Container(height=10),
-                    ft.ElevatedButton(
-                        "Update in Google Wallet API", icon="cloud_upload",
-                        on_click=push_to_google_wallet_handler, width=380,
-                        style=ft.ButtonStyle(bgcolor="blue", color="white"),
-                    ),
-                    ft.Container(height=10),
-                ], spacing=8, scroll="auto"),
-                padding=15, bgcolor="white",
-            ),
+            left_panel,
+            splitter,
             # Middle Panel: JSON Data
             ft.Container(
                 width=320,

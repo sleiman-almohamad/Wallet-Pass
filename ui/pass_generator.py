@@ -6,6 +6,9 @@ Creates individual Google Wallet passes for end users
 import flet as ft
 from typing import Dict, List, Any, Optional
 from core.qr_generator import generate_qr_code
+from ui.components.text_module_row_editor import TextModuleRowEditor
+import configs
+import string
 
 
 # Field configurations for each pass type
@@ -66,6 +69,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     # Container for dynamic fields
     dynamic_fields_container = ft.Column(spacing=10)
     dynamic_field_refs = {}  # Store refs for dynamic fields
+    pass_row_editor_ref = [None]  # List to hold reference mutably
     
     # Preview container
     preview_container = ft.Container(
@@ -75,7 +79,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     )
     
     # Current selected class data and custom color
-    current_class_data = {"class_type": None}
+    current_class_data = None
     custom_color_state = {"background_color": "#4285f4"}  # Default color
     
     # Color picker component (will be initialized after color change callback)
@@ -127,6 +131,14 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
         elif class_type == "TransitPass":
             detail_lines.append(f"Type: {pass_data.get('pass_type', 'Standard')}")
             detail_lines.append(f"Valid: {pass_data.get('valid_from', 'TBD')} - {pass_data.get('valid_until', 'TBD')}")
+        elif class_type == "Generic":
+            # Display text modules if available
+            text_modules = pass_data.get("textModulesData", [])
+            for module in text_modules:
+                if module.get("header") and module.get("body"):
+                    detail_lines.append(f"{module['header']}: {module['body']}")
+                elif module.get("body"):
+                    detail_lines.append(module['body'])
         else:
             detail_lines.append(f"Status: Active")
         
@@ -189,7 +201,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     def update_preview():
         """Update preview based on current form values"""
         nonlocal json_editor
-        if not current_class_data.get("class_type"):
+        if not current_class_data: # Use the top-level current_class_data
             return
 
         # Collect pass data from form
@@ -201,6 +213,10 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
         for field_name, field_ref in dynamic_field_refs.items():
             if field_ref.current:
                 pass_data[field_name] = field_ref.current.value or ""
+
+        # Add text module rows if editor is present
+        if pass_row_editor_ref[0]:
+            pass_data["textModulesData"] = pass_row_editor_ref[0].get_rows()
 
         # Update visual preview
         preview_container.content = build_preview(current_class_data, pass_data)
@@ -225,6 +241,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
             class_id = template_dropdown_ref.current.value
             
             # Get class data from local database
+            nonlocal current_class_data
             if class_id in class_metadata:
                 class_data = class_metadata[class_id]
             else:
@@ -239,6 +256,8 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 
                 # Store in metadata
                 class_metadata[class_id] = class_data
+            
+            current_class_data = class_data # Update the top-level current_class_data
             
             # Get class type
             class_type = class_data.get("class_type", "Generic")
@@ -288,8 +307,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                         template_event_time = template_event_time.split(":")[0] + ":" + template_event_time.split(":")[1]  # HH:MM
             
             # Store current class data for preview
-            current_class_data.clear()
-            current_class_data.update({
+            current_class_data.update({ # Update the existing dictionary
                 "class_type": class_type,
                 "class_id": class_id,
                 "base_color": base_color,
@@ -362,6 +380,31 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 )
                 
                 dynamic_fields_container.controls.append(field)
+
+            # Conditionally inject TextModuleRowEditor for Generic passes
+            if class_type == "Generic":
+                def on_pass_rows_change(modules):
+                    # This callback is triggered by the editor itself, so we just need to update the preview
+                    update_preview()
+
+                # Prepopulate with class-level rows if present (adapted for pass level)
+                initial_class_rows = class_data.get("text_module_rows", []) or []
+                if "textModulesData" in class_data.get("class_json", {}):
+                    # If class_json has textModulesData, use that as the base
+                    initial_class_rows = class_data["class_json"]["textModulesData"]
+                
+                # Check for existing pass-level textModulesData if any (e.g., from a loaded pass)
+                # For pass generation, we usually start fresh or from class defaults.
+                # The editor will manage its own state.
+
+                row_editor = TextModuleRowEditor(initial_class_rows, on_change=on_pass_rows_change, mode="pass")
+                pass_row_editor_ref[0] = row_editor
+                
+                dynamic_fields_container.controls.append(ft.Divider())
+                dynamic_fields_container.controls.append(ft.Text("Text Module Rows", weight=ft.FontWeight.BOLD))
+                dynamic_fields_container.controls.append(row_editor)
+            else:
+                pass_row_editor_ref[0] = None
             
             status_ref.current.value = f"✅ Template loaded from database: {class_type}"
             status_ref.current.color = "green"
@@ -445,6 +488,10 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 if field_ref.current and field_ref.current.value:
                     pass_data[field_name] = field_ref.current.value
             
+            # Add text module rows if editor is present
+            if pass_row_editor_ref[0]:
+                pass_data["textModulesData"] = pass_row_editor_ref[0].get_rows()
+
             # Generate unique object ID
             import time
             import configs
@@ -596,91 +643,108 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
         page.update()
     
     # Build UI
+    left_panel = ft.Container(
+        width=420,
+        content=ft.Column([
+            ft.Text("Pass Generator", size=22, weight=ft.FontWeight.BOLD),
+            ft.Text("Create individual passes for end users", size=11, color="grey"),
+            ft.Divider(),
+
+            ft.Container(height=10),
+
+            ft.Text("Select Template", size=16, weight=ft.FontWeight.BOLD),
+            ft.Dropdown(
+                ref=template_dropdown_ref,
+                label="Template Class",
+                hint_text="Choose a template",
+                width=380,
+                on_change=on_template_selected
+            ),
+
+            ft.Container(height=10),
+
+            ft.Text("Pass Holder Information", size=16, weight=ft.FontWeight.BOLD),
+            ft.TextField(
+                ref=holder_name_ref,
+                label="Name *",
+                hint_text="e.g., John Doe",
+                width=380,
+                on_change=lambda e: update_preview()
+            ),
+            ft.TextField(
+                ref=holder_email_ref,
+                label="Email *",
+                hint_text="e.g., john@example.com",
+                width=380
+            ),
+
+            ft.Container(height=5),
+
+            ft.Dropdown(
+                ref=message_type_ref,
+                label="Notification Type",
+                hint_text="Choose notification behavior",
+                width=380,
+                value="TEXT_AND_NOTIFY",
+                options=[
+                    ft.dropdown.Option(key="TEXT", text="Text Only (No Notification)"),
+                    ft.dropdown.Option(key="TEXT_AND_NOTIFY", text="Text + Push Notification"),
+                ]
+            ),
+
+            ft.Container(height=10),
+
+            # Color Picker Section
+            ft.Text("Customize Card Color", size=16, weight=ft.FontWeight.BOLD),
+            ft.Text("Choose a custom color or keep the template default", size=10, color="grey"),
+            color_picker_container,
+
+            ft.Container(height=10),
+
+            ft.Text("Pass Details", size=16, weight=ft.FontWeight.BOLD),
+            dynamic_fields_container,
+
+            ft.Divider(height=20),
+
+            ft.ElevatedButton(
+                "Generate Pass",
+                icon="add_card",
+                on_click=generate_pass,
+                width=380,
+                style=ft.ButtonStyle(bgcolor="blue", color="white")
+            ),
+
+            ft.Container(height=10),
+
+            ft.Text(ref=status_ref, value="", size=12),
+
+            ft.Container(height=10),
+
+            ft.Container(ref=result_container_ref, content=None)
+
+        ], spacing=10, scroll="auto"),
+        padding=15,
+        bgcolor="white"
+    )
+
+    # Splitter logic
+    def on_pan_update(e: ft.DragUpdateEvent):
+        new_width = left_panel.width + e.delta_x
+        # Constrain width between 300 and 800 pixels
+        left_panel.width = max(300, min(800, new_width))
+        left_panel.update()
+
+    splitter = ft.GestureDetector(
+        mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
+        drag_interval=10,
+        on_pan_update=on_pan_update,
+        content=ft.Container(width=5, bgcolor="transparent")
+    )
+
     ui = ft.Row([
         # Left Panel: Form
-        ft.Container(
-            width=420,
-            content=ft.Column([
-                ft.Text("Pass Generator", size=22, weight=ft.FontWeight.BOLD),
-                ft.Text("Create individual passes for end users", size=11, color="grey"),
-                ft.Divider(),
-
-                ft.Container(height=10),
-
-                ft.Text("Select Template", size=16, weight=ft.FontWeight.BOLD),
-                ft.Dropdown(
-                    ref=template_dropdown_ref,
-                    label="Template Class",
-                    hint_text="Choose a template",
-                    width=380,
-                    on_change=on_template_selected
-                ),
-
-                ft.Container(height=10),
-
-                ft.Text("Pass Holder Information", size=16, weight=ft.FontWeight.BOLD),
-                ft.TextField(
-                    ref=holder_name_ref,
-                    label="Name *",
-                    hint_text="e.g., John Doe",
-                    width=380,
-                    on_change=lambda e: update_preview()
-                ),
-                ft.TextField(
-                    ref=holder_email_ref,
-                    label="Email *",
-                    hint_text="e.g., john@example.com",
-                    width=380
-                ),
-
-                ft.Container(height=5),
-
-                ft.Dropdown(
-                    ref=message_type_ref,
-                    label="Notification Type",
-                    hint_text="Choose notification behavior",
-                    width=380,
-                    value="TEXT_AND_NOTIFY",
-                    options=[
-                        ft.dropdown.Option(key="TEXT", text="Text Only (No Notification)"),
-                        ft.dropdown.Option(key="TEXT_AND_NOTIFY", text="Text + Push Notification"),
-                    ]
-                ),
-
-                ft.Container(height=10),
-
-                # Color Picker Section
-                ft.Text("Customize Card Color", size=16, weight=ft.FontWeight.BOLD),
-                ft.Text("Choose a custom color or keep the template default", size=10, color="grey"),
-                color_picker_container,
-
-                ft.Container(height=10),
-
-                ft.Text("Pass Details", size=16, weight=ft.FontWeight.BOLD),
-                dynamic_fields_container,
-
-                ft.Divider(height=20),
-
-                ft.ElevatedButton(
-                    "Generate Pass",
-                    icon="add_card",
-                    on_click=generate_pass,
-                    width=380,
-                    style=ft.ButtonStyle(bgcolor="blue", color="white")
-                ),
-
-                ft.Container(height=10),
-
-                ft.Text(ref=status_ref, value="", size=12),
-
-                ft.Container(height=10),
-
-                ft.Container(ref=result_container_ref, content=None)
-
-            ], spacing=10, scroll="auto"),
-            padding=15,
-            bgcolor="white"
-        ),
+        left_panel,
+        splitter,
 
         # Middle Panel: JSON Data
         ft.Container(

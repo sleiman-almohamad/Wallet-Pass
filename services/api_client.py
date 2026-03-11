@@ -49,6 +49,10 @@ class APIClient:
                     transit_type: Optional[str] = None,
                     transit_operator_name: Optional[str] = None,
                     class_json: Optional[Dict[str, Any]] = None,
+                    multiple_devices_allowed: Optional[str] = None,
+                    view_unlock_requirement: Optional[str] = None,
+                    enable_smart_tap: Optional[bool] = None,
+                    text_module_rows: Optional[list] = None,
                     **extra) -> Dict[str, Any]:
         """Create a new class"""
         data = {
@@ -67,8 +71,14 @@ class APIClient:
             "program_name": program_name,
             "transit_type": transit_type,
             "transit_operator_name": transit_operator_name,
-            "class_json": class_json
+            "class_json": class_json,
+            "multiple_devices_allowed": multiple_devices_allowed,
+            "view_unlock_requirement": view_unlock_requirement,
+            "enable_smart_tap": enable_smart_tap,
+            "text_module_rows": text_module_rows
         }
+        # filter out Nones
+        data = {k: v for k, v in data.items() if v is not None}
         try:
             response = requests.post(f"{self.base_url}/classes/", json=data)
             response.raise_for_status()
@@ -104,6 +114,10 @@ class APIClient:
                     transit_type: Optional[str] = None,
                     transit_operator_name: Optional[str] = None,
                     class_json: Optional[Dict[str, Any]] = None,
+                    multiple_devices_allowed: Optional[str] = None,
+                    view_unlock_requirement: Optional[str] = None,
+                    enable_smart_tap: Optional[bool] = None,
+                    text_module_rows: Optional[list] = None,
                     sync_to_google: bool = True,
                     notification_message: Optional[str] = None,
                     **extra) -> Dict[str, Any]:
@@ -117,7 +131,9 @@ class APIClient:
             ("venue_name", venue_name), ("venue_address", venue_address),
             ("event_start", event_start), ("program_name", program_name),
             ("transit_type", transit_type), ("transit_operator_name", transit_operator_name),
-            ("class_json", class_json)
+            ("class_json", class_json), ("multiple_devices_allowed", multiple_devices_allowed),
+            ("view_unlock_requirement", view_unlock_requirement), ("enable_smart_tap", enable_smart_tap),
+            ("text_module_rows", text_module_rows)
         ]:
             if field_val is not None:
                 data[field_name] = field_val

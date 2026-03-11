@@ -7,6 +7,7 @@ import flet as ft
 from core.json_templates import JSONTemplateManager, get_template, get_editable_fields
 from ui.components.json_form_mapper import DynamicForm, set_nested_value
 from ui.components.json_editor import JSONEditor
+from ui.components.text_module_row_editor import TextModuleRowEditor
 import configs
 import json
 
@@ -25,6 +26,14 @@ def create_template_builder(page, api_client=None):
     current_json = {}
     dynamic_form = None
     json_editor = None
+    row_editor = None
+    
+    # Left panel reference for resizing
+    left_panel = ft.Container(
+        width=420,
+        padding=15,
+        bgcolor="white"
+    )
     
     # UI References
     class_id_input_ref = ft.Ref[ft.TextField]()
@@ -181,8 +190,25 @@ def create_template_builder(page, api_client=None):
         # Get editable fields for this type
         field_mappings = get_editable_fields(current_class_type)
         
-        # Create dynamic form
-        dynamic_form = DynamicForm(field_mappings, current_json, on_json_change)
+        # Create dynamic form (conditionally inject text modules for Generic)
+        nonlocal row_editor
+        custom_form_controls = []
+        
+        if current_class_type == "Generic":
+            def on_rows_change(rows):
+                nonlocal current_json
+                current_json["text_module_rows"] = rows
+                on_json_change(current_json)
+                
+            # Initialize with existing rows if present
+            initial_rows = current_json.get("text_module_rows", [])
+            row_editor = TextModuleRowEditor(initial_rows, on_change=on_rows_change, mode="class")
+            custom_form_controls.append(ft.Divider())
+            custom_form_controls.append(row_editor)
+        else:
+            row_editor = None
+            
+        dynamic_form = DynamicForm(field_mappings, current_json, on_json_change, custom_controls=custom_form_controls)
         form_controls = dynamic_form.build()
         
         # Update form container
@@ -242,13 +268,24 @@ def create_template_builder(page, api_client=None):
                 # Check if class already exists
                 existing_class = api_client.get_class(class_id)
                 
+                
+                # Extract extended generic fields from the form's current state
+                form_data = dynamic_form.get_json_data() if dynamic_form else current_json
+                extras = {}
+                if current_class_type == "Generic":
+                    extras["multiple_devices_allowed"] = form_data.get("multiple_devices_allowed")
+                    extras["view_unlock_requirement"] = form_data.get("view_unlock_requirement")
+                    extras["enable_smart_tap"] = form_data.get("enable_smart_tap")
+                    extras["text_module_rows"] = form_data.get("text_module_rows", [])
+
                 if existing_class:
                     # Update existing class
                     print(f"Class '{class_id}' already exists, updating...")
                     result = api_client.update_class(
                         class_id=class_id,
                         class_type=current_class_type,
-                        class_json=current_json
+                        class_json=current_json,
+                        **extras
                     )
                     status_text_ref.current.value = f"✅ Template '{class_id}' updated successfully!"
                 else:
@@ -257,7 +294,8 @@ def create_template_builder(page, api_client=None):
                     result = api_client.create_class(
                         class_id=class_id,
                         class_type=current_class_type,
-                        class_json=current_json
+                        class_json=current_json,
+                        **extras
                     )
                     status_text_ref.current.value = f"✅ Template '{class_id}' created successfully!"
                 
@@ -305,70 +343,86 @@ def create_template_builder(page, api_client=None):
         page.update()
     
     # Build the UI
+    left_panel = ft.Container(
+        width=420,
+        content=ft.Column([
+            ft.Text("Template Builder", size=22, weight=ft.FontWeight.BOLD),
+            ft.Text("Dynamic class creation with templates", size=11, color="grey"),
+            ft.Divider(),
+            
+            ft.Text("Basic Information", size=16, weight=ft.FontWeight.BOLD),
+            ft.TextField(
+                ref=class_id_input_ref,
+                label="Class ID *",
+                hint_text="e.g., coffee_loyalty_2025",
+                width=350,
+                on_change=on_class_id_change
+            ),
+            ft.Dropdown(
+                ref=class_type_dropdown_ref,
+                label="Class Type *",
+                value="Generic",
+                width=350,
+                options=[
+                    ft.dropdown.Option("Generic"),
+                    ft.dropdown.Option("LoyaltyCard"),
+                    ft.dropdown.Option("GiftCard"),
+                    ft.dropdown.Option("EventTicket"),
+                    ft.dropdown.Option("TransitPass")
+                ],
+                on_change=on_class_type_change
+            ),
+            
+            ft.Divider(height=15),
+            
+            ft.Text("Template Fields", size=16, weight=ft.FontWeight.BOLD),
+            ft.Text("Fields will appear here after selecting a type", size=10, color="grey"),
+            
+            ft.Column(
+                ref=form_container_ref,
+                controls=[],
+                scroll="auto",
+                spacing=8
+            ),
+            
+            ft.Divider(height=15),
+            
+            ft.Row([
+                ft.ElevatedButton(
+                    "Save Template",
+                    icon="save",
+                    on_click=save_template,
+                    style=ft.ButtonStyle(bgcolor="blue", color="white")
+                ),
+                ft.OutlinedButton("Reset", icon="refresh", on_click=reset_form)
+            ], spacing=10),
+            
+            
+            ft.Text(ref=status_text_ref, value="", size=11),
+            
+        ], spacing=8, scroll="auto")
+    )
+    
+    # Splitter logic
+    def on_pan_update(e: ft.DragUpdateEvent):
+        new_width = left_panel.width + e.delta_x
+        # Constrain width between 300 and 800 pixels
+        left_panel.width = max(300, min(800, new_width))
+        left_panel.update()
+
+    splitter = ft.GestureDetector(
+        mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
+        drag_interval=10,
+        on_pan_update=on_pan_update,
+        content=ft.Container(width=5, bgcolor="transparent")
+    )
+
     return ft.Row([
-        # LEFT PANEL: Form
-        ft.Container(
-            width=380,
-            content=ft.Column([
-                ft.Text("Create Pass Class", size=22, weight=ft.FontWeight.BOLD),
-                ft.Text("Dynamic class creation with templates", size=11, color="grey"),
-                ft.Divider(),
-                
-                ft.Text("Basic Information", size=16, weight=ft.FontWeight.BOLD),
-                ft.TextField(
-                    ref=class_id_input_ref,
-                    label="Class ID *",
-                    hint_text="e.g., coffee_loyalty_2025",
-                    width=350,
-                    on_change=on_class_id_change
-                ),
-                ft.Dropdown(
-                    ref=class_type_dropdown_ref,
-                    label="Class Type *",
-                    value="Generic",
-                    width=350,
-                    options=[
-                        ft.dropdown.Option("Generic"),
-                        ft.dropdown.Option("LoyaltyCard"),
-                        ft.dropdown.Option("GiftCard"),
-                        ft.dropdown.Option("EventTicket"),
-                        ft.dropdown.Option("TransitPass")
-                    ],
-                    on_change=on_class_type_change
-                ),
-                
-                ft.Divider(height=15),
-                
-                ft.Text("Template Fields", size=16, weight=ft.FontWeight.BOLD),
-                ft.Text("Fields will appear here after selecting a type", size=10, color="grey"),
-                
-                ft.Column(
-                    ref=form_container_ref,
-                    controls=[],
-                    scroll="auto",
-                    spacing=8
-                ),
-                
-                ft.Divider(height=15),
-                
-                ft.Row([
-                    ft.ElevatedButton(
-                        "Save Template",
-                        icon="save",
-                        on_click=save_template,
-                        style=ft.ButtonStyle(bgcolor="blue", color="white")
-                    ),
-                    ft.OutlinedButton("Reset", icon="refresh", on_click=reset_form)
-                ], spacing=10),
-                
-                ft.Text(ref=status_text_ref, value="", size=11),
-                
-            ], spacing=8, scroll="auto"),
-            padding=15,
-            bgcolor="white"
-        ),
-        
-        # MIDDLE PANEL: JSON Preview
+        # LEFT PANEL: Form Inputs
+            left_panel,
+            splitter,
+            
+            # MIDDLE PANEL: JSON Preview
         ft.Container(
             width=320,
             content=ft.Column([

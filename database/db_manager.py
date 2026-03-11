@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from database.models import (
     SessionLocal,
-    ClassesTable, GenericClassFields, EventTicketClassFields,
+    ClassesTable, GenericClassFields, GenericClassTextModuleRows, EventTicketClassFields,
     LoyaltyClassFields, TransitClassFields,
     PassesTable, EventTicketFields, GenericFields,
     PassTextModules, PassMessages,
@@ -68,6 +68,11 @@ class DatabaseManager:
                      # Transit-specific
                      transit_type: Optional[str] = None,
                      transit_operator_name: Optional[str] = None,
+                     # Generic-specific extended
+                     multiple_devices_allowed: Optional[str] = None,
+                     view_unlock_requirement: Optional[str] = None,
+                     enable_smart_tap: Optional[bool] = None,
+                     text_module_rows: Optional[list] = None,
                      # Legacy compat (ignored for storage)
                      class_json: Optional[Dict[str, Any]] = None,
                      **extra) -> bool:
@@ -86,7 +91,24 @@ class DatabaseManager:
             if class_type == 'Generic':
                 session.add(GenericClassFields(
                     class_id=class_id, header=header_text, card_title=card_title,
+                    multiple_devices_allowed=multiple_devices_allowed,
+                    view_unlock_requirement=view_unlock_requirement,
+                    enable_smart_tap=enable_smart_tap
                 ))
+                session.flush()
+                
+                # Insert text module rows
+                if text_module_rows:
+                    for row in text_module_rows:
+                        if hasattr(row, 'dict'):
+                            row = row.dict()
+                        session.add(GenericClassTextModuleRows(
+                            class_id=class_id,
+                            row_index=row.get('row_index', 0),
+                            left_header=row.get('left_header'), left_body=row.get('left_body'),
+                            middle_header=row.get('middle_header'), middle_body=row.get('middle_body'),
+                            right_header=row.get('right_header'), right_body=row.get('right_body')
+                        ))
             elif class_type == 'EventTicket':
                 session.add(EventTicketClassFields(
                     class_id=class_id, event_name=event_name,
@@ -123,6 +145,10 @@ class DatabaseManager:
         if class_type == "Generic":
             args["header_text"] = result.get("header")
             args["card_title"] = result.get("card_title")
+            args["multiple_devices_allowed"] = result.get("multiple_devices_allowed")
+            args["view_unlock_requirement"] = result.get("view_unlock_requirement")
+            args["enable_smart_tap"] = result.get("enable_smart_tap")
+            args["text_module_rows"] = result.get("text_module_rows", [])
         elif class_type == "EventTicket":
             args["event_name"] = result.get("event_name")
             args["venue_name"] = result.get("venue_name")
@@ -152,9 +178,25 @@ class DatabaseManager:
         if cls.generic_fields:
             d["header"] = cls.generic_fields.header
             d["card_title"] = cls.generic_fields.card_title
+            d["multiple_devices_allowed"] = cls.generic_fields.multiple_devices_allowed
+            d["view_unlock_requirement"] = cls.generic_fields.view_unlock_requirement
+            d["enable_smart_tap"] = cls.generic_fields.enable_smart_tap
+            d["text_module_rows"] = [
+                {
+                    "row_index": r.row_index,
+                    "left_header": r.left_header, "left_body": r.left_body,
+                    "middle_header": r.middle_header, "middle_body": r.middle_body,
+                    "right_header": r.right_header, "right_body": r.right_body,
+                }
+                for r in cls.generic_fields.text_module_rows
+            ]
         else:
             d["header"] = None
             d["card_title"] = None
+            d["multiple_devices_allowed"] = None
+            d["view_unlock_requirement"] = None
+            d["enable_smart_tap"] = None
+            d["text_module_rows"] = []
 
         if cls.event_ticket_fields:
             d["event_name"] = cls.event_ticket_fields.event_name
@@ -218,6 +260,9 @@ class DatabaseManager:
                 child_vals = {
                     'header': kwargs.get('header_text'),
                     'card_title': kwargs.get('card_title'),
+                    'multiple_devices_allowed': kwargs.get('multiple_devices_allowed'),
+                    'view_unlock_requirement': kwargs.get('view_unlock_requirement'),
+                    'enable_smart_tap': kwargs.get('enable_smart_tap'),
                 }
                 child_vals = {k: v for k, v in child_vals.items() if v is not None}
                 if child_vals:
@@ -228,6 +273,29 @@ class DatabaseManager:
                         cls.generic_fields = GenericClassFields(
                             class_id=class_id, **child_vals,
                         )
+                
+                if 'text_module_rows' in kwargs:
+                    # Replace all existing module rows
+                    if cls.generic_fields:
+                        cls.generic_fields.text_module_rows.clear()
+                        session.flush()
+                        
+                    for row in kwargs.get('text_module_rows', []):
+                        if hasattr(row, 'dict'):
+                            row = row.dict()
+                        
+                        r_obj = GenericClassTextModuleRows(
+                            class_id=class_id,
+                            row_index=row.get('row_index', 0),
+                            left_header=row.get('left_header'), left_body=row.get('left_body'),
+                            middle_header=row.get('middle_header'), middle_body=row.get('middle_body'),
+                            right_header=row.get('right_header'), right_body=row.get('right_body')
+                        )
+                        if cls.generic_fields:
+                            cls.generic_fields.text_module_rows.append(r_obj)
+                        else:
+                            # edge case
+                            session.add(r_obj)
 
             elif class_type == 'EventTicket':
                 child_vals = {

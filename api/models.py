@@ -40,6 +40,11 @@ class ClassCreate(BaseModel):
     # Transit-specific
     transit_type: Optional[str] = Field(None, description="Transit type (e.g., TRANSIT_TYPE_BUS)")
     transit_operator_name: Optional[str] = Field(None, description="Transit operator name")
+    # Generic-specific extended
+    multiple_devices_allowed: Optional[str] = Field(None, description="Multiple devices and holders allowed status")
+    view_unlock_requirement: Optional[str] = Field(None, description="View unlock requirement")
+    enable_smart_tap: Optional[bool] = Field(None, description="Enable smart tap")
+    text_module_rows: Optional[list['TextModuleRowModel']] = Field(default_factory=list, description="Array of text module rows")
     # Legacy compat
     class_json: Optional[Dict[str, Any]] = Field(None, description="Complete Google Wallet class JSON configuration")
     
@@ -75,6 +80,11 @@ class ClassUpdate(BaseModel):
     program_name: Optional[str] = Field(None, description="Loyalty program name")
     transit_type: Optional[str] = Field(None, description="Transit type")
     transit_operator_name: Optional[str] = Field(None, description="Transit operator name")
+    # Generic-specific extended
+    multiple_devices_allowed: Optional[str] = Field(None, description="Multiple devices and holders allowed status")
+    view_unlock_requirement: Optional[str] = Field(None, description="View unlock requirement")
+    enable_smart_tap: Optional[bool] = Field(None, description="Enable smart tap")
+    text_module_rows: Optional[list['TextModuleRowModel']] = Field(default_factory=list, description="Array of text module rows")
     class_json: Optional[Dict[str, Any]] = Field(None, description="Complete Google Wallet class JSON configuration")
     
     model_config = {
@@ -98,6 +108,10 @@ class ClassResponse(BaseModel):
     issuer_name: Optional[str] = None
     header_text: Optional[str] = None
     card_title: Optional[str] = None
+    multiple_devices_allowed: Optional[str] = None
+    view_unlock_requirement: Optional[str] = None
+    enable_smart_tap: Optional[bool] = None
+    text_module_rows: Optional[list['TextModuleRowModel']] = Field(default_factory=list)
     class_json: Optional[Dict[str, Any]] = None
     created_at: datetime
     
@@ -137,6 +151,15 @@ class GenericDataModel(BaseModel):
     header_value: Optional[str] = None
     subheader_value: Optional[str] = None
 
+
+class TextModuleRowModel(BaseModel):
+    row_index: Optional[int] = None
+    left_header: Optional[str] = None
+    left_body: Optional[str] = None
+    middle_header: Optional[str] = None
+    middle_body: Optional[str] = None
+    right_header: Optional[str] = None
+    right_body: Optional[str] = None
 
 # ========================================================================
 # Pass Models

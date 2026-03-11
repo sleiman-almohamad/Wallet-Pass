@@ -209,7 +209,7 @@ class JSONTemplateManager:
     @staticmethod
     def _generic_template(class_id: str, **kwargs) -> Dict[str, Any]:
         """Generic template"""
-        return {
+        template = {
             "id": class_id,
             "issuerName": kwargs.get("issuer_name", "Your Business"),
             "header": {
@@ -249,6 +249,49 @@ class JSONTemplateManager:
             },
             "reviewStatus": "UNDER_REVIEW"
         }
+
+        if kwargs.get("multiple_devices_allowed"):
+            template["multipleDevicesAndHoldersAllowedStatus"] = kwargs["multiple_devices_allowed"]
+        
+        if kwargs.get("view_unlock_requirement"):
+            template["viewUnlockRequirement"] = kwargs["view_unlock_requirement"]
+            
+        if kwargs.get("enable_smart_tap") is not None:
+            template["enableSmartTap"] = bool(kwargs["enable_smart_tap"])
+
+        if kwargs.get("text_module_rows"):
+            text_modules = []
+            for row in kwargs.get("text_module_rows", []):
+                # row can be a dict (from API payload) or TextModuleRowModel object
+                if hasattr(row, 'dict'):
+                    row = row.dict()
+                
+                # left
+                if row.get('left_header') or row.get('left_body'):
+                    text_modules.append({
+                        "header": row.get('left_header', ''),
+                        "body": row.get('left_body', ''),
+                        "id": f"row_{row.get('row_index', 0)}_left"
+                    })
+                # middle
+                if row.get('middle_header') or row.get('middle_body'):
+                    text_modules.append({
+                        "header": row.get('middle_header', ''),
+                        "body": row.get('middle_body', ''),
+                        "id": f"row_{row.get('row_index', 0)}_middle"
+                    })
+                # right
+                if row.get('right_header') or row.get('right_body'):
+                    text_modules.append({
+                        "header": row.get('right_header', ''),
+                        "body": row.get('right_body', ''),
+                        "id": f"row_{row.get('row_index', 0)}_right"
+                    })
+            
+            if text_modules:
+                template["textModulesData"] = text_modules
+
+        return template
     
     @staticmethod
     def get_editable_fields(class_type: str) -> Dict[str, Dict[str, str]]:
@@ -407,6 +450,23 @@ class JSONTemplateManager:
                     "label": "Hero Image URL",
                     "type": "url",
                     "hint": "https://example.com/hero.jpg (1032x336px recommended)"
+                },
+                "multiple_devices_allowed": {
+                    "label": "Multiple Devices Allowed",
+                    "type": "select",
+                    "hint": "MULTIPLE_HOLDERS",
+                    "options": ["MULTIPLE_HOLDERS", "ONE_USER_ALL_DEVICES", "ONE_USER_ONE_DEVICE"]
+                },
+                "view_unlock_requirement": {
+                    "label": "View Unlock Requirement",
+                    "type": "select",
+                    "hint": "UNLOCK_REQUIRED_TO_VIEW",
+                    "options": ["UNLOCK_REQUIRED_TO_VIEW", "UNLOCK_NOT_REQUIRED"]
+                },
+                "enable_smart_tap": {
+                    "label": "Enable Smart Tap",
+                    "type": "boolean",
+                    "hint": "false"
                 }
             }
 

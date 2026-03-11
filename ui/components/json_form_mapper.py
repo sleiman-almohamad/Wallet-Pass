@@ -71,6 +71,15 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
     label = field_metadata.get("label", field_path)
     hint = field_metadata.get("hint", "")
     
+    if field_type == "boolean":
+        # Checkbox / Switch field
+        is_checked = str(current_value).lower() == 'true' if current_value is not None else False
+        return ft.Switch(
+            label=label,
+            value=is_checked,
+            on_change=lambda e: on_change(field_path, e.control.value)
+        )
+    
     if field_type == "color":
         # Color field with hex input
         color_field = ft.TextField(
@@ -169,7 +178,8 @@ class DynamicForm:
     
     def __init__(self, field_mappings: Dict[str, Dict[str, str]], 
                  initial_json: Dict[str, Any],
-                 on_change_callback: Optional[Callable] = None):
+                 on_change_callback: Optional[Callable] = None,
+                 custom_controls: Optional[list] = None):
         """
         Initialize dynamic form
         
@@ -177,10 +187,12 @@ class DynamicForm:
             field_mappings: Field definitions
             initial_json: Initial JSON data
             on_change_callback: Optional callback when form data changes
+            custom_controls: Optional list of additional Flet controls to render at bottom
         """
         self.field_mappings = field_mappings
         self.json_data = initial_json.copy()
         self.on_change_callback = on_change_callback
+        self.custom_controls = custom_controls or []
         self.controls = []
     
     def _on_field_change(self, field_path: str, new_value: Any):
@@ -199,6 +211,8 @@ class DynamicForm:
             self.json_data,
             self._on_field_change
         )
+        if self.custom_controls:
+            self.controls.extend(self.custom_controls)
         return self.controls
     
     def get_json_data(self) -> Dict[str, Any]:

@@ -5,10 +5,10 @@ Maps to the existing MariaDB schema defined in schema.sql
 
 from sqlalchemy import (
     create_engine, Column, String, Text, Integer, Enum, ForeignKey,
-    Index, UniqueConstraint, TIMESTAMP, func
+    Index, UniqueConstraint, TIMESTAMP, func, Boolean
 )
 from sqlalchemy.orm import (
-    DeclarativeBase, relationship, sessionmaker, Session
+    declarative_base, relationship, sessionmaker, Session
 )
 import configs
 
@@ -31,8 +31,7 @@ SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 # Base
 # ---------------------------------------------------------------------------
 
-class Base(DeclarativeBase):
-    pass
+Base = declarative_base()
 
 
 # ============================================================================
@@ -85,8 +84,35 @@ class GenericClassFields(Base):
     )
     header = Column(String(255))
     card_title = Column(String(255))
+    multiple_devices_allowed = Column(String(100), nullable=True)
+    view_unlock_requirement = Column(String(100), nullable=True)
+    enable_smart_tap = Column(Boolean, nullable=True, default=False)
 
     parent = relationship("ClassesTable", back_populates="generic_fields")
+
+    text_module_rows = relationship(
+        "GenericClassTextModuleRows", back_populates="parent_generic_fields",
+        cascade="all, delete-orphan", passive_deletes=True,
+        order_by="GenericClassTextModuleRows.row_index"
+    )
+
+class GenericClassTextModuleRows(Base):
+    __tablename__ = "GenericClass_TextModuleRows"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    class_id = Column(
+        String(255), ForeignKey("GenericClass_Fields.class_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False, index=True,
+    )
+    row_index = Column(Integer, nullable=False, default=0)
+    left_header = Column(String(255), nullable=True)
+    left_body = Column(Text, nullable=True)
+    middle_header = Column(String(255), nullable=True)
+    middle_body = Column(Text, nullable=True)
+    right_header = Column(String(255), nullable=True)
+    right_body = Column(Text, nullable=True)
+
+    parent_generic_fields = relationship("GenericClassFields", back_populates="text_module_rows")
 
 
 class EventTicketClassFields(Base):

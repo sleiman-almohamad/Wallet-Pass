@@ -29,6 +29,8 @@ def parse_google_wallet_class(class_json):
         # Transit child fields
         'transit_type': None,
         'transit_operator_name': None,
+        # Generic text module rows (our DB stores these as 3-column rows)
+        'text_module_rows': [],
     }
     
     # Strip issuer ID prefix if present
@@ -72,6 +74,50 @@ def parse_google_wallet_class(class_json):
         metadata['header_text'] = class_json['header'].get('defaultValue', {}).get('value')
     if 'cardTitle' in class_json:
         metadata['card_title'] = class_json['cardTitle'].get('defaultValue', {}).get('value')
+
+    # Generic: textModulesData -> our row-based storage
+    # Google uses a flat list; our UI/DB expects rows with left/middle/right columns.
+    # Common IDs created by our app: row_{row_index}_{left|middle|right}
+    text_modules = class_json.get("textModulesData")
+    if isinstance(text_modules, list) and text_modules:
+        rows_by_idx = {}
+        fallback_row = 0
+
+        for mod in text_modules:
+            if not isinstance(mod, dict):
+                continue
+            mid = mod.get("id") or ""
+            header = mod.get("header")
+            body = mod.get("body")
+
+            # defaults
+            row_index = None
+            col = None
+
+            if isinstance(mid, str) and mid.startswith("row_"):
+                # expected: row_0_left, row_1_middle, row_2_right
+                parts = mid.split("_")
+                if len(parts) >= 3:
+                    try:
+                        row_index = int(parts[1])
+                        col = parts[2]
+                    except Exception:
+                        row_index = None
+                        col = None
+
+            if row_index is None:
+                row_index = fallback_row
+                col = "left"
+                fallback_row += 1
+
+            if col not in ("left", "middle", "right"):
+                col = "left"
+
+            row = rows_by_idx.setdefault(row_index, {"row_index": row_index})
+            row[f"{col}_header"] = header
+            row[f"{col}_body"] = body
+
+        metadata["text_module_rows"] = [rows_by_idx[k] for k in sorted(rows_by_idx.keys())]
     
     # EventTicket
     if 'eventName' in class_json:

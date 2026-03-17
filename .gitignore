@@ -18,5 +18,15 @@ wallet-pass-*.json
 
 #testing
 debug_notification.py
+debug_class_ManchesterUnited.json
+Clean_test_push.py
+delete_passes.py
+fetch_Class_Json.py
+fetch_json.py
+final_propoer_notification_test.py
+list_all_passes.py
+test_list_objects.py
+test_minimal.py
+test_sync_improved.py
 plan.txt
 certs/

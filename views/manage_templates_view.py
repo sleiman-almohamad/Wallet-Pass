@@ -96,21 +96,14 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
     # ── Business-logic handlers ──
 
     def startup_sync_classes():
-        """Check local DB and sync from Google Wallet if empty."""
+        """Check local DB; do not auto-sync from Google (local is source of truth)."""
         try:
             classes = api_client.get_classes() if api_client else []
             if not classes or len(classes) == 0:
-                _set_status(state.t("msg.syncing_classes"), "blue")
-                page.update()
-                try:
-                    api_client.sync_classes()
-                    classes = api_client.get_classes() if api_client else []
-                    if classes and len(classes) > 0:
-                        _set_status(state.t("msg.synced_classes", count=len(classes)))
-                    else:
-                        _set_status(state.t("msg.no_classes_google"), "blue")
-                except Exception as sync_error:
-                    _set_status(state.t("msg.error_syncing", error=str(sync_error)), "red")
+                _set_status(
+                    "ℹ️ No templates found locally. Google class sync is disabled (local DB is source of truth).",
+                    "orange",
+                )
                 page.update()
         except Exception as e:
             _set_status(f"❌ Error checking local database: {e}", "red")
@@ -168,6 +161,13 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
 
             class_type = class_data.get("class_type", "Generic")
 
+            # IMPORTANT: Our DB stores Generic text modules in relational form as `text_module_rows`.
+            # The Manage Templates UI expects `text_module_rows` to exist in the JSON it edits,
+            # but `class_json` coming from Google does not include that structure.
+            if class_type == "Generic":
+                json_data = json_data.copy()  # avoid mutating shared dict
+                json_data["text_module_rows"] = class_data.get("text_module_rows", []) or []
+
             edit_class_id_field.value = class_id
             edit_class_type_field.value = class_type
 
@@ -224,7 +224,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
 
     def update_and_sync_handler(e):
         """Save template changes to local database AND sync to Google Wallet."""
-        nonlocal manage_current_json, manage_dynamic_form
+        nonlocal manage_current_json, manage_dynamic_form, manage_row_editor
 
         if not edit_class_id_field.value:
             _set_status(state.t("msg.no_template_loaded"), "red"); page.update(); return
@@ -236,6 +236,10 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             updated_json = manage_dynamic_form.get_json_data()
             extras = {}
             if manage_current_class_type == "Generic":
+                # Always read latest rows from the row editor (the row editor does not
+                # update manage_dynamic_form.json_data automatically).
+                if manage_row_editor and hasattr(manage_row_editor, "get_rows"):
+                    updated_json["text_module_rows"] = manage_row_editor.get_rows()
                 extras["multiple_devices_allowed"] = updated_json.get("multiple_devices_allowed")
                 extras["view_unlock_requirement"] = updated_json.get("view_unlock_requirement")
                 extras["enable_smart_tap"] = updated_json.get("enable_smart_tap")

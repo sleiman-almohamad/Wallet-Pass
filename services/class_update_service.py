@@ -45,6 +45,22 @@ def propagate_class_update_to_passes(
         }
     """
     logger.info(f"Starting pass propagation for class: {class_id}")
+
+    def _extract_localized_value(v: Any) -> str:
+        """Best-effort extraction of a LocalizedString-like dict to plain text."""
+        if v is None:
+            return ""
+        if isinstance(v, str):
+            return v
+        if isinstance(v, (int, float, bool)):
+            return str(v)
+        if isinstance(v, dict):
+            dv = v.get("defaultValue")
+            if isinstance(dv, dict) and isinstance(dv.get("value"), str):
+                return dv["value"]
+            if isinstance(v.get("value"), str):
+                return v["value"]
+        return ""
     
     # Initialize result counters
     result = {
@@ -98,7 +114,37 @@ def propagate_class_update_to_passes(
                 # Extract pass-specific data
                 holder_name = pass_obj.get('holder_name', '')
                 holder_email = pass_obj.get('holder_email', '')
-                pass_data = pass_obj.get('pass_data', {})
+                pass_data = pass_obj.get('pass_data', {}) or {}
+
+                # IMPORTANT: For Google "Generic" passes, visual branding (logo/hero/bg)
+                # is object-level, not class-level. So when a Generic template is updated
+                # locally, we must push those visual fields onto each GenericObject.
+                if class_type == "Generic":
+                    pass_data = dict(pass_data)
+                    class_json = updated_class.get("class_json") or {}
+                    if updated_class.get("logo_url"):
+                        pass_data["logo_url"] = updated_class["logo_url"]
+                    if updated_class.get("hero_image_url"):
+                        pass_data["hero_image_url"] = updated_class["hero_image_url"]
+                    if updated_class.get("base_color"):
+                        pass_data["hexBackgroundColor"] = updated_class["base_color"]
+
+                    # For Generic passes, header and cardTitle are ALSO object-level.
+                    # If the user updates them in the template, copy them to objects.
+                    # Prefer explicit relational columns if present, else derive from class_json.
+                    header_text = (
+                        updated_class.get("header_text")
+                        or _extract_localized_value(class_json.get("header"))
+                    )
+                    card_title = (
+                        updated_class.get("card_title")
+                        or _extract_localized_value(class_json.get("cardTitle"))
+                    )
+
+                    if header_text:
+                        pass_data["header_value"] = header_text
+                    if card_title:
+                        pass_data["subheader_value"] = card_title
 
                 # region agent log
                 try:

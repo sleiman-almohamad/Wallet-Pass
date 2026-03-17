@@ -392,6 +392,12 @@ async def sync_classes_from_google():
     Updates existing classes and creates new ones.
     """
     try:
+        if not configs.ALLOW_GOOGLE_CLASS_SYNC:
+            raise HTTPException(
+                status_code=403,
+                detail="Syncing classes FROM Google is disabled (local DB is source of truth). "
+                       "Set ALLOW_GOOGLE_CLASS_SYNC=true to enable."
+            )
         if not wallet_client:
             raise HTTPException(status_code=503, detail="Google Wallet client not initialized")
         
@@ -436,23 +442,29 @@ async def sync_classes_from_google():
                 if existing_class:
                     # Update parameters
                     logger.info(f"Updating local class: {class_id}")
-                    success = db.update_class(
-                        class_id=class_id,
-                        class_type=metadata['class_type'],
-                        issuer_name=metadata.get('issuer_name'),
-                        base_color=metadata.get('base_color'),
-                        logo_url=metadata.get('logo_url'),
-                        hero_image_url=metadata.get('hero_image_url'),
-                        header_text=metadata.get('header_text'),
-                        card_title=metadata.get('card_title'),
-                        event_name=metadata.get('event_name'),
-                        venue_name=metadata.get('venue_name'),
-                        venue_address=metadata.get('venue_address'),
-                        event_start=metadata.get('event_start'),
-                        program_name=metadata.get('program_name'),
-                        transit_type=metadata.get('transit_type'),
-                        transit_operator_name=metadata.get('transit_operator_name'),
-                    )
+                    # IMPORTANT: never overwrite local fields with None during sync.
+                    # Google may omit fields (especially for GenericClass branding),
+                    # so we only apply non-None updates. text_module_rows is always applied.
+                    update_kwargs = {
+                        "class_type": metadata.get("class_type"),
+                        "issuer_name": metadata.get("issuer_name"),
+                        "base_color": metadata.get("base_color"),
+                        "logo_url": metadata.get("logo_url"),
+                        "hero_image_url": metadata.get("hero_image_url"),
+                        "header_text": metadata.get("header_text"),
+                        "card_title": metadata.get("card_title"),
+                        "event_name": metadata.get("event_name"),
+                        "venue_name": metadata.get("venue_name"),
+                        "venue_address": metadata.get("venue_address"),
+                        "event_start": metadata.get("event_start"),
+                        "program_name": metadata.get("program_name"),
+                        "transit_type": metadata.get("transit_type"),
+                        "transit_operator_name": metadata.get("transit_operator_name"),
+                    }
+                    update_kwargs = {k: v for k, v in update_kwargs.items() if v is not None}
+                    update_kwargs["text_module_rows"] = metadata.get("text_module_rows", [])
+
+                    success = db.update_class(class_id, **update_kwargs)
                     updated_count += 1
                 else:
                     # Create new class
@@ -473,6 +485,7 @@ async def sync_classes_from_google():
                         program_name=metadata.get('program_name'),
                         transit_type=metadata.get('transit_type'),
                         transit_operator_name=metadata.get('transit_operator_name'),
+                        text_module_rows=metadata.get('text_module_rows', []),
                     )
                     if success:
                         new_count += 1
@@ -875,10 +888,40 @@ async def root():
 async def sync_passes():
     """Sync all pass objects from Google Wallet to local database"""
     try:
+        if not configs.ALLOW_GOOGLE_PASS_SYNC:
+            raise HTTPException(
+                status_code=403,
+                detail="Syncing passes FROM Google is disabled. Set ALLOW_GOOGLE_PASS_SYNC=true to enable."
+            )
         if not wallet_client:
             raise HTTPException(status_code=503, detail="Google Wallet service not initialized")
             
         logger.info("Starting pass objects sync from Google Wallet")
+
+        def _extract_localized_value(v: Any) -> Optional[str]:
+            """
+            Google Wallet frequently uses LocalizedString/TranslatedString objects.
+            This helper extracts a best-effort plain string value.
+            """
+            if v is None:
+                return None
+            if isinstance(v, str):
+                return v
+            if isinstance(v, (int, float, bool)):
+                return str(v)
+            if isinstance(v, dict):
+                # Common shapes:
+                # { defaultValue: { value: "..." } }
+                dv = v.get("defaultValue")
+                if isinstance(dv, dict):
+                    val = dv.get("value")
+                    if isinstance(val, str):
+                        return val
+                # Some objects use { value: "..." }
+                val = v.get("value")
+                if isinstance(val, str):
+                    return val
+            return None
         
         # 1. Fetch all pass objects from Google Wallet
         google_passes = wallet_client.list_all_pass_objects()
@@ -923,9 +966,12 @@ async def sync_passes():
                     holder_name = google_pass['accountName']
                 elif 'passengerName' in google_pass:
                     holder_name = google_pass['passengerName']
+                elif 'header' in google_pass:
+                    # Generic object header is a localized string object
+                    holder_name = _extract_localized_value(google_pass.get('header')) or holder_name
                 
                 if 'accountId' in google_pass:
-                    holder_email = google_pass['accountId']
+                    holder_email = google_pass['accountId'] if isinstance(google_pass['accountId'], str) else ""
                 
                 # If we still don't have email/name, try custom modules or just leave blank
                 # In our system holder_email is UNIQUE and REQUIRED, this might be a problem for sync
@@ -944,6 +990,16 @@ async def sync_passes():
                 pass_data_cleaned.pop('accountName', None)
                 pass_data_cleaned.pop('accountId', None)
                 pass_data_cleaned.pop('state', None)
+
+                # Normalize problematic dict fields into string-friendly shapes for DB storage.
+                # Our DB schema stores only a few extracted scalar columns; any dict accidentally
+                # mapped into those columns will break inserts/updates.
+                if isinstance(pass_data_cleaned.get("header"), dict):
+                    pass_data_cleaned["header_value"] = _extract_localized_value(pass_data_cleaned.get("header"))
+                    pass_data_cleaned.pop("header", None)
+                if isinstance(pass_data_cleaned.get("cardTitle"), dict):
+                    pass_data_cleaned["subheader_value"] = _extract_localized_value(pass_data_cleaned.get("cardTitle"))
+                    pass_data_cleaned.pop("cardTitle", None)
                 
                 status = "Active" if google_pass.get('state') == "ACTIVE" else "Expired"
                 
@@ -963,50 +1019,42 @@ async def sync_passes():
                     logger.info(f"Creating local pass: {object_id}")
                     # Ensure class exists locally before creating pass (FK constraint)
                     if not db.get_class(local_class_id):
-                        # Auto-create the missing class from Google Wallet
-                        logger.warning(f"Class '{local_class_id}' not found locally. Auto-syncing from Google...")
-                        try:
-                            from core.google_wallet_parser import parse_google_wallet_class
-                            # Fetch class data from Google
-                            full_class_id = f"{configs.ISSUER_ID}.{local_class_id}"
-                            google_class_data = wallet_client.get_class(full_class_id)
-                            if google_class_data:
-                                meta = parse_google_wallet_class(google_class_data)
-                                db.create_class(
-                                    class_id=local_class_id,
-                                    class_type=meta['class_type'],
-                                    issuer_name=meta.get('issuer_name'),
-                                    base_color=meta.get('base_color'),
-                                    logo_url=meta.get('logo_url'),
-                                    hero_image_url=meta.get('hero_image_url'),
-                                    header_text=meta.get('header_text'),
-                                    card_title=meta.get('card_title'),
-                                    event_name=meta.get('event_name'),
-                                    venue_name=meta.get('venue_name'),
-                                    venue_address=meta.get('venue_address'),
-                                    event_start=meta.get('event_start'),
-                                    program_name=meta.get('program_name'),
-                                    transit_type=meta.get('transit_type'),
-                                    transit_operator_name=meta.get('transit_operator_name'),
-                                )
-                                logger.info(f"Auto-created class '{local_class_id}'")
-                            else:
-                                logger.warning(f"Class '{local_class_id}' not found in Google Wallet either. Skipping pass.")
-                                errors.append(f"Class '{local_class_id}' missing for pass '{object_id}'")
-                                continue
-                        except Exception as class_err:
-                            logger.warning(f"Failed to auto-create class '{local_class_id}': {class_err}. Skipping pass.")
-                            errors.append(f"Failed to create class '{local_class_id}': {class_err}")
-                            continue
+                        # Permanent behavior: do NOT fetch classes from Google during pass sync.
+                        logger.warning(
+                            f"Class '{local_class_id}' not found locally. "
+                            f"Skipping pass '{object_id}' (class auto-fetch disabled)."
+                        )
+                        errors.append(f"Missing local class '{local_class_id}' for pass '{object_id}'")
+                        continue
                          
-                    db.create_pass(
-                        object_id=object_id,
-                        class_id=local_class_id,
-                        holder_name=holder_name,
-                        holder_email=holder_email,
-                        status=status,
-                        pass_data=pass_data_cleaned
-                    )
+                    try:
+                        db.create_pass(
+                            object_id=object_id,
+                            class_id=local_class_id,
+                            holder_name=holder_name,
+                            holder_email=holder_email,
+                            status=status,
+                            pass_data=pass_data_cleaned
+                        )
+                    except Exception as create_err:
+                        # Common failure: unique constraint (class_id, holder_email).
+                        # Google Wallet can have multiple objects per class for the same accountId.
+                        # If we hit that, fall back to a synthetic, object-scoped email to ensure
+                        # we can still sync ALL objects by object_id.
+                        err_str = str(create_err)
+                        if "unique_class_holder" in err_str or "Duplicate entry" in err_str:
+                            fallback_email = f"{holder_email.split('@')[0]}+{object_id}@{holder_email.split('@')[-1]}" if "@" in holder_email else f"unknown_{object_id}@example.com"
+                            logger.warning(f"Unique constraint hit for class '{local_class_id}'. Retrying create with fallback email '{fallback_email}'.")
+                            db.create_pass(
+                                object_id=object_id,
+                                class_id=local_class_id,
+                                holder_name=holder_name,
+                                holder_email=fallback_email,
+                                status=status,
+                                pass_data=pass_data_cleaned
+                            )
+                        else:
+                            raise
                     new_count += 1
                 
                 synced_count += 1

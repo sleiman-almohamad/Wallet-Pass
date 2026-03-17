@@ -217,6 +217,12 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 json_data["messageType"] = "TEXT_AND_NOTIFY"
                 passes_current_json["messageType"] = "TEXT_AND_NOTIFY"
 
+            # IMPORTANT: text modules for passes are stored in relational tables and exposed by the API
+            # as `textModulesData` at the top-level pass shape. Ensure we always carry them into the
+            # editable JSON so the TextModuleRowEditor is pre-populated correctly.
+            if p_data.get("textModulesData") and "textModulesData" not in passes_current_json:
+                passes_current_json["textModulesData"] = p_data.get("textModulesData", [])
+
             # Event date/time from template
             template_event_date = None
             template_event_time = None

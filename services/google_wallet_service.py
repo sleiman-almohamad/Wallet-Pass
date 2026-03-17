@@ -14,6 +14,36 @@ class WalletClient:
         self.service = None
         self._authenticate()
 
+    def _list_all_pages(self, list_method, **kwargs):
+        """
+        Exhaust a Google Wallet `list()` method by following nextPageToken.
+
+        Args:
+            list_method: bound googleapiclient list method (e.g., resource.list)
+            **kwargs: parameters passed to list()
+
+        Returns:
+            List of resource dicts aggregated across all pages.
+        """
+        all_resources = []
+        page_token = None
+
+        while True:
+            if page_token:
+                kwargs["pageToken"] = page_token
+            else:
+                # Ensure we don't accidentally reuse an old token
+                kwargs.pop("pageToken", None)
+
+            resp = list_method(**kwargs).execute()
+            all_resources.extend(resp.get("resources", []) or [])
+
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+
+        return all_resources
+
     def _authenticate(self):
         """
         Authenticates with Google using the service account file.
@@ -145,18 +175,18 @@ class WalletClient:
             ("EventTicket", self.service.eventticketclass()),
             ("GiftCard", self.service.giftcardclass()),
             ("TransitPass", self.service.transitclass()),
+            ("Offer", self.service.offerclass()),
+            ("Flight", self.service.flightclass()),
         ]
         
         for class_type, resource in class_types:
             try:
                 # List classes of this type
-                response = resource.list(issuerId=configs.ISSUER_ID).execute()
-                
-                if 'resources' in response:
-                    for cls in response['resources']:
-                        # Add class type information
-                        cls['class_type'] = class_type
-                        all_classes.append(cls)
+                classes = self._list_all_pages(resource.list, issuerId=configs.ISSUER_ID)
+                for cls in classes:
+                    # Add class type information
+                    cls['class_type'] = class_type
+                    all_classes.append(cls)
                         
             except HttpError as e:
                 # Skip if this class type has no resources or error
@@ -199,6 +229,9 @@ class WalletClient:
                 "Generic": self.service.genericobject(),
                 "GiftCard": self.service.giftcardobject(),
                 "TransitPass": self.service.transitobject()
+                ,
+                "Offer": self.service.offerobject(),
+                "Flight": self.service.flightobject(),
             }
             
             resource = resource_map.get(class_type)
@@ -209,16 +242,13 @@ class WalletClient:
             try:
                 # List objects for this specific class
                 print(f"DEBUG: Listing {class_type} objects for class {class_id}...")
-                request = resource.list(classId=class_id)
-                response = request.execute()
-                
-                if 'resources' in response:
-                    count = len(response['resources'])
-                    print(f"DEBUG: Found {count} {class_type} objects for class {class_id}")
-                    for obj in response['resources']:
-                        # Add object type information
-                        obj['class_type'] = class_type
-                        all_objects.append(obj)
+                objs = self._list_all_pages(resource.list, classId=class_id)
+                count = len(objs)
+                print(f"DEBUG: Found {count} {class_type} objects for class {class_id}")
+                for obj in objs:
+                    # Add object type information
+                    obj['class_type'] = class_type
+                    all_objects.append(obj)
                         
             except HttpError as e:
                 # Skip if this class has no objects or error
@@ -253,6 +283,8 @@ class WalletClient:
             ("EventTicket", self.service.eventticketobject()),
             ("GiftCard", self.service.giftcardobject()),
             ("TransitPass", self.service.transitobject()),
+            ("Offer", self.service.offerobject()),
+            ("Flight", self.service.flightobject()),
         ]
         
         matching_objects = []
@@ -261,18 +293,14 @@ class WalletClient:
             try:
                 # List objects of this type with pagination, filtered by class ID
                 print(f"DEBUG: Attempting to list {obj_type} objects for class {full_class_id}...")
-                request = resource.list(classId=full_class_id)
-                
-                response = request.execute()
-                
-                if 'resources' in response:
-                    for obj in response['resources']:
-                        matching_objects.append({
-                            'id': obj['id'],
-                            'resource': resource,
-                            'class_type': obj_type,
-                            'data': obj
-                        })
+                objs = self._list_all_pages(resource.list, classId=full_class_id)
+                for obj in objs:
+                    matching_objects.append({
+                        'id': obj['id'],
+                        'resource': resource,
+                        'class_type': obj_type,
+                        'data': obj
+                    })
                         
             except HttpError as e:
                 # Skip if this object type has no resources or error
@@ -390,11 +418,24 @@ class WalletClient:
             # If class already exists, try to update it
             if e.resp.status == 409:  # Conflict - class already exists
                 try:
+                    # Google Wallet does not allow patching reviewStatus. Remove it at any depth.
+                    import copy
+                    patch_body = copy.deepcopy(class_data)
+                    def remove_review_status(obj):
+                        if isinstance(obj, dict):
+                            obj.pop('reviewStatus', None)
+                            for value in obj.values():
+                                remove_review_status(value)
+                        elif isinstance(obj, list):
+                            for item in obj:
+                                remove_review_status(item)
+                    remove_review_status(patch_body)
+
                     # Use patch instead of update for partial updates (more forgiving)
                     print(f"Class exists, attempting to patch update...")
                     return resource.patch(
                         resourceId=class_data['id'],
-                        body=class_data
+                        body=patch_body
                     ).execute()
                 except HttpError as update_error:
                     # Print detailed error for debugging
@@ -1030,6 +1071,16 @@ class WalletClient:
         pd = pass_data or {}
         header_text = pd.get("header_value", holder_name) # Fallback to holder_name
         subheader_text = pd.get("subheader_value", "")
+
+        # Generic *object*-level branding (Google ignores these on GenericClass)
+        branding_logo_url = pd.get("logo_url") or pd.get("logoUrl")
+        branding_hero_url = pd.get("hero_image_url") or pd.get("heroImageUrl") or pd.get("hero_url")
+        branding_bg = (
+            custom_color
+            or pd.get("hexBackgroundColor")
+            or pd.get("background_color")
+            or pd.get("base_color")
+        )
         
         # Map local status to Google Wallet state
         gw_state = "ACTIVE"
@@ -1060,8 +1111,13 @@ class WalletClient:
             }
         
         # Add custom background color if provided
-        if custom_color:
-            obj["hexBackgroundColor"] = custom_color
+        if branding_bg:
+            obj["hexBackgroundColor"] = branding_bg
+
+        if branding_logo_url:
+            obj["logo"] = {"sourceUri": {"uri": str(branding_logo_url)}}
+        if branding_hero_url:
+            obj["heroImage"] = {"sourceUri": {"uri": str(branding_hero_url)}}
         
         # Add message with specified messageType
         if message_type:
@@ -1073,6 +1129,11 @@ class WalletClient:
         
         if pass_data:
             
+            # If UI provided explicit pass text modules, keep them as-is on the object.
+            # (This is separate from infoModulesData.)
+            if isinstance(pass_data.get("textModulesData"), list):
+                obj["textModulesData"] = pass_data.get("textModulesData", [])
+
             # Add text modules for any text-heavy fields
             text_modules = []
             if "description" in pass_data and pass_data["description"]:
@@ -1083,13 +1144,29 @@ class WalletClient:
                 })
             
             if text_modules:
-                obj["textModulesData"] = text_modules
+                # Merge with any existing modules from the UI
+                obj["textModulesData"] = (obj.get("textModulesData") or []) + text_modules
             
             # Add info modules for all other data
             info_label_values = []
             
             # Skip fields already used in header, cardTitle, subheader, or textModules
-            skip_fields = ["header_value", "subheader", "description"]
+            skip_fields = [
+                "header_value",
+                "subheader",
+                "subheader_value",
+                "description",
+                "textModulesData",
+                # Branding fields used above (should not appear as info rows)
+                "logo_url",
+                "logoUrl",
+                "hero_image_url",
+                "heroImageUrl",
+                "hero_url",
+                "hexBackgroundColor",
+                "background_color",
+                "base_color",
+            ]
             
             for key, value in pass_data.items():
                 if value and key not in skip_fields:

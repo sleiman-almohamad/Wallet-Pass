@@ -11,6 +11,7 @@ from sqlalchemy.orm import (
     declarative_base, relationship, sessionmaker, Session
 )
 import configs
+from datetime import datetime
 
 
 # ---------------------------------------------------------------------------
@@ -47,8 +48,8 @@ class ClassesTable(Base):
     base_color = Column(String(50))
     logo_url = Column(Text)
     hero_image_url = Column(Text)
-    created_at = Column(TIMESTAMP, server_default=func.now())
-    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+    created_at = Column(TIMESTAMP, default=datetime.now)
+    updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
 
     # Relationships to child tables
     generic_fields = relationship(
@@ -172,8 +173,8 @@ class PassesTable(Base):
     status = Column(Enum("Active", "Expired", name="pass_status"), nullable=False, default="Active")
     sync_status = Column(Enum("synced", "pending", "failed", name="sync_status"), default="pending")
     last_synced_at = Column(TIMESTAMP, nullable=True)
-    created_at = Column(TIMESTAMP, server_default=func.now())
-    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+    created_at = Column(TIMESTAMP, default=datetime.now)
+    updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
 
     __table_args__ = (
         UniqueConstraint("class_id", "holder_email", name="unique_class_holder"),
@@ -284,7 +285,7 @@ class NotificationsTable(Base):
     )
     status = Column(Enum("Sent", "Failed", name="notif_status"), nullable=False)
     message = Column(Text)
-    created_at = Column(TIMESTAMP, server_default=func.now(), index=True)
+    created_at = Column(TIMESTAMP, default=datetime.now, index=True)
 
 
 # ============================================================================
@@ -359,7 +360,7 @@ class AppleNotificationsTable(Base):
     serial_number = Column(String(255), index=True)
     status = Column(Enum("Sent", "Failed", name="apple_notif_status"), nullable=False)
     message = Column(Text, nullable=True)
-    created_at = Column(TIMESTAMP, server_default=func.now(), index=True)
+    created_at = Column(TIMESTAMP, default=datetime.now, index=True)
 
 
 class AppleDeviceRegistrations(Base):

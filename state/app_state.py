@@ -3,8 +3,9 @@ Application State — Root coordinator
 Holds references to services and sub-states for every wallet provider.
 """
 
-from .google_state import ManageTemplateState, ManagePassState
+from .google_state import ManageTemplateState, ManagePassState, ManageNotificationState
 from .apple_state import AppleState
+from i18n.translations import TRANSLATIONS
 
 
 class AppState:
@@ -25,9 +26,13 @@ class AppState:
         # Google Wallet sub-states
         self.template_state = ManageTemplateState()
         self.pass_state = ManagePassState()
+        self.notification_state = ManageNotificationState()
 
         # Apple Wallet sub-state (placeholder)
         self.apple_state = AppleState()
+
+        # Localization
+        self.language = "en"
 
     # -- Convenience helpers ------------------------------------------------
 
@@ -50,3 +55,24 @@ class AppState:
             self.apple_state.send_notification(pass_id, message)
         else:
             raise ValueError(f"Unknown provider: {provider}")
+
+    def set_language(self, lang: str):
+        """Update current language and refresh UI."""
+        if lang in TRANSLATIONS:
+            self.language = lang
+            if self.page:
+                self.page.update()
+
+    def t(self, key: str, **kwargs) -> str:
+        """Translate a key into the current language."""
+        # Fallback order: current lang -> en -> key
+        text = TRANSLATIONS.get(self.language, {}).get(key)
+        if text is None:
+            text = TRANSLATIONS.get("en", {}).get(key, key)
+        
+        if kwargs:
+            try:
+                return text.format(**kwargs)
+            except Exception:
+                return text
+        return text

@@ -12,7 +12,7 @@ from views.root_view import build_root_view
 
 def main(page: ft.Page):
     # ── Page configuration ──
-    page.title = "Google Wallet Verifier & Preview"
+    page.title = "Android - IOS Wallet Verifier & Preview"
     page.window_width = 1000
     page.window_height = 800
     page.padding = 20

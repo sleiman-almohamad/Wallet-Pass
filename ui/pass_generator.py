@@ -7,6 +7,7 @@ import flet as ft
 from typing import Dict, List, Any, Optional
 from core.qr_generator import generate_qr_code
 from ui.components.text_module_row_editor import TextModuleRowEditor
+from ui.components.preview_builder import build_comprehensive_preview
 import configs
 import string
 
@@ -14,37 +15,37 @@ import string
 # Field configurations for each pass type
 PASS_TYPE_FIELDS = {
     "Generic": [
-        {"name": "header_value", "label": "Header Value", "type": "text", "hint": "e.g., VIP Member"},
-        {"name": "subheader", "label": "Subheader", "type": "text", "hint": "e.g., Premium Access"},
+        {"name": "header_value", "label": "label.header_value", "type": "text", "hint": "e.g., VIP Member"},
+        {"name": "subheader", "label": "label.subheader", "type": "text", "hint": "e.g., Premium Access"},
     ],
     "EventTicket": [
-        {"name": "event_date", "label": "Event Date", "type": "text", "hint": "e.g., 2024-12-25", "template_field": True},
-        {"name": "event_time", "label": "Event Time", "type": "text", "hint": "e.g., 19:00", "template_field": True},
-        {"name": "seat_number", "label": "Seat Number", "type": "text", "hint": "e.g., A12"},
-        {"name": "section", "label": "Section", "type": "text", "hint": "e.g., Lower Bowl"},
-        {"name": "gate", "label": "Gate", "type": "text", "hint": "e.g., Gate 3"},
+        {"name": "event_date", "label": "label.event_date", "type": "text", "hint": "e.g., 2024-12-25", "template_field": True},
+        {"name": "event_time", "label": "label.event_time", "type": "text", "hint": "e.g., 19:00", "template_field": True},
+        {"name": "seat_number", "label": "label.seat_number", "type": "text", "hint": "e.g., A12"},
+        {"name": "section", "label": "label.section", "type": "text", "hint": "e.g., Lower Bowl"},
+        {"name": "gate", "label": "label.gate", "type": "text", "hint": "e.g., Gate 3"},
     ],
     "LoyaltyCard": [
-        {"name": "points_balance", "label": "Points Balance", "type": "number", "hint": "e.g., 1500"},
-        {"name": "tier_level", "label": "Tier Level", "type": "text", "hint": "e.g., Gold"},
-        {"name": "member_since", "label": "Member Since", "type": "text", "hint": "e.g., 2024-01-15"},
-        {"name": "rewards_available", "label": "Rewards Available", "type": "number", "hint": "e.g., 3"},
+        {"name": "points_balance", "label": "label.points_balance", "type": "number", "hint": "e.g., 1500"},
+        {"name": "tier_level", "label": "label.tier_level", "type": "text", "hint": "e.g., Gold"},
+        {"name": "member_since", "label": "label.member_since", "type": "text", "hint": "e.g., 2024-01-15"},
+        {"name": "rewards_available", "label": "label.rewards_available", "type": "number", "hint": "e.g., 3"},
     ],
     "GiftCard": [
-        {"name": "balance", "label": "Card Balance", "type": "number", "hint": "e.g., 50.00"},
-        {"name": "card_number", "label": "Card Number", "type": "text", "hint": "e.g., 1234-5678-9012"},
-        {"name": "expiry_date", "label": "Expiry Date", "type": "text", "hint": "e.g., 2025-12-31"},
+        {"name": "balance", "label": "label.card_balance", "type": "number", "hint": "e.g., 50.00"},
+        {"name": "card_number", "label": "label.card_number", "type": "text", "hint": "e.g., 1234-5678-9012"},
+        {"name": "expiry_date", "label": "label.expiry_date", "type": "text", "hint": "e.g., 2025-12-31"},
     ],
     "TransitPass": [
-        {"name": "pass_type", "label": "Pass Type", "type": "text", "hint": "e.g., Monthly Pass"},
-        {"name": "valid_from", "label": "Valid From", "type": "text", "hint": "e.g., 2024-12-01"},
-        {"name": "valid_until", "label": "Valid Until", "type": "text", "hint": "e.g., 2024-12-31"},
-        {"name": "zones", "label": "Zones", "type": "text", "hint": "e.g., Zone 1-3"},
+        {"name": "pass_type", "label": "label.pass_type", "type": "text", "hint": "e.g., Monthly Pass"},
+        {"name": "valid_from", "label": "label.valid_from", "type": "text", "hint": "e.g., 2024-12-01"},
+        {"name": "valid_until", "label": "label.valid_until", "type": "text", "hint": "e.g., 2024-12-31"},
+        {"name": "zones", "label": "label.zones", "type": "text", "hint": "e.g., Zone 1-3"},
     ],
 }
 
 
-def create_pass_generator(page: ft.Page, api_client, wallet_client):
+def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
     """
     Create the Pass Generator tab UI
     
@@ -73,7 +74,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     
     # Preview container
     preview_container = ft.Container(
-        content=ft.Text("Select a template to see preview", color="grey"),
+        content=ft.Text(state.t("msg.pls_select_template"), color="grey"),
         alignment=ft.alignment.center,
         padding=20
     )
@@ -86,113 +87,14 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     color_picker_component = None
     color_picker_container = ft.Container(content=None)
     
-    def build_preview(class_data: Dict, pass_data: Dict):
-        """Build visual pass preview"""
-        # Use custom color if set, otherwise use template color
-        bg_color = custom_color_state.get("background_color", class_data.get("base_color", "#4285f4"))
-        logo_url = class_data.get("logo_url")
-        header_text = class_data.get("header_text", "Business Name")
-        card_title = class_data.get("card_title", "Pass Title")
-        holder_name = pass_data.get("holder_name", "John Doe")
+    def build_preview(class_data: Dict, pass_data: Dict) -> ft.Container:
+        """Build visual pass preview from JSON data using centralized builder"""
+        # Inject custom background color if set
+        preview_class_data = class_data.copy()
+        if custom_color_state.get("background_color"):
+             preview_class_data["hexBackgroundColor"] = custom_color_state["background_color"]
         
-        # Logo
-        if logo_url:
-            logo_control = ft.Container(
-                width=50, height=50, border_radius=25,
-                clip_behavior=ft.ClipBehavior.HARD_EDGE,
-                content=ft.Image(src=logo_url, width=50, height=50, fit=ft.ImageFit.COVER)
-            )
-        else:
-            logo_control = ft.Container(
-                width=50, height=50, border_radius=25, bgcolor="white30",
-                content=ft.Icon("business", color="white", size=30),
-                alignment=ft.alignment.center
-            )
-        
-        # Build detail text based on pass type
-        detail_lines = []
-        class_type = class_data.get("class_type", "Generic")
-        
-        if class_type == "EventTicket":
-            # Event name and date come from template, not pass data
-            # Show ticket-specific info (seat, section, time, etc.)
-            if 'seat_number' in pass_data and pass_data.get('seat_number'):
-                detail_lines.append(f"Seat: {pass_data.get('seat_number', 'TBD')}")
-            if 'event_time' in pass_data and pass_data.get('event_time'):
-                detail_lines.append(f"Time: {pass_data.get('event_time', 'TBD')}")
-            if 'gate' in pass_data and pass_data.get('gate'):
-                detail_lines.append(f"Gate: {pass_data.get('gate', 'TBD')}")
-        elif class_type == "LoyaltyCard":
-            detail_lines.append(f"Points: {pass_data.get('points_balance', '0')}")
-            detail_lines.append(f"Tier: {pass_data.get('tier_level', 'Standard')}")
-        elif class_type == "GiftCard":
-            detail_lines.append(f"Balance: ${pass_data.get('balance', '0.00')}")
-            detail_lines.append(f"Card: {pass_data.get('card_number', 'XXXX-XXXX')}")
-        elif class_type == "TransitPass":
-            detail_lines.append(f"Type: {pass_data.get('pass_type', 'Standard')}")
-            detail_lines.append(f"Valid: {pass_data.get('valid_from', 'TBD')} - {pass_data.get('valid_until', 'TBD')}")
-        elif class_type == "Generic":
-            # Display text modules if available
-            text_modules = pass_data.get("textModulesData", [])
-            for module in text_modules:
-                if module.get("header") and module.get("body"):
-                    detail_lines.append(f"{module['header']}: {module['body']}")
-                elif module.get("body"):
-                    detail_lines.append(module['body'])
-        else:
-            detail_lines.append(f"Status: Active")
-        
-        return ft.Container(
-            width=350,
-            bgcolor=bg_color,
-            border_radius=15,
-            clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            shadow=ft.BoxShadow(blur_radius=15, color="black26", offset=ft.Offset(0, 5)),
-            content=ft.Column([
-                # Top: Logo & Header
-                ft.Container(
-                    padding=15,
-                    content=ft.Row([
-                        logo_control,
-                        ft.Container(width=10),
-                        ft.Text(header_text, color="white", weight=ft.FontWeight.BOLD, size=16, expand=True)
-                    ])
-                ),
-                # Card Title
-                ft.Container(
-                    padding=ft.padding.only(left=15, right=15, bottom=10),
-                    content=ft.Text(card_title, color="white", size=22, weight=ft.FontWeight.BOLD)
-                ),
-                # Hero Image placeholder
-                ft.Container(
-                    height=150, bgcolor="black12",
-                    content=ft.Column([
-                        ft.Icon("confirmation_number" if class_type == "EventTicket" else "card_giftcard", size=40, color="grey"),
-                        ft.Text(class_type, size=12, color="grey")
-                    ], alignment=ft.MainAxisAlignment.CENTER,
-                       horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-                ),
-                # Bottom: QR & Details
-                ft.Container(
-                    bgcolor="white",
-                    padding=15,
-                    content=ft.Column([
-                        ft.Text("Pass Holder", color="grey", size=10),
-                        ft.Text(holder_name, weight=ft.FontWeight.BOLD, size=16, color="black"),
-                        ft.Container(height=10),
-                        ft.Column([
-                            ft.Text(line, size=12, color="grey") for line in detail_lines
-                        ], spacing=3),
-                        ft.Container(height=10),
-                        ft.Container(
-                            width=80, height=80, bgcolor="grey200", border_radius=5,
-                            content=ft.Icon("qr_code_2", size=60, color="grey"),
-                            alignment=ft.alignment.center
-                        )
-                    ])
-                )
-            ], spacing=0)
-        )
+        return build_comprehensive_preview(preview_class_data, pass_data, state=state)
     
     def on_color_change():
         """Handle color change from color picker"""
@@ -226,7 +128,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
             import json
             from ui.components.json_editor import JSONEditor
             display_json = {**current_class_data, **pass_data}
-            json_editor = JSONEditor(display_json, read_only=True)
+            json_editor = JSONEditor(display_json, state=state, on_change=None, read_only=True)
             json_container_ref.current.content = json_editor.build()
 
         page.update()
@@ -249,7 +151,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 class_data = api_client.get_class(class_id) if api_client else None
                 
                 if not class_data:
-                    status_ref.current.value = f"❌ Template '{class_id}' not found in database"
+                    status_ref.current.value = state.t("msg.template_not_found", id=class_id)
                     status_ref.current.color = "red"
                     page.update()
                     return
@@ -276,16 +178,16 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 logo_url = class_json.get("programLogo", {}).get("sourceUri", {}).get("uri")
             
             # Extract header text
-            header_text = class_data.get("header_text") or class_data.get("issuer_name", "Business Name")
-            if not header_text or header_text == "Business Name":
+            header_text = class_data.get("header_text") or class_data.get("issuer_name", state.t("placeholder.business_name"))
+            if not header_text or header_text == state.t("placeholder.business_name"):
                 if "localizedIssuerName" in class_json:
                     header_text = class_json.get("localizedIssuerName", {}).get("defaultValue", {}).get("value", "Business")
                 elif "issuerName" in class_json:
                     header_text = class_json.get("issuerName", "Business")
             
             # Extract card title
-            card_title = class_data.get("card_title", "Pass Title")
-            if not card_title or card_title == "Pass Title":
+            card_title = class_data.get("card_title", state.t("placeholder.pass_title"))
+            if not card_title or card_title == state.t("placeholder.pass_title"):
                 if "localizedProgramName" in class_json:
                     card_title = class_json.get("localizedProgramName", {}).get("defaultValue", {}).get("value", "Program")
                 elif "eventName" in class_json:
@@ -371,7 +273,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 
                 field = ft.TextField(
                     ref=field_ref,
-                    label=field_config["label"],
+                    label=state.t(field_config["label"]),
                     hint_text=field_config["hint"],
                     value=initial_value,  # Pre-fill with template value if available
                     read_only=is_readonly,  # Make template fields read-only
@@ -397,16 +299,16 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 # For pass generation, we usually start fresh or from class defaults.
                 # The editor will manage its own state.
 
-                row_editor = TextModuleRowEditor(initial_class_rows, on_change=on_pass_rows_change, mode="pass")
+                row_editor = TextModuleRowEditor(initial_class_rows, on_change=on_pass_rows_change, state=state, mode="pass")
                 pass_row_editor_ref[0] = row_editor
                 
                 dynamic_fields_container.controls.append(ft.Divider())
-                dynamic_fields_container.controls.append(ft.Text("Text Module Rows", weight=ft.FontWeight.BOLD))
+                dynamic_fields_container.controls.append(ft.Text(state.t("label.template_fields"), weight=ft.FontWeight.BOLD))
                 dynamic_fields_container.controls.append(row_editor)
             else:
                 pass_row_editor_ref[0] = None
             
-            status_ref.current.value = f"✅ Template loaded from database: {class_type}"
+            status_ref.current.value = state.t("msg.loaded_template_type", type=class_type)
             status_ref.current.color = "green"
             
             # Update preview
@@ -444,11 +346,11 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                     )
                     for cls in classes
                 ]
-                status_ref.current.value = f"✅ Loaded {len(classes)} template(s) from local database"
+                status_ref.current.value = state.t("msg.loaded_classes", count=len(classes))
                 status_ref.current.color = "green"
             else:
                 template_dropdown_ref.current.options = []
-                status_ref.current.value = "ℹ️ No templates found. Create one in 'Template Builder' tab or restart app to sync from Google Wallet."
+                status_ref.current.value = state.t("msg.no_templates")
                 status_ref.current.color = "blue"
             page.update()
         except Exception as e:
@@ -460,24 +362,24 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
         """Generate the pass"""
         # Validate inputs
         if not template_dropdown_ref.current.value:
-            status_ref.current.value = "❌ Please select a template"
+            status_ref.current.value = state.t("msg.pls_select_template")
             status_ref.current.color = "red"
             page.update()
             return
         
         if not holder_name_ref.current.value:
-            status_ref.current.value = "❌ Please enter holder name"
+            status_ref.current.value = state.t("msg.pls_enter_name")
             status_ref.current.color = "red"
             page.update()
             return
         
         if not holder_email_ref.current.value:
-            status_ref.current.value = "❌ Please enter holder email"
+            status_ref.current.value = state.t("msg.pls_enter_email")
             status_ref.current.color = "red"
             page.update()
             return
         
-        status_ref.current.value = "⏳ Generating pass..."
+        status_ref.current.value = state.t("msg.creating_in_google")
         status_ref.current.color = "blue"
         page.update()
         
@@ -547,7 +449,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 )
             
             # Create pass object in Google Wallet
-            status_ref.current.value = "⏳ Creating pass in Google Wallet..."
+            status_ref.current.value = state.t("msg.creating_in_google")
             status_ref.current.color = "blue"
             page.update()
             
@@ -558,7 +460,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
             
             # Try to create pass in local database (optional - for record keeping)
             try:
-                status_ref.current.value = "⏳ Saving to local database..."
+                status_ref.current.value = state.t("msg.saving_local")
                 status_ref.current.color = "blue"
                 page.update()
                 
@@ -590,17 +492,17 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
             
             # Show success result with QR code
             result_container_ref.current.content = ft.Column([
-                ft.Text("✅ Pass created successfully!", color="green", size=16, weight=ft.FontWeight.BOLD),
+                ft.Text(state.t("status.pass_generated_google"), color="green", size=16, weight=ft.FontWeight.BOLD),
                 ft.Container(height=5),
                 ft.Text(
-                    f"{'✅ Saved to local database' if db_saved else '⚠️ Not saved to local database (class not in DB)'}",
+                    f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
                     size=10,
                     color="green" if db_saved else "orange"
                 ),
                 ft.Container(height=15),
                 
                 # QR Code Section
-                ft.Text("Scan QR Code:", size=14, weight=ft.FontWeight.BOLD),
+                ft.Text(state.t("msg.pass_qr_scan"), size=14, weight=ft.FontWeight.BOLD),
                 ft.Container(height=5),
                 ft.Container(
                     content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
@@ -609,19 +511,19 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                     border_radius=10,
                     padding=10
                 ),
-                ft.Text("Scan with your phone camera to add to Google Wallet", size=10, color="grey", text_align=ft.TextAlign.CENTER),
+                ft.Text(state.t("msg.pass_qr_hint"), size=10, color="grey", text_align=ft.TextAlign.CENTER),
                 
                 ft.Container(height=15),
                 
                 # Link Section
-                ft.Text("Or use link:", size=14, weight=ft.FontWeight.BOLD),
+                ft.Text(state.t("label.or_use_link"), size=14, weight=ft.FontWeight.BOLD),
                 ft.Row([
                     ft.TextField(value=save_link, read_only=True, expand=True, text_size=10),
-                    ft.IconButton(icon="content_copy", tooltip="Copy link", on_click=lambda e: page.set_clipboard(save_link))
+                    ft.IconButton(icon="content_copy", tooltip=state.t("tooltip.copy_link"), on_click=lambda e: page.set_clipboard(save_link))
                 ]),
                 ft.Container(height=5),
                 ft.ElevatedButton(
-                    "Open in Google Wallet",
+                    state.t("btn.open_google_wallet"),
                     icon="open_in_new",
                     on_click=lambda e: page.launch_url(save_link),
                     style=ft.ButtonStyle(bgcolor="blue", color="white")
@@ -630,7 +532,7 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
                 ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
             ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
             
-            status_ref.current.value = "✅ Pass generated and saved to Google Wallet!"
+            status_ref.current.value = state.t("status.pass_generated_google")
             status_ref.current.color = "green"
             
         except Exception as ex:
@@ -646,34 +548,34 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
     left_panel = ft.Container(
         width=420,
         content=ft.Column([
-            ft.Text("Pass Generator", size=22, weight=ft.FontWeight.BOLD),
-            ft.Text("Create individual passes for end users", size=11, color="grey"),
+            ft.Text(state.t("header.pass_generator"), size=22, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("subtitle.pass_generator"), size=11, color="grey"),
             ft.Divider(),
 
             ft.Container(height=10),
 
-            ft.Text("Select Template", size=16, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("label.select_template"), size=16, weight=ft.FontWeight.BOLD),
             ft.Dropdown(
                 ref=template_dropdown_ref,
-                label="Template Class",
-                hint_text="Choose a template",
+                label=state.t("label.class_id"),
+                hint_text=state.t("label.select_class_err"),
                 width=380,
                 on_change=on_template_selected
             ),
 
             ft.Container(height=10),
 
-            ft.Text("Pass Holder Information", size=16, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("label.pass_holder_info"), size=16, weight=ft.FontWeight.BOLD),
             ft.TextField(
                 ref=holder_name_ref,
-                label="Name *",
+                label=state.t("label.name_req"),
                 hint_text="e.g., John Doe",
                 width=380,
                 on_change=lambda e: update_preview()
             ),
             ft.TextField(
                 ref=holder_email_ref,
-                label="Email *",
+                label=state.t("label.email_req"),
                 hint_text="e.g., john@example.com",
                 width=380
             ),
@@ -682,32 +584,32 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
 
             ft.Dropdown(
                 ref=message_type_ref,
-                label="Notification Type",
-                hint_text="Choose notification behavior",
+                label=state.t("label.notification_type"),
+                hint_text=state.t("label.notification_type"),
                 width=380,
                 value="TEXT_AND_NOTIFY",
                 options=[
-                    ft.dropdown.Option(key="TEXT", text="Text Only (No Notification)"),
-                    ft.dropdown.Option(key="TEXT_AND_NOTIFY", text="Text + Push Notification"),
+                    ft.dropdown.Option(key="TEXT", text=state.t("option.notification_none")),
+                    ft.dropdown.Option(key="TEXT_AND_NOTIFY", text=state.t("option.notification_push")),
                 ]
             ),
 
             ft.Container(height=10),
 
             # Color Picker Section
-            ft.Text("Customize Card Color", size=16, weight=ft.FontWeight.BOLD),
-            ft.Text("Choose a custom color or keep the template default", size=10, color="grey"),
+            ft.Text(state.t("label.customize_color"), size=16, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("subtitle.choose_color"), size=10, color="grey"),
             color_picker_container,
 
             ft.Container(height=10),
 
-            ft.Text("Pass Details", size=16, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("label.pass_details"), size=16, weight=ft.FontWeight.BOLD),
             dynamic_fields_container,
 
             ft.Divider(height=20),
 
             ft.ElevatedButton(
-                "Generate Pass",
+                state.t("btn.generate_pass"),
                 icon="add_card",
                 on_click=generate_pass,
                 width=380,
@@ -750,12 +652,12 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
         ft.Container(
             width=320,
             content=ft.Column([
-                ft.Text("JSON Data", size=18, weight=ft.FontWeight.BOLD),
-                ft.Text("Live pass JSON", size=10, color="grey"),
+                ft.Text(state.t("label.json_data"), size=18, weight=ft.FontWeight.BOLD),
+                ft.Text(state.t("subtitle.live_json"), size=10, color="grey"),
                 ft.Container(height=10),
                 ft.Container(
                     ref=json_container_ref,
-                    content=ft.Text("Select a template to see JSON", color="grey", size=11),
+                    content=ft.Text(state.t("msg.pls_select_template"), color="grey", size=11),
                     expand=True
                 )
             ], scroll="auto"),
@@ -767,8 +669,8 @@ def create_pass_generator(page: ft.Page, api_client, wallet_client):
         ft.Container(
             expand=True,
             content=ft.Column([
-                ft.Text("Visual Preview", size=18, weight=ft.FontWeight.BOLD),
-                ft.Text("How your pass will look", size=10, color="grey"),
+                ft.Text(state.t("label.visual_preview"), size=18, weight=ft.FontWeight.BOLD),
+                ft.Text(state.t("subtitle.pass_look"), size=10, color="grey"),
                 ft.Container(height=20),
                 preview_container
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll="auto"),

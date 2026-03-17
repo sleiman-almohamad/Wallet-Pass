@@ -270,3 +270,9 @@ class MessageResponse(BaseModel):
             ]
         }
     }
+
+
+class NotificationRequest(BaseModel):
+    """Model for sending a push notification"""
+    message: str = Field(..., description="The notification message text")
+

@@ -469,10 +469,9 @@ class WalletClient:
     
     def update_pass_class(self, class_id, class_data, class_type="Generic"):
         """
-        Update an existing pass class in Google Wallet
+        Update an existing pass class in Google Wallet using an ATOMIC patch.
         
-        This triggers automatic push notifications to all users who have
-        passes from this class saved in their Google Wallet.
+        This fetches the current state, merges the changes, and sends a single patch.
         
         Args:
             class_id: Class ID (with or without issuer prefix)
@@ -486,23 +485,6 @@ class WalletClient:
             # Ensure class_id has issuer prefix
             full_class_id = self._prepare_ids_to_try(class_id)[0]
             
-            # Remove reviewStatus from the update payload to avoid API errors
-            # Google Wallet doesn't allow updating reviewStatus on existing classes
-            def remove_review_status(obj):
-                """Recursively remove reviewStatus from nested dictionaries"""
-                if isinstance(obj, dict):
-                    obj.pop('reviewStatus', None)
-                    for value in obj.values():
-                        remove_review_status(value)
-                elif isinstance(obj, list):
-                    for item in obj:
-                        remove_review_status(item)
-            
-            # Create a copy to avoid modifying the original
-            import copy
-            clean_class_data = copy.deepcopy(class_data)
-            remove_review_status(clean_class_data)
-            
             # Select appropriate resource based on class type
             if class_type == "EventTicket":
                 resource = self.service.eventticketclass()
@@ -514,11 +496,34 @@ class WalletClient:
                 resource = self.service.transitclass()
             else:
                 resource = self.service.genericclass()
+
+            # 1. Fetch CURRENT state from Google
+            try:
+                current_data = resource.get(resourceId=full_class_id).execute()
+            except Exception as e:
+                print(f"Warning: Could not fetch current class {full_class_id} before update: {e}")
+                current_data = {}
+
+            # 2. Merge data and clean reviewStatus (Google Wallet doesn't allow updating it)
+            import copy
+            final_body = copy.deepcopy(current_data)
+            final_body.update(class_data)
             
-            # Use patch for partial updates (more forgiving than update)
+            def remove_review_status(obj):
+                if isinstance(obj, dict):
+                    obj.pop('reviewStatus', None)
+                    for value in obj.values():
+                        remove_review_status(value)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        remove_review_status(item)
+            
+            remove_review_status(final_body)
+            
+            # 3. Use patch for partial updates
             return resource.patch(
                 resourceId=full_class_id,
-                body=clean_class_data
+                body=final_body
             ).execute()
             
         except HttpError as e:
@@ -650,7 +655,7 @@ class WalletClient:
                 "messageType": "TEXT_AND_NOTIFY",
                 "displayInterval": {
                     "start": {"date": (now - timedelta(minutes=1)).isoformat() + "Z"},
-                    "end": {"date": (now + timedelta(hours=24)).isoformat() + "Z"}
+                    "end": {"date": (now + timedelta(hours=1)).isoformat() + "Z"}
                 }
             }
             
@@ -658,8 +663,10 @@ class WalletClient:
             existing_messages = current_data.get("messages", [])
             existing_messages.append(new_message)
             
-            # 4. Minimal patch — ONLY update messages, nothing else
+            # 4. Build robust patch body (including state and groupingId to force immediate sync)
             patch_body = {
+                "state": "ACTIVE",
+                "groupingId": f"group_{int(_time.time())}",
                 "messages": existing_messages
             }
             
@@ -671,10 +678,10 @@ class WalletClient:
     
     def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket", status=None, notification_message=None):
         """
-        Update an individual pass object in Google Wallet
+        Update an individual pass object in Google Wallet using an ATOMIC patch.
         
-        This triggers a push notification to the user's device informing them
-        that their pass has been updated.
+        This combines data updates and push notifications into ONE request, which
+        is significantly faster and more reliable on Android devices.
         
         Args:
             object_id: Full object ID (with issuer prefix)
@@ -689,120 +696,93 @@ class WalletClient:
         Returns:
             Updated object from Google Wallet API
         """
+        import time as _time
+        from datetime import datetime, timedelta
+
         try:
             # Ensure IDs have issuer prefix
             full_object_id = self._prepare_ids_to_try(object_id)[0]
             full_class_id = self._prepare_ids_to_try(class_id)[0]
 
-            # region agent log
-            try:
-                import json as _json, time as _time
-                with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
-                    _ts = int(_time.time() * 1000)
-                    _f.write(_json.dumps({
-                        "id": f"log_{_ts}",
-                        "timestamp": _ts,
-                        "location": "wallet_service.py:update_pass_object:entry",
-                        "message": "Entering update_pass_object",
-                        "data": {
-                            "object_id": object_id,
-                            "full_object_id": full_object_id,
-                            "class_id": class_id,
-                            "full_class_id": full_class_id,
-                            "class_type": class_type
-                        },
-                        "runId": "initial",
-                        "hypothesisId": "H4"
-                    }) + "\n")
-            except Exception:
-                pass
-            # endregion
-            
-            # Build the updated pass object using existing builder methods
+            # 1. Select appropriate resource
             if class_type == "EventTicket":
-                object_data = self.build_event_ticket_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
-                )
                 resource = self.service.eventticketobject()
             elif class_type == "LoyaltyCard":
-                object_data = self.build_loyalty_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
-                )
                 resource = self.service.loyaltyobject()
             elif class_type == "GiftCard":
-                object_data = self.build_generic_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
-                )
                 resource = self.service.giftcardobject()
             elif class_type == "TransitPass":
-                object_data = self.build_generic_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
-                )
                 resource = self.service.transitobject()
-            else:  # Generic
-                object_data = self.build_generic_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status
-                )
+            else:
                 resource = self.service.genericobject()
 
-            # Patch the pass data (remove static builder messages to avoid conflicts)
-            object_data.pop("messages", None)
+            # 2. Fetch CURRENT state from Google
+            try:
+                current_data = resource.get(resourceId=full_object_id).execute()
+                existing_messages = current_data.get("messages", [])
+            except Exception as e:
+                print(f"Warning: Could not fetch current object {full_object_id} before update: {e}")
+                existing_messages = []
+
+            # 3. Build the NEW pass data using appropriate builder
+            if class_type == "EventTicket":
+                object_data = self.build_event_ticket_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
+                )
+            elif class_type == "LoyaltyCard":
+                object_data = self.build_loyalty_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
+                )
+            elif class_type == "GiftCard":
+                object_data = self.build_generic_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
+                )
+            elif class_type == "TransitPass":
+                object_data = self.build_generic_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
+                )
+            else:  # Generic
+                object_data = self.build_generic_object(
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
+                )
+
+            # 4. ATOMIC TRICK: Always append a Notification Message and rotate groupingId
+            # This ensures that EVERY update triggers a visible push notification on Android.
+            
+            # Use default message if none provided
+            msg_body = notification_message if notification_message else "Your pass information has been updated."
+            
+            now = datetime.utcnow()
+            msg_id = f"notif_{int(_time.time())}"
+            new_msg = {
+                "header": "Mertesacker Home Office",
+                "body": msg_body,
+                "kind": "walletobjects#walletObjectMessage",
+                "id": msg_id,
+                "messageType": "TEXT_AND_NOTIFY",
+                "displayInterval": {
+                    "start": {"date": (now - timedelta(minutes=1)).isoformat() + "Z"},
+                    "end": {"date": (now + timedelta(hours=24)).isoformat() + "Z"}
+                }
+            }
+            # Merge with existing messages (keep history but add new one)
+            object_data["messages"] = existing_messages + [new_msg]
+            
+            # ANDROID UI TRICK: Force immediate refresh by changing groupingId
+            # This is critical to make the notification pop up immediately
+            object_data["groupingId"] = f"grp_{int(_time.time())}"
+
+            # 5. EXECUTE SINGLE PATCH (Atomic operation)
             result = resource.patch(
                 resourceId=full_object_id,
                 body=object_data
             ).execute()
             
-            # Trigger push notification using the proven approach
-            if notification_message:
-                self.send_push_notification(
-                    full_object_id, resource,
-                    message_header="Mertesacker Home Office",
-                    message_body=notification_message
-                )
-            else:
-                self.send_push_notification(full_object_id, resource)
-
-            # region agent log
-            try:
-                import json as _json, time as _time
-                with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
-                    _ts = int(_time.time() * 1000)
-                    _f.write(_json.dumps({
-                        "id": f"log_{_ts}",
-                        "timestamp": _ts,
-                        "location": "wallet_service.py:update_pass_object:success",
-                        "message": "Successfully patched pass object in Google Wallet",
-                        "data": {"full_object_id": full_object_id, "class_type": class_type},
-                        "runId": "initial",
-                        "hypothesisId": "H4"
-                    }) + "\n")
-            except Exception:
-                pass
-            # endregion
-
+            print(f"SUCCESS: Atomic update/notification complete for {full_object_id}")
             return result
             
         except HttpError as e:
             error_details = e.content.decode('utf-8') if hasattr(e, 'content') else str(e)
-
-            # region agent log
-            try:
-                import json as _json, time as _time
-                with open("/home/slimanutd/sleiman/B2F/Projects/WalletPasses/.cursor/debug.log", "a") as _f:
-                    _ts = int(_time.time() * 1000)
-                    _f.write(_json.dumps({
-                        "id": f"log_{_ts}",
-                        "timestamp": _ts,
-                        "location": "wallet_service.py:update_pass_object:error",
-                        "message": "HttpError while updating pass object",
-                        "data": {"object_id": object_id, "error": error_details},
-                        "runId": "initial",
-                        "hypothesisId": "H4"
-                    }) + "\n")
-            except Exception:
-                pass
-            # endregion
-
             raise GoogleWalletAPIError(
                 f"Error updating pass object '{object_id}': {error_details}",
                 status_code=e.resp.status if hasattr(e, 'resp') else None,

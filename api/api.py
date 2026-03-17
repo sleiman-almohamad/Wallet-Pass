@@ -19,7 +19,7 @@ from database.db_manager import DatabaseManager
 from api.models import (
     ClassCreate, ClassUpdate, ClassResponse,
     PassCreate, PassUpdate, PassStatusUpdate, PassResponse,
-    HealthResponse, MessageResponse
+    HealthResponse, MessageResponse, NotificationRequest
 )
 
 # Import service layer and wallet client
@@ -685,10 +685,14 @@ async def get_passes_by_class(class_id: str):
 async def get_passes_by_email(email: str):
     """Get all passes for a specific user email"""
     try:
+        logger.info(f"DEBUG: Searching for passes with email: '{email}'")
         passes = db.get_passes_by_email(email)
+        logger.info(f"DEBUG: Found {len(passes)} passes")
         return passes
     except Exception as e:
+        logger.error(f"DEBUG: Error searching passes by email: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.put("/passes/{object_id}", response_model=MessageResponse, tags=["Passes"])
@@ -1072,6 +1076,96 @@ def _normalize_google_pass(gw_obj: Dict[str, Any]) -> Dict[str, Any]:
         "created_at": None,
         "updated_at": None,
     }
+
+# ========================================================================
+# Notification Endpoints
+# ========================================================================
+
+@app.post("/passes/{object_id}/notify", response_model=MessageResponse, tags=["Passes"])
+async def send_pass_notification(object_id: str, request: NotificationRequest):
+    """Send a push notification to a specific pass holder"""
+    try:
+        # 1. Fetch pass from DB
+        pass_data = db.get_pass(object_id)
+        if not pass_data:
+            raise HTTPException(status_code=404, detail=f"Pass '{object_id}' not found")
+        
+        # 2. Fetch class to get class_type
+        class_data = db.get_class(pass_data['class_id'])
+        if not class_data:
+            raise HTTPException(status_code=404, detail=f"Class info for pass '{object_id}' not found")
+            
+        if not wallet_client:
+            raise HTTPException(status_code=503, detail="Google Wallet client not initialized")
+            
+        # 3. Call wallet client to send notification
+        wallet_client.send_push_notification(
+            full_object_id=wallet_client._prepare_ids_to_try(object_id)[0],
+            resource=wallet_client.service.genericobject() if class_data['class_type'] == 'Generic' 
+                     else wallet_client.service.eventticketobject() if class_data['class_type'] == 'EventTicket'
+                     else wallet_client.service.loyaltyobject() if class_data['class_type'] == 'LoyaltyCard'
+                     else wallet_client.service.giftcardobject() if class_data['class_type'] == 'GiftCard'
+                     else wallet_client.service.transitobject(),
+            message_header="Mertesacker Home Office",
+            message_body=request.message
+        )
+        
+        # 4. Log to DB
+        db.create_notification(
+            class_id=pass_data['class_id'],
+            object_id=object_id,
+            status="Sent",
+            message=f"Direct: {request.message}"
+        )
+        
+        return MessageResponse(
+            message=f"Notification sent to pass {object_id}",
+            success=True
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending pass notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/classes/{class_id}/notify", response_model=MessageResponse, tags=["Classes"])
+async def send_class_notification(class_id: str, request: NotificationRequest):
+    """Send a push notification to all holders of a template/class"""
+    try:
+        # 1. Verify class exists
+        class_data = db.get_class(class_id)
+        if not class_data:
+            raise HTTPException(status_code=404, detail=f"Class '{class_id}' not found")
+            
+        if not wallet_client:
+            raise HTTPException(status_code=503, detail="Google Wallet client not initialized")
+            
+        # 2. Use existing propagation service to send bulk notifications
+        # This service already handles fetching passes, sending via wallet_client, and logging to DB.
+        result = propagate_class_update_to_passes(
+            class_id=class_id,
+            updated_class=class_data,
+            db_manager=db,
+            wallet_client=wallet_client,
+            notification_message=request.message
+        )
+        
+        message = (
+            f"Bulk notification sent. "
+            f"Success: {result['updated_count']}, "
+            f"Failed: {result['failed_count']}."
+        )
+        
+        return MessageResponse(
+            message=message,
+            success=True
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending bulk notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn

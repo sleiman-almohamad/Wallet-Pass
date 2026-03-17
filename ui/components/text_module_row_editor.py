@@ -8,7 +8,7 @@ import flet as ft
 from typing import List, Dict, Callable
 
 class TextModuleRowEditor(ft.Container):
-    def __init__(self, initial_rows: List[Dict] = None, on_change: Callable[[List[Dict]], None] = None, mode: str = "class"):
+    def __init__(self, initial_rows: List[Dict] = None, on_change: Callable[[List[Dict]], None] = None, state=None, mode="class"):
         """
         initial_rows: list of dictionaries representing rows 
                      (class mode expects dicts with row_index, left_header, etc.)
@@ -18,6 +18,7 @@ class TextModuleRowEditor(ft.Container):
         """
         super().__init__()
         self.mode = mode
+        self.state = state
         self.on_change_callback = on_change
         
         # Internal state always managed as "rows" of 3 columns
@@ -141,8 +142,12 @@ class TextModuleRowEditor(ft.Container):
     def build_row_ui(self, row_data: Dict, index: int):
         def make_field(col_prefix, label_postfix):
             field_name = f"{col_prefix}_{label_postfix.lower()}"
+            label_key = f"label.{col_prefix}"
+            postfix_key = f"label.{label_postfix.lower()}"
+            label = f"{self.state.t(label_key)} {self.state.t(postfix_key)}" if self.state else f"{col_prefix.capitalize()} {label_postfix}"
+            
             return ft.TextField(
-                label=f"{col_prefix.capitalize()} {label_postfix}",
+                label=label,
                 value=row_data.get(field_name, ""),
                 width=120,
                 text_size=12,
@@ -159,11 +164,11 @@ class TextModuleRowEditor(ft.Container):
             bgcolor="grey50",
             content=ft.Column([
                 ft.Row([
-                    ft.Text(f"Row {index + 1}", weight=ft.FontWeight.BOLD),
+                    ft.Text(f"{self.state.t('label.row') if self.state else 'Row'} {index + 1}", weight=ft.FontWeight.BOLD),
                     ft.IconButton(
                         icon="delete",
                         icon_color="red",
-                        tooltip="Remove Row",
+                        tooltip=self.state.t("tooltip.remove_row") if self.state else "Remove Row",
                         on_click=lambda e, i=index: self.remove_row(i)
                     )
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -183,10 +188,10 @@ class TextModuleRowEditor(ft.Container):
 
         return ft.Column([
             ft.Row([
-                ft.Text("Text Module Rows", size=14, weight=ft.FontWeight.BOLD),
-                ft.ElevatedButton("Add Row", icon="add", on_click=self.add_row, style=ft.ButtonStyle(padding=5)),
+                ft.Text(self.state.t("label.text_module_rows") if self.state else "Text Module Rows", size=14, weight=ft.FontWeight.BOLD),
+                ft.ElevatedButton(self.state.t("btn.add_row") if self.state else "Add Row", icon="add", on_click=self.add_row, style=ft.ButtonStyle(padding=5)),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ft.Text("Supports up to 3 columns per row on the pass.", size=10, color="grey"),
+            ft.Text(self.state.t("msg.row_hint") if self.state else "Supports up to 3 columns per row on the pass.", size=10, color="grey"),
             rows_list
         ])
 

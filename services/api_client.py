@@ -228,6 +228,20 @@ class APIClient:
             print(f"Error fetching passes for class '{class_id}': {e}")
             return []
 
+    def get_passes_by_email(self, email: str) -> List[Dict[str, Any]]:
+        """Fetch all passes belonging to a specific email (from local DB)"""
+        try:
+            from urllib.parse import quote
+            safe_email = quote(email)
+            response = requests.get(f"{self.base_url}/passes/email/{safe_email}")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching passes for email '{email}': {e}")
+            return []
+
+
+
     def get_passes_by_class_from_google(self, class_id: str) -> List[Dict[str, Any]]:
         """Fetch all passes for a class LIVE from Google Wallet API (no local DB)"""
         try:
@@ -345,3 +359,42 @@ class APIClient:
             return response.json()
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
+
+    def send_pass_notification(self, object_id: str, message: str) -> Dict[str, Any]:
+        """Send a push notification to a specific pass holder"""
+        try:
+            response = requests.post(
+                f"{self.base_url}/passes/{object_id}/notify",
+                json={"message": message}
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(
+                f"Error sending pass notification: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except Exception as e:
+            raise APIClientError(f"Error sending pass notification: {e}") from e
+
+    def send_class_notification(self, class_id: str, message: str) -> Dict[str, Any]:
+        """Send a push notification to all holders of a template/class"""
+        try:
+            response = requests.post(
+                f"{self.base_url}/classes/{class_id}/notify",
+                json={"message": message}
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(
+                f"Error sending bulk notification: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except Exception as e:
+            raise APIClientError(f"Error sending bulk notification: {e}") from e
+

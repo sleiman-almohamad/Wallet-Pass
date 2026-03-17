@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
+.curor/
 
 # Virtual environments
 .venv
@@ -14,3 +15,8 @@ wallet-pass-*.json
 
 # Environment variables
 .env
+
+#testing
+debug_notification.py
+plan.txt
+certs/

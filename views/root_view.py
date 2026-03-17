@@ -8,6 +8,7 @@ from ui.class_builder import create_template_builder
 from ui.pass_generator import create_pass_generator
 from views.manage_templates_view import build_manage_templates_view
 from views.manage_passes_view import build_manage_passes_view
+from views.send_notification_view import build_send_notification_view
 
 
 def build_root_view(page: ft.Page, state) -> list:
@@ -19,40 +20,108 @@ def build_root_view(page: ft.Page, state) -> list:
     api_client = state.api_client
     wallet_client = state.wallet_client
 
+    # ── Language Selector ──
+    def on_lang_change(e):
+        state.set_language(lang_dropdown.value)
+        
+        # Re-build all views and update tab contents
+        nonlocal template_builder, pass_generator, manage_templates, manage_passes, send_notification
+        
+        template_builder = create_template_builder(page, state, api_client=api_client)
+        pass_generator = create_pass_generator(page, state, api_client=api_client, wallet_client=wallet_client)
+        manage_templates = build_manage_templates_view(page, state, api_client)
+        manage_passes = build_manage_passes_view(page, state, api_client)
+        send_notification = build_send_notification_view(page, state, api_client)
+        
+        # Updating tab headers and contents
+        tabs.tabs[0].text = state.t("tab.template_builder")
+        tabs.tabs[0].content = template_builder
+        
+        tabs.tabs[1].text = state.t("tab.pass_generator")
+        tabs.tabs[1].content = pass_generator
+        
+        tabs.tabs[2].text = state.t("tab.manage_templates")
+        tabs.tabs[2].content = manage_templates
+        
+        tabs.tabs[3].text = state.t("tab.manage_passes")
+        tabs.tabs[3].content = manage_passes
+        
+        tabs.tabs[4].text = state.t("tab.send_notification")
+        tabs.tabs[4].content = send_notification
+        
+        # Updating connection status indicators
+        if state.wallet_connected:
+            connection_status.value = state.t("status.connected")
+            connection_status.color = "green"
+        else:
+            connection_status.value = state.t("status.not_connected")
+            connection_status.color = "red"
+            
+        health = state.check_api_health()
+        if state.api_connected:
+            api_status.value = state.t("status.api_connected")
+            api_status.color = "green"
+        else:
+            detail = health.get("database", health.get("detail", "unknown"))
+            api_status.value = state.t("status.api_error", detail=detail)
+            api_status.color = "orange"
+        
+        page.update()
+
+    lang_dropdown = ft.Dropdown(
+        options=[
+            ft.dropdown.Option("en", "English"),
+            ft.dropdown.Option("de", "Deutsch"),
+        ],
+        value=state.language,
+        width=120,
+        content_padding=ft.Padding(10, 0, 10, 0),
+        on_change=on_lang_change,
+    )
+
     # ── Connection status indicators ──
     if state.wallet_connected:
-        connection_status = ft.Text("✅ Service Connected", color="green", size=12)
+        connection_status = ft.Text(state.t("status.connected"), color="green", size=12)
     else:
-        connection_status = ft.Text("❌ Service Not Connected", color="red", size=12)
+        connection_status = ft.Text(state.t("status.not_connected"), color="red", size=12)
 
     health = state.check_api_health()
     if state.api_connected:
-        api_status = ft.Text("✅ API Connected", color="green", size=12)
+        api_status = ft.Text(state.t("status.api_connected"), color="green", size=12)
     else:
         detail = health.get("database", health.get("detail", "unknown"))
-        api_status = ft.Text(f"⚠️ API: {detail}", color="orange", size=12)
+        api_status = ft.Text(state.t("status.api_error", detail=detail), color="orange", size=12)
 
     # ── Tab contents ──
-    template_builder = create_template_builder(page, api_client=api_client)
-    pass_generator = create_pass_generator(page, api_client=api_client, wallet_client=wallet_client)
+    template_builder = create_template_builder(page, state, api_client=api_client)
+    pass_generator = create_pass_generator(page, state, api_client=api_client, wallet_client=wallet_client)
     manage_templates = build_manage_templates_view(page, state, api_client)
     manage_passes = build_manage_passes_view(page, state, api_client)
+    send_notification = build_send_notification_view(page, state, api_client)
 
     tabs = ft.Tabs(
         selected_index=0,
         animation_duration=300,
         tabs=[
-            ft.Tab(text="Template Builder 🎨", content=template_builder),
-            ft.Tab(text="Pass Generator 🎫", content=pass_generator),
-            ft.Tab(text="Manage Templates 📋", content=manage_templates),
-            ft.Tab(text="Manage Passes", icon="contact_page", content=manage_passes),
+            ft.Tab(text=state.t("tab.template_builder"), content=template_builder),
+            ft.Tab(text=state.t("tab.pass_generator"), content=pass_generator),
+            ft.Tab(text=state.t("tab.manage_templates"), content=manage_templates),
+            ft.Tab(text=state.t("tab.manage_passes"), icon="contact_page", content=manage_passes),
+            ft.Tab(text=state.t("tab.send_notification"), content=send_notification),
         ],
         expand=True,
     )
 
     # ── Assemble top-level controls ──
     return [
-        ft.Row([ft.Image(src="B2F.png", width=150, height=150)]),
+        ft.Row([
+            ft.Image(src="B2F.png", width=150, height=150),
+            ft.VerticalDivider(width=20, color="transparent"),
+            ft.Column([
+                ft.Text("Language / Sprache", size=10, color="grey"),
+                lang_dropdown,
+            ], spacing=2),
+        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         ft.Row([connection_status, ft.Text(" | "), api_status]),
         ft.Divider(),
         tabs,

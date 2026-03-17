@@ -98,3 +98,31 @@ class ManagePassState(_ObservableState):
     def reset(self):
         self._data = dict(_PASS_DEFAULTS)
         self._notify()
+
+
+# ──────────────────────────────────────────────
+# Manage Notifications state
+# ──────────────────────────────────────────────
+_NOTIFICATION_DEFAULTS = {
+    "mode": "single",  # "single" | "template"
+    "selected_class_id": None,
+    "email_query": "",
+    "passes_found": [],
+    "selected_pass_id": None,
+    "message": "",
+    "status_message": "",
+    "status_color": "grey",
+    "is_loading": False,
+}
+
+
+class ManageNotificationState(_ObservableState):
+    """State for the *Send Notification* tab."""
+
+    def __init__(self):
+        super().__init__(_NOTIFICATION_DEFAULTS)
+
+    def reset(self):
+        self._data = dict(_NOTIFICATION_DEFAULTS)
+        self._notify()
+

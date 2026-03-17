@@ -54,7 +54,8 @@ def set_nested_value(data: Dict[str, Any], path: str, value: Any) -> None:
 
 def create_form_field(field_path: str, field_metadata: Dict[str, str], 
                       current_value: Optional[str], 
-                      on_change: Callable) -> ft.Control:
+                      on_change: Callable,
+                      state) -> ft.Control:
     """
     Create a Flet form field based on field metadata
     
@@ -68,7 +69,7 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
         Flet control for the form field
     """
     field_type = field_metadata.get("type", "text")
-    label = field_metadata.get("label", field_path)
+    label = state.t(field_metadata.get("label", field_path))
     hint = field_metadata.get("hint", "")
     
     if field_type == "boolean":
@@ -142,7 +143,8 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
 
 def generate_dynamic_form(field_mappings: Dict[str, Dict[str, str]], 
                           json_data: Dict[str, Any],
-                          on_field_change: Callable) -> list:
+                          on_field_change: Callable,
+                          state) -> list:
     """
     Generate a list of Flet form controls from field mappings
     
@@ -165,7 +167,8 @@ def generate_dynamic_form(field_mappings: Dict[str, Dict[str, str]],
             field_path, 
             field_metadata, 
             str(current_value) if current_value is not None else None,
-            on_field_change
+            on_field_change,
+            state
         )
         
         form_controls.append(field)
@@ -178,6 +181,7 @@ class DynamicForm:
     
     def __init__(self, field_mappings: Dict[str, Dict[str, str]], 
                  initial_json: Dict[str, Any],
+                 state,
                  on_change_callback: Optional[Callable] = None,
                  custom_controls: Optional[list] = None):
         """
@@ -191,6 +195,7 @@ class DynamicForm:
         """
         self.field_mappings = field_mappings
         self.json_data = initial_json.copy()
+        self.state = state
         self.on_change_callback = on_change_callback
         self.custom_controls = custom_controls or []
         self.controls = []
@@ -209,7 +214,8 @@ class DynamicForm:
         self.controls = generate_dynamic_form(
             self.field_mappings,
             self.json_data,
-            self._on_field_change
+            self._on_field_change,
+            self.state
         )
         if self.custom_controls:
             self.controls.extend(self.custom_controls)

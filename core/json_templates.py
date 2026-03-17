@@ -310,7 +310,7 @@ class JSONTemplateManager:
         """
         common_fields = {
             "hexBackgroundColor": {
-                "label": "Background Color",
+                "label": "label.background_color",
                 "type": "color",
                 "hint": "#4285f4"
             }
@@ -320,22 +320,22 @@ class JSONTemplateManager:
             return {
                 **common_fields,
                 "localizedIssuerName.defaultValue.value": {
-                    "label": "Issuer Name",
+                    "label": "label.issuer_name",
                     "type": "text",
                     "hint": "Your Business Name"
                 },
                 "localizedProgramName.defaultValue.value": {
-                    "label": "Program Name",
+                    "label": "label.program_name",
                     "type": "text",
                     "hint": "Loyalty Program"
                 },
                 "programLogo.sourceUri.uri": {
-                    "label": "Program Logo URL",
+                    "label": "label.program_logo_url",
                     "type": "url",
                     "hint": "https://example.com/logo.png"
                 },
                 "heroImage.sourceUri.uri": {
-                    "label": "Hero Image URL",
+                    "label": "label.hero_image_url",
                     "type": "url",
                     "hint": "https://example.com/hero.jpg"
                 }
@@ -344,17 +344,17 @@ class JSONTemplateManager:
             return {
                 **common_fields,
                 "localizedIssuerName.defaultValue.value": {
-                    "label": "Issuer Name",
+                    "label": "label.issuer_name",
                     "type": "text",
                     "hint": "Your Business Name"
                 },
                 "programLogo.sourceUri.uri": {
-                    "label": "Card Logo URL",
+                    "label": "label.card_logo_url",
                     "type": "url",
                     "hint": "https://example.com/logo.png"
                 },
                 "heroImage.sourceUri.uri": {
-                    "label": "Hero Image URL",
+                    "label": "label.hero_image_url",
                     "type": "url",
                     "hint": "https://example.com/hero.jpg"
                 }
@@ -363,37 +363,37 @@ class JSONTemplateManager:
             return {
                 **common_fields,
                 "issuerName": {
-                    "label": "Issuer Name",
+                    "label": "label.issuer_name",
                     "type": "text",
                     "hint": "Your Business"
                 },
                 "eventName.defaultValue.value": {
-                    "label": "Event Name",
+                    "label": "label.event_name",
                     "type": "text",
                     "hint": "Event Name"
                 },
                 "venue.name.defaultValue.value": {
-                    "label": "Venue Name",
+                    "label": "label.venue_name",
                     "type": "text",
                     "hint": "Venue Name"
                 },
                 "venue.address.defaultValue.value": {
-                    "label": "Venue Address",
+                    "label": "label.venue_address",
                     "type": "text",
                     "hint": "123 Main St, City"
                 },
                 "dateTime.start": {
-                    "label": "Event Start Time",
+                    "label": "label.event_start_time",
                     "type": "datetime",
                     "hint": "2025-12-31T19:00:00"
                 },
                 "logo.sourceUri.uri": {
-                    "label": "Logo URL",
+                    "label": "label.logo_url",
                     "type": "url",
                     "hint": "https://example.com/logo.png"
                 },
                 "heroImage.sourceUri.uri": {
-                    "label": "Hero Image URL",
+                    "label": "label.hero_image_url",
                     "type": "url",
                     "hint": "https://example.com/hero.jpg (1032x336px recommended)"
                 }
@@ -402,23 +402,23 @@ class JSONTemplateManager:
             return {
                 **common_fields,
                 "issuerName": {
-                    "label": "Issuer Name",
+                    "label": "label.issuer_name",
                     "type": "text",
                     "hint": "Transit Authority"
                 },
                 "transitType": {
-                    "label": "Transit Type",
+                    "label": "label.transit_type",
                     "type": "select",
                     "hint": "TRANSIT_TYPE_BUS",
                     "options": ["TRANSIT_TYPE_BUS", "TRANSIT_TYPE_RAIL", "TRANSIT_TYPE_TRAM", "TRANSIT_TYPE_FERRY"]
                 },
                 "logo.sourceUri.uri": {
-                    "label": "Logo URL",
+                    "label": "label.logo_url",
                     "type": "url",
                     "hint": "https://example.com/logo.png"
                 },
                 "heroImage.sourceUri.uri": {
-                    "label": "Hero Image URL",
+                    "label": "label.hero_image_url",
                     "type": "url",
                     "hint": "https://example.com/hero.jpg (1032x336px recommended)"
                 }
@@ -427,44 +427,44 @@ class JSONTemplateManager:
             return {
                 **common_fields,
                 "issuerName": {
-                    "label": "Issuer Name",
+                    "label": "label.issuer_name",
                     "type": "text",
                     "hint": "Your Business"
                 },
                 "header.defaultValue.value": {
-                    "label": "Header Text",
+                    "label": "label.header_text",
                     "type": "text",
                     "hint": "Business Name"
                 },
                 "cardTitle.defaultValue.value": {
-                    "label": "Card Title",
+                    "label": "label.card_title",
                     "type": "text",
                     "hint": "Pass Title"
                 },
                 "logo.sourceUri.uri": {
-                    "label": "Logo URL",
+                    "label": "label.logo_url",
                     "type": "url",
                     "hint": "https://example.com/logo.png"
                 },
                 "heroImage.sourceUri.uri": {
-                    "label": "Hero Image URL",
+                    "label": "label.hero_image_url",
                     "type": "url",
                     "hint": "https://example.com/hero.jpg (1032x336px recommended)"
                 },
                 "multiple_devices_allowed": {
-                    "label": "Multiple Devices Allowed",
+                    "label": "label.multiple_devices_allowed",
                     "type": "select",
                     "hint": "MULTIPLE_HOLDERS",
                     "options": ["MULTIPLE_HOLDERS", "ONE_USER_ALL_DEVICES", "ONE_USER_ONE_DEVICE"]
                 },
                 "view_unlock_requirement": {
-                    "label": "View Unlock Requirement",
+                    "label": "label.view_unlock_requirement",
                     "type": "select",
                     "hint": "UNLOCK_REQUIRED_TO_VIEW",
                     "options": ["UNLOCK_REQUIRED_TO_VIEW", "UNLOCK_NOT_REQUIRED"]
                 },
                 "enable_smart_tap": {
-                    "label": "Enable Smart Tap",
+                    "label": "label.enable_smart_tap",
                     "type": "boolean",
                     "hint": "false"
                 }

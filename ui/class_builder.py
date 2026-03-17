@@ -8,11 +8,12 @@ from core.json_templates import JSONTemplateManager, get_template, get_editable_
 from ui.components.json_form_mapper import DynamicForm, set_nested_value
 from ui.components.json_editor import JSONEditor
 from ui.components.text_module_row_editor import TextModuleRowEditor
+from ui.components.preview_builder import build_comprehensive_preview
 import configs
 import json
 
 
-def create_template_builder(page, api_client=None):
+def create_template_builder(page, state, api_client=None):
     """
     Create the redesigned template builder interface with:
     - Left panel: Class ID, Type selector, Dynamic form
@@ -44,117 +45,8 @@ def create_template_builder(page, api_client=None):
     status_text_ref = ft.Ref[ft.Text]()
     
     def build_visual_preview(json_data: dict) -> ft.Container:
-        """Build visual pass preview from JSON data"""
-        # Extract visual elements based on class type
-        bg_color = json_data.get("hexBackgroundColor", "#4285f4")
-        
-        # Get logo URL (different paths for different types)
-        logo_url = None
-        if "programLogo" in json_data:
-            logo_url = json_data.get("programLogo", {}).get("sourceUri", {}).get("uri")
-        elif "logo" in json_data:
-            logo_url = json_data.get("logo", {}).get("sourceUri", {}).get("uri")
-        
-        # Get hero image URL
-        hero_url = None
-        if "heroImage" in json_data:
-            hero_url = json_data.get("heroImage", {}).get("sourceUri", {}).get("uri")
-        
-        # Get header/title text
-        header_text = "Business Name"
-        card_title = "Pass Title"
-        
-        if "localizedIssuerName" in json_data:
-            header_text = json_data.get("localizedIssuerName", {}).get("defaultValue", {}).get("value", "Business")
-        elif "issuerName" in json_data:
-            header_text = json_data.get("issuerName", "Business")
-        
-        if "localizedProgramName" in json_data:
-            card_title = json_data.get("localizedProgramName", {}).get("defaultValue", {}).get("value", "Program")
-        elif "eventName" in json_data:
-            card_title = json_data.get("eventName", {}).get("defaultValue", {}).get("value", "Event")
-        elif "header" in json_data:
-            header_text = json_data.get("header", {}).get("defaultValue", {}).get("value", "Header")
-        if "cardTitle" in json_data:
-            card_title = json_data.get("cardTitle", {}).get("defaultValue", {}).get("value", "Title")
-        
-        # Build logo control
-        if logo_url:
-            logo_control = ft.Container(
-                width=50, height=50, border_radius=25,
-                clip_behavior=ft.ClipBehavior.HARD_EDGE,
-                content=ft.Image(src=logo_url, width=50, height=50, fit=ft.ImageFit.COVER)
-            )
-        else:
-            logo_control = ft.Container(
-                width=50, height=50, border_radius=25, bgcolor="white30",
-                content=ft.Icon("business", color="white", size=30),
-                alignment=ft.alignment.center
-            )
-        
-        # Build hero image control
-        if hero_url:
-            hero_control = ft.Container(
-                height=150,
-                content=ft.Image(src=hero_url, width=300, height=150, fit=ft.ImageFit.COVER)
-            )
-        else:
-            hero_control = ft.Container(
-                height=150, bgcolor="black12",
-                content=ft.Column([
-                    ft.Icon("image", size=40, color="grey"),
-                    ft.Text("Hero Image", size=12, color="grey")
-                ], alignment=ft.MainAxisAlignment.CENTER,
-                   horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-            )
-        
-        # Build the pass preview
-        return ft.Container(
-            width=300,
-            bgcolor=bg_color,
-            border_radius=15,
-            clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            shadow=ft.BoxShadow(blur_radius=15, color="black26", offset=ft.Offset(0, 5)),
-            content=ft.Column([
-                # Top: Logo & Header
-                ft.Container(
-                    padding=15,
-                    content=ft.Row([
-                        logo_control,
-                        ft.Container(width=10),
-                        ft.Text(header_text, color="white", weight=ft.FontWeight.BOLD, size=14, expand=True)
-                    ])
-                ),
-                # Card Title
-                ft.Container(
-                    padding=ft.padding.only(left=15, right=15, bottom=10),
-                    content=ft.Text(card_title, color="white", size=20, weight=ft.FontWeight.BOLD)
-                ),
-                # Hero Image
-                hero_control,
-                # Bottom: QR & Details
-                ft.Container(
-                    bgcolor="white",
-                    padding=15,
-                    content=ft.Column([
-                        ft.Text("Pass Details", color="grey", size=11),
-                        ft.Container(height=5),
-                        ft.Row([
-                            ft.Container(
-                                width=70, height=70, bgcolor="grey200", border_radius=5,
-                                content=ft.Icon("qr_code_2", size=50, color="grey"),
-                                alignment=ft.alignment.center
-                            ),
-                            ft.Container(width=10),
-                            ft.Column([
-                                ft.Text("Sample User", weight=ft.FontWeight.BOLD, size=13, color="black"),
-                                ft.Text("ID: 1234567890", size=11, color="grey")
-                            ])
-                        ])
-                    ])
-                )
-            ], spacing=0)
-        )
+        """Build visual pass preview from JSON data using centralized builder"""
+        return build_comprehensive_preview(json_data, state=state)
     
     def on_json_change(updated_json: dict):
         """Callback when JSON data changes from form or editor"""
@@ -179,7 +71,7 @@ def create_template_builder(page, api_client=None):
         class_id = class_id_input_ref.current.value
         
         if not class_id:
-            status_text_ref.current.value = "⚠️ Please enter a Class ID first"
+            status_text_ref.current.value = state.t("msg.enter_class_id")
             status_text_ref.current.color = "orange"
             page.update()
             return
@@ -202,13 +94,18 @@ def create_template_builder(page, api_client=None):
                 
             # Initialize with existing rows if present
             initial_rows = current_json.get("text_module_rows", [])
-            row_editor = TextModuleRowEditor(initial_rows, on_change=on_rows_change, mode="class")
+            row_editor = TextModuleRowEditor(initial_rows, on_change=on_rows_change, state=state, mode="class")
             custom_form_controls.append(ft.Divider())
             custom_form_controls.append(row_editor)
         else:
             row_editor = None
-            
-        dynamic_form = DynamicForm(field_mappings, current_json, on_json_change, custom_controls=custom_form_controls)
+         # Create dynamic form
+        dynamic_form = DynamicForm(
+            field_mappings=field_mappings, # Changed from editable_fields to field_mappings
+            initial_json=current_json,
+            state=state,
+            on_change_callback=on_json_change # Changed from on_form_change to on_json_change
+        )
         form_controls = dynamic_form.build()
         
         # Update form container
@@ -216,7 +113,7 @@ def create_template_builder(page, api_client=None):
             form_container_ref.current.controls = form_controls
         
         # Create/update JSON editor
-        json_editor = JSONEditor(current_json, on_change=on_json_change, read_only=True)
+        json_editor = JSONEditor(current_json, state=state, on_change=on_json_change, read_only=True)
         if json_container_ref.current:
             json_container_ref.current.content = json_editor.build()
         
@@ -224,7 +121,7 @@ def create_template_builder(page, api_client=None):
         if preview_container_ref.current:
             preview_container_ref.current.content = build_visual_preview(current_json)
         
-        status_text_ref.current.value = f"✓ Loaded {current_class_type} template"
+        status_text_ref.current.value = state.t("msg.loaded_template_type", type=current_class_type)
         status_text_ref.current.color = "green"
         page.update()
     
@@ -248,18 +145,18 @@ def create_template_builder(page, api_client=None):
         class_id = class_id_input_ref.current.value
         
         if not class_id:
-            status_text_ref.current.value = "❌ Class ID is required"
+            status_text_ref.current.value = state.t("msg.class_id_req")
             status_text_ref.current.color = "red"
             page.update()
             return
         
         if not current_json:
-            status_text_ref.current.value = "❌ No template data to save"
+            status_text_ref.current.value = state.t("msg.no_template_data")
             status_text_ref.current.color = "red"
             page.update()
             return
         
-        status_text_ref.current.value = "⏳ Saving template..."
+        status_text_ref.current.value = state.t("msg.saving_template")
         status_text_ref.current.color = "blue"
         page.update()
         
@@ -287,7 +184,7 @@ def create_template_builder(page, api_client=None):
                         class_json=current_json,
                         **extras
                     )
-                    status_text_ref.current.value = f"✅ Template '{class_id}' updated successfully!"
+                    status_text_ref.current.value = state.t("msg.template_updated", id=class_id)
                 else:
                     # Create new class
                     print(f"Creating new class '{class_id}'...")
@@ -297,11 +194,11 @@ def create_template_builder(page, api_client=None):
                         class_json=current_json,
                         **extras
                     )
-                    status_text_ref.current.value = f"✅ Template '{class_id}' created successfully!"
+                    status_text_ref.current.value = state.t("msg.template_created", id=class_id)
                 
                 status_text_ref.current.color = "green"
             else:
-                status_text_ref.current.value = "⚠️ API client not connected"
+                status_text_ref.current.value = state.t("msg.api_not_connected")
                 status_text_ref.current.color = "orange"
         except Exception as ex:
             print(f"Error saving template: {ex}")
@@ -311,7 +208,7 @@ def create_template_builder(page, api_client=None):
             # Check if it's a 409 conflict error
             error_msg = str(ex)
             if "409" in error_msg or "Conflict" in error_msg:
-                status_text_ref.current.value = f"❌ Class '{class_id}' already exists. Try refreshing and editing it instead."
+                status_text_ref.current.value = state.t("msg.class_exists_err", id=class_id)
             else:
                 status_text_ref.current.value = f"❌ Error: {str(ex)}"
             status_text_ref.current.color = "red"
@@ -330,12 +227,12 @@ def create_template_builder(page, api_client=None):
             form_container_ref.current.controls = []
         
         if json_container_ref.current:
-            json_container_ref.current.content = ft.Text("Select a class type to begin", color="grey")
+            json_container_ref.current.content = ft.Text(state.t("msg.select_type_hint"), color="grey")
         
         if preview_container_ref.current:
             preview_container_ref.current.content = ft.Column([
                 ft.Icon("credit_card", size=80, color="grey300"),
-                ft.Text("Preview", size=12, color="grey")
+                ft.Text(state.t("label.visual_preview"), size=12, color="grey")
             ], alignment=ft.MainAxisAlignment.CENTER,
                horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         
@@ -346,21 +243,21 @@ def create_template_builder(page, api_client=None):
     left_panel = ft.Container(
         width=420,
         content=ft.Column([
-            ft.Text("Template Builder", size=22, weight=ft.FontWeight.BOLD),
-            ft.Text("Dynamic class creation with templates", size=11, color="grey"),
+            ft.Text(state.t("header.template_builder"), size=22, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("subtitle.template_builder"), size=11, color="grey"),
             ft.Divider(),
             
-            ft.Text("Basic Information", size=16, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("label.basic_info"), size=16, weight=ft.FontWeight.BOLD),
             ft.TextField(
                 ref=class_id_input_ref,
-                label="Class ID *",
+                label=state.t("label.class_id_req"),
                 hint_text="e.g., coffee_loyalty_2025",
                 width=350,
                 on_change=on_class_id_change
             ),
             ft.Dropdown(
                 ref=class_type_dropdown_ref,
-                label="Class Type *",
+                label=state.t("label.class_type_req"),
                 value="Generic",
                 width=350,
                 options=[
@@ -375,7 +272,7 @@ def create_template_builder(page, api_client=None):
             
             ft.Divider(height=15),
             
-            ft.Text("Template Fields", size=16, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("label.template_fields"), size=16, weight=ft.FontWeight.BOLD),
             ft.Text("Fields will appear here after selecting a type", size=10, color="grey"),
             
             ft.Column(
@@ -389,12 +286,12 @@ def create_template_builder(page, api_client=None):
             
             ft.Row([
                 ft.ElevatedButton(
-                    "Save Template",
+                    state.t("btn.update_template"),
                     icon="save",
                     on_click=save_template,
                     style=ft.ButtonStyle(bgcolor="blue", color="white")
                 ),
-                ft.OutlinedButton("Reset", icon="refresh", on_click=reset_form)
+                ft.OutlinedButton(state.t("btn.reset"), icon="refresh", on_click=reset_form)
             ], spacing=10),
             
             
@@ -426,12 +323,12 @@ def create_template_builder(page, api_client=None):
         ft.Container(
             width=320,
             content=ft.Column([
-                ft.Text("JSON Configuration", size=18, weight=ft.FontWeight.BOLD),
+                ft.Text(state.t("label.json_config"), size=18, weight=ft.FontWeight.BOLD),
                 ft.Text("Live JSON preview", size=10, color="grey"),
                 ft.Container(height=10),
                 ft.Container(
                     ref=json_container_ref,
-                    content=ft.Text("Select a class type to see JSON", color="grey", size=11),
+                    content=ft.Text(state.t("msg.select_type_hint"), color="grey", size=11),
                     expand=True
                 )
             ], scroll="auto"),
@@ -443,14 +340,14 @@ def create_template_builder(page, api_client=None):
         ft.Container(
             expand=True,
             content=ft.Column([
-                ft.Text("Visual Preview", size=18, weight=ft.FontWeight.BOLD),
+                ft.Text(state.t("label.visual_preview"), size=18, weight=ft.FontWeight.BOLD),
                 ft.Text("How your pass will look", size=10, color="grey"),
                 ft.Container(height=20),
                 ft.Container(
                     ref=preview_container_ref,
                     content=ft.Column([
                         ft.Icon("credit_card", size=80, color="grey300"),
-                        ft.Text("Preview will appear here", size=12, color="grey")
+                        ft.Text(state.t("msg.preview_hint"), size=12, color="grey")
                     ], alignment=ft.MainAxisAlignment.CENTER,
                        horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                     alignment=ft.alignment.top_center,

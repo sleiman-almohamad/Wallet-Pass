@@ -11,6 +11,7 @@ class JSONEditor:
     """JSON preview/editor component with formatting and validation"""
     
     def __init__(self, initial_json: Dict[str, Any], 
+                 state,
                  on_change: Optional[Callable] = None,
                  read_only: bool = True):
         """
@@ -22,6 +23,7 @@ class JSONEditor:
             read_only: Whether the editor is read-only
         """
         self.json_data = initial_json
+        self.state = state
         self.on_change = on_change
         self.read_only = read_only
         self.text_field = None
@@ -53,7 +55,7 @@ class JSONEditor:
         except json.JSONDecodeError as ex:
             # Show error
             if self.error_text:
-                self.error_text.value = f"Invalid JSON: {str(ex)}"
+                self.error_text.value = self.state.t("msg.invalid_json", error=str(ex))
                 self.error_text.color = "red"
     
     def update_json(self, new_json: Dict[str, Any]):
@@ -90,13 +92,13 @@ class JSONEditor:
         # Copy button
         def copy_json(e):
             e.page.set_clipboard(self.text_field.value)
-            self.error_text.value = "✓ Copied to clipboard!"
+            self.error_text.value = self.state.t("msg.copied")
             self.error_text.color = "green"
             e.page.update()
         
         copy_button = ft.IconButton(
             icon="content_copy",
-            tooltip="Copy JSON",
+            tooltip=self.state.t("tooltip.copy_json"),
             on_click=copy_json
         )
         
@@ -105,17 +107,17 @@ class JSONEditor:
             try:
                 parsed = json.loads(self.text_field.value)
                 self.text_field.value = self._format_json(parsed)
-                self.error_text.value = "✓ Formatted"
+                self.error_text.value = self.state.t("msg.formatted")
                 self.error_text.color = "green"
                 e.page.update()
             except json.JSONDecodeError as ex:
-                self.error_text.value = f"Cannot format: {str(ex)}"
+                self.error_text.value = self.state.t("msg.cannot_format", error=str(ex))
                 self.error_text.color = "red"
                 e.page.update()
         
         format_button = ft.IconButton(
             icon="format_align_left",
-            tooltip="Format JSON",
+            tooltip=self.state.t("tooltip.format_json"),
             on_click=format_json
         ) if not self.read_only else None
         
@@ -127,7 +129,7 @@ class JSONEditor:
         return ft.Container(
             content=ft.Column([
                 ft.Row([
-                    ft.Text("JSON Preview", size=14, weight=ft.FontWeight.BOLD),
+                    ft.Text(self.state.t("label.json_preview"), size=14, weight=ft.FontWeight.BOLD),
                     ft.Row(buttons, spacing=5)
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Container(height=5),

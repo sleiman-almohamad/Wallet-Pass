@@ -69,9 +69,6 @@ class DatabaseManager:
                      transit_type: Optional[str] = None,
                      transit_operator_name: Optional[str] = None,
                      # Generic-specific extended
-                     multiple_devices_allowed: Optional[str] = None,
-                     view_unlock_requirement: Optional[str] = None,
-                     enable_smart_tap: Optional[bool] = None,
                      text_module_rows: Optional[list] = None,
                      # Legacy compat (ignored for storage)
                      class_json: Optional[Dict[str, Any]] = None,
@@ -91,9 +88,6 @@ class DatabaseManager:
             if class_type == 'Generic':
                 session.add(GenericClassFields(
                     class_id=class_id, header=header_text, card_title=card_title,
-                    multiple_devices_allowed=multiple_devices_allowed,
-                    view_unlock_requirement=view_unlock_requirement,
-                    enable_smart_tap=enable_smart_tap
                 ))
                 session.flush()
                 
@@ -145,9 +139,6 @@ class DatabaseManager:
         if class_type == "Generic":
             args["header_text"] = result.get("header")
             args["card_title"] = result.get("card_title")
-            args["multiple_devices_allowed"] = result.get("multiple_devices_allowed")
-            args["view_unlock_requirement"] = result.get("view_unlock_requirement")
-            args["enable_smart_tap"] = result.get("enable_smart_tap")
             args["text_module_rows"] = result.get("text_module_rows", [])
         elif class_type == "EventTicket":
             args["event_name"] = result.get("event_name")
@@ -178,9 +169,7 @@ class DatabaseManager:
         if cls.generic_fields:
             d["header"] = cls.generic_fields.header
             d["card_title"] = cls.generic_fields.card_title
-            d["multiple_devices_allowed"] = cls.generic_fields.multiple_devices_allowed
-            d["view_unlock_requirement"] = cls.generic_fields.view_unlock_requirement
-            d["enable_smart_tap"] = cls.generic_fields.enable_smart_tap
+            d["card_title"] = cls.generic_fields.card_title
             d["text_module_rows"] = [
                 {
                     "row_index": r.row_index,
@@ -193,9 +182,7 @@ class DatabaseManager:
         else:
             d["header"] = None
             d["card_title"] = None
-            d["multiple_devices_allowed"] = None
-            d["view_unlock_requirement"] = None
-            d["enable_smart_tap"] = None
+            d["card_title"] = None
             d["text_module_rows"] = []
 
         if cls.event_ticket_fields:
@@ -260,9 +247,6 @@ class DatabaseManager:
                 child_vals = {
                     'header': kwargs.get('header_text'),
                     'card_title': kwargs.get('card_title'),
-                    'multiple_devices_allowed': kwargs.get('multiple_devices_allowed'),
-                    'view_unlock_requirement': kwargs.get('view_unlock_requirement'),
-                    'enable_smart_tap': kwargs.get('enable_smart_tap'),
                 }
                 child_vals = {k: v for k, v in child_vals.items() if v is not None}
                 if child_vals:

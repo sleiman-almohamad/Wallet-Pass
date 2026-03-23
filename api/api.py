@@ -165,6 +165,23 @@ async def create_class(class_data: ClassCreate):
         )
         
         if success:
+            # Re-fetch from DB to get the final synthesized class_json
+            newly_created_class = db.get_class(class_data.class_id)
+            
+            if wallet_client and newly_created_class and newly_created_class.get('class_json'):
+                try:
+                    logger.info(f"Syncing new class '{class_data.class_id}' to Google Wallet")
+                    wallet_client.create_pass_class(
+                        class_data=newly_created_class['class_json'],
+                        class_type=newly_created_class.get('class_type', 'Generic')
+                    )
+                except Exception as e:
+                    logger.error(f"Google Wallet sync failed for new class '{class_data.class_id}': {e}")
+                    return MessageResponse(
+                        message=f"Class created locally. ⚠️ Google Wallet sync failed: {str(e)}",
+                        success=True
+                    )
+            
             return MessageResponse(
                 message=f"Class '{class_data.class_id}' created successfully",
                 success=True

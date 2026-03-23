@@ -517,7 +517,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             _set_status(f"❌ Error generating link: {ex}", "red"); page.update()
 
     # ── Startup ──
-    startup_sync_passes()
+    # startup_sync_passes() # Disabled per user request (keeps old test data off local DB)
     load_passes_classes()
 
     # Build UI Left Panel
@@ -527,11 +527,11 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             ft.Text(state.t("header.manage_passes"), size=22, weight=ft.FontWeight.BOLD),
             ft.Text(state.t("subtitle.manage_passes"), size=11, color="grey"),
             ft.Divider(),
-            ft.Row([
-                ft.IconButton("sync", on_click=sync_passes_manual, tooltip="Refresh passes from Google Wallet"),
-                ft.Text(state.t("msg.syncing_google"), size=11, color="grey"),
-            ]),
-            ft.Container(height=5),
+            # ft.Row([
+            #     ft.IconButton("sync", on_click=sync_passes_manual, tooltip="Refresh passes from Google Wallet"),
+            #     ft.Text(state.t("msg.syncing_google"), size=11, color="grey"),
+            # ]),
+            # ft.Container(height=5),
             ft.Text("1. " + state.t("label.select_template"), size=13, weight=ft.FontWeight.W_500, color="blue700"),
             manage_passes_class_dropdown,
             ft.Container(height=5),

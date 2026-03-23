@@ -240,11 +240,6 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
         try:
             updated_json = manage_dynamic_form.get_json_data()
             extras = {}
-            if manage_current_class_type == "Generic":
-                # Generic classes are rules-only: only send rule fields.
-                extras["multiple_devices_allowed"] = updated_json.get("multiple_devices_allowed")
-                extras["view_unlock_requirement"] = updated_json.get("view_unlock_requirement")
-                extras["enable_smart_tap"] = updated_json.get("enable_smart_tap")
 
             # Perform the update with sync_to_google=True
             response = api_client.update_class(
@@ -261,7 +256,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
         page.update()
 
     # ── Startup ──
-    startup_sync_classes()
+    # startup_sync_classes() # Disabled per user request
     load_template_classes()
 
     left_panel.content = ft.Column([

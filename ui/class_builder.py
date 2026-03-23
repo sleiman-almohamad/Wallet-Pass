@@ -168,12 +168,7 @@ def create_template_builder(page, state, api_client=None):
                 
                 # Extract extended generic fields from the form's current state
                 form_data = dynamic_form.get_json_data() if dynamic_form else current_json
-                extras = {}
-                if current_class_type == "Generic":
-                    extras["multiple_devices_allowed"] = form_data.get("multiple_devices_allowed")
-                    extras["view_unlock_requirement"] = form_data.get("view_unlock_requirement")
-                    extras["enable_smart_tap"] = form_data.get("enable_smart_tap")
-                    extras["text_module_rows"] = form_data.get("text_module_rows", [])
+                extras = {"text_module_rows": form_data.get("text_module_rows", [])}
 
                 if existing_class:
                     # Update existing class

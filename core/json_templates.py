@@ -218,14 +218,7 @@ class JSONTemplateManager:
             "id": class_id,
         }
 
-        if kwargs.get("multiple_devices_allowed"):
-            template["multipleDevicesAndHoldersAllowedStatus"] = kwargs["multiple_devices_allowed"]
-
-        if kwargs.get("view_unlock_requirement"):
-            template["viewUnlockRequirement"] = kwargs["view_unlock_requirement"]
-
-        if kwargs.get("enable_smart_tap") is not None:
-            template["enableSmartTap"] = bool(kwargs["enable_smart_tap"])
+        return template
 
         return template
     
@@ -360,25 +353,7 @@ class JSONTemplateManager:
                 }
             }
         else:  # Generic — rules-only (branding is per-pass)
-            return {
-                "multiple_devices_allowed": {
-                    "label": "label.multiple_devices_allowed",
-                    "type": "select",
-                    "hint": "MULTIPLE_HOLDERS",
-                    "options": ["MULTIPLE_HOLDERS", "ONE_USER_ALL_DEVICES", "ONE_USER_ONE_DEVICE"]
-                },
-                "view_unlock_requirement": {
-                    "label": "label.view_unlock_requirement",
-                    "type": "select",
-                    "hint": "UNLOCK_REQUIRED_TO_VIEW",
-                    "options": ["UNLOCK_REQUIRED_TO_VIEW", "UNLOCK_NOT_REQUIRED"]
-                },
-                "enable_smart_tap": {
-                    "label": "label.enable_smart_tap",
-                    "type": "boolean",
-                    "hint": "false"
-                }
-            }
+            return {}
 
 
 # Helper functions for easy template access

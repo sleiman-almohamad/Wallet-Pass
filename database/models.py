@@ -85,9 +85,6 @@ class GenericClassFields(Base):
     )
     header = Column(String(255))
     card_title = Column(String(255))
-    multiple_devices_allowed = Column(String(100), nullable=True)
-    view_unlock_requirement = Column(String(100), nullable=True)
-    enable_smart_tap = Column(Boolean, nullable=True, default=False)
 
     parent = relationship("ClassesTable", back_populates="generic_fields")
 

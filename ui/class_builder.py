@@ -192,6 +192,12 @@ def create_template_builder(page, state, api_client=None):
                     status_text_ref.current.value = state.t("msg.template_created", id=class_id)
                 
                 status_text_ref.current.color = "green"
+                
+                # Refresh other views that depend on the template list
+                if state:
+                    state.refresh_ui("pass_generator_templates")
+                    state.refresh_ui("manage_templates_list")
+                    state.refresh_ui("manage_passes_list")
             else:
                 status_text_ref.current.value = state.t("msg.api_not_connected")
                 status_text_ref.current.color = "orange"

@@ -351,7 +351,8 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
         except Exception as e:
             status_ref.current.value = f"❌ Error loading templates: {e}"
             status_ref.current.color = "red"
-            page.update()
+    # Register this function for remote refresh
+    state.register_refresh_callback("pass_generator_templates", load_templates)
     
     def generate_pass(e):
         """Generate the pass"""
@@ -488,6 +489,9 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                     pass_data=pass_data
                 )
                 db_saved = True
+                # Refresh Manage Passes view instantly
+                if state:
+                    state.refresh_ui("manage_passes_list")
             except Exception as db_error:
                 # Local database save failed, but pass was still created in Google Wallet
                 print(f"Warning: Could not save to local database: {db_error}")

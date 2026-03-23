@@ -34,6 +34,18 @@ class AppState:
         # Localization
         self.language = "en"
 
+        # UI Refresh Registry (callback functions for cross-view updates)
+        self.ui_refresh_registry = {}
+
+    def register_refresh_callback(self, key: str, callback: callable):
+        """Register a callback function to be called when a specific UI component needs refreshing."""
+        self.ui_refresh_registry[key] = callback
+
+    def refresh_ui(self, key: str):
+        """Trigger a registered refresh callback."""
+        if key in self.ui_refresh_registry:
+            self.ui_refresh_registry[key]()
+
     # -- Convenience helpers ------------------------------------------------
 
     def check_api_health(self) -> dict:

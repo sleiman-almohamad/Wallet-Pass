@@ -131,6 +131,9 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             import traceback; traceback.print_exc()
             _set_status(f"❌ Error loading classes from database: {e}", "red")
             page.update()
+            
+    # Register this function for remote refresh
+    state.register_refresh_callback("manage_templates_list", load_template_classes)
 
     def show_template(e):
         """Fetch and display template for editing from local database."""
@@ -250,6 +253,12 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 **extras
             )
             _set_status("✅ " + response.get("message", state.t("msg.synced_google")))
+            
+            # Refresh other views
+            if state:
+                state.refresh_ui("pass_generator_templates")
+                state.refresh_ui("manage_templates_list")
+                state.refresh_ui("manage_passes_list")
         except Exception as ex:
             import traceback; traceback.print_exc()
             _set_status(f"❌ Error: {ex}", "red")

@@ -109,26 +109,48 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
         """Load classes into the Manage Passes class dropdown."""
         try:
             classes = api_client.get_classes() if api_client else []
+            current_val = manage_passes_class_dropdown.value
+            
             if classes and len(classes) > 0:
                 manage_passes_class_dropdown.options = [
                     ft.dropdown.Option(key=cls["class_id"], text=f"{cls['class_id']} ({cls.get('class_type', 'Unknown')})")
                     for cls in classes
                 ]
-                manage_passes_class_dropdown.value = None
-                manage_passes_class_dropdown.hint_text = state.t("label.select_template")
+                
+                # Preserve selection if still valid
+                if current_val and any(c["class_id"] == current_val for c in classes):
+                    manage_passes_class_dropdown.value = current_val
+                else:
+                    manage_passes_class_dropdown.value = None
+                    manage_passes_class_dropdown.hint_text = state.t("label.select_template")
+                
                 _set_status(state.t("msg.loaded_classes", count=len(classes)))
             else:
                 manage_passes_class_dropdown.options = []
                 manage_passes_class_dropdown.value = None
                 manage_passes_class_dropdown.hint_text = state.t("msg.no_templates")
                 _set_status(state.t("msg.no_templates"), "blue")
-            manage_passes_dropdown.options = []
-            manage_passes_dropdown.value = None
-            manage_passes_dropdown.hint_text = "Select a class first"
+            
+            # Reset pass dropdown if no class selected
+            if not manage_passes_class_dropdown.value:
+                manage_passes_dropdown.options = []
+                manage_passes_dropdown.value = None
+                manage_passes_dropdown.hint_text = "Select a class first"
+            
             page.update()
         except Exception as e:
             _set_status(f"❌ Error loading classes: {e}", "red")
             page.update()
+
+    def refresh_manage_passes():
+        """Refresh logic for remote trigger."""
+        load_passes_classes()
+        # If a class is already selected, refresh the passes for that class too
+        if manage_passes_class_dropdown.value:
+            load_passes_for_class(manage_passes_class_dropdown.value)
+
+    # Register this function for remote refresh
+    state.register_refresh_callback("manage_passes_list", refresh_manage_passes)
 
     def load_passes_for_class(class_id: str):
         """Load passes for a specific class from local database."""

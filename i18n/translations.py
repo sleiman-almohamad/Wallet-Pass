@@ -47,6 +47,10 @@ TRANSLATIONS = {
         "label.text_module_rows": "Text Module Rows",
         "label.header_value": "Header Value",
         "label.subheader": "Subheader",
+        "label.barcode_type": "Barcode Type",
+        "label.barcode_value": "Barcode Payload",
+        "label.message_header": "Message Header",
+        "label.message_body": "Message Body",
         "label.name_req": "Name *",
         "label.email_req": "Email *",
         "label.notification_type": "Notification Type",
@@ -173,6 +177,7 @@ TRANSLATIONS = {
         "subtitle.complete_json": "Complete class JSON",
         "subtitle.pass_look": "How your pass will look",
         "status.pass_generated_google": "✅ Pass generated and saved to Google Wallet!",
+        "msg.generic_visuals_per_pass": "ℹ️ Generic pass visuals/content are edited per pass in Manage Passes.",
     },
     "de": {
         "status.connected": "✅ Dienst verbunden",
@@ -219,6 +224,10 @@ TRANSLATIONS = {
         "label.text_module_rows": "Textmodul-Zeilen",
         "label.header_value": "Kopfzeilenwert",
         "label.subheader": "Unterüberschrift",
+        "label.barcode_type": "Barcode-Typ",
+        "label.barcode_value": "Barcode-Payload",
+        "label.message_header": "Nachrichtenkopf",
+        "label.message_body": "Nachrichteninhalt",
         "label.name_req": "Name *",
         "label.email_req": "E-Mail *",
         "label.notification_type": "Benachrichtigungstyp",
@@ -345,5 +354,6 @@ TRANSLATIONS = {
         "subtitle.complete_json": "Vollständiger Klassen-JSON",
         "subtitle.pass_look": "Wie Ihr Pass aussehen wird",
         "status.pass_generated_google": "✅ Pass generiert und in Google Wallet gespeichert!",
+        "msg.generic_visuals_per_pass": "ℹ️ Generische Pass-Visuals/Inhalte werden pro Pass unter 'Pässe verwalten' bearbeitet.",
     }
 }

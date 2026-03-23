@@ -116,35 +116,11 @@ def propagate_class_update_to_passes(
                 holder_email = pass_obj.get('holder_email', '')
                 pass_data = pass_obj.get('pass_data', {}) or {}
 
-                # IMPORTANT: For Google "Generic" passes, visual branding (logo/hero/bg)
-                # is object-level, not class-level. So when a Generic template is updated
-                # locally, we must push those visual fields onto each GenericObject.
-                if class_type == "Generic":
-                    pass_data = dict(pass_data)
-                    class_json = updated_class.get("class_json") or {}
-                    if updated_class.get("logo_url"):
-                        pass_data["logo_url"] = updated_class["logo_url"]
-                    if updated_class.get("hero_image_url"):
-                        pass_data["hero_image_url"] = updated_class["hero_image_url"]
-                    if updated_class.get("base_color"):
-                        pass_data["hexBackgroundColor"] = updated_class["base_color"]
-
-                    # For Generic passes, header and cardTitle are ALSO object-level.
-                    # If the user updates them in the template, copy them to objects.
-                    # Prefer explicit relational columns if present, else derive from class_json.
-                    header_text = (
-                        updated_class.get("header_text")
-                        or _extract_localized_value(class_json.get("header"))
-                    )
-                    card_title = (
-                        updated_class.get("card_title")
-                        or _extract_localized_value(class_json.get("cardTitle"))
-                    )
-
-                    if header_text:
-                        pass_data["header_value"] = header_text
-                    if card_title:
-                        pass_data["subheader_value"] = card_title
+                # NOTE: For Generic classes, branding (logo/hero/color/header/cardTitle)
+                # is strictly object-level. Generic class updates only push rule/policy
+                # fields (multipleDevicesAndHoldersAllowedStatus, viewUnlockRequirement,
+                # enableSmartTap). We do NOT copy branding from the class to objects here.
+                # Per-pass branding is edited in Manage Passes.
 
                 # region agent log
                 try:

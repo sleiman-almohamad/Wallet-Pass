@@ -178,6 +178,9 @@ class PassCreate(BaseModel):
     generic_data: Optional[GenericDataModel] = None
     text_modules: Optional[list[TextModuleModel]] = Field(default_factory=list, alias="textModulesData")
     messages: Optional[list[MessageModel]] = Field(default_factory=list)
+    # Legacy/compat: the project’s UI/API client posts an unstructured `pass_data` dict.
+    # The backend uses `pass_data.pass_data` when persisting/syncing.
+    pass_data: Optional[Dict[str, Any]] = Field(None, description="Pass-specific data fields")
     
     class Config:
         populate_by_name = True

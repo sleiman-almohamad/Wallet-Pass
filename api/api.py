@@ -277,6 +277,9 @@ async def update_class(class_id: str, class_data: ClassUpdate, sync_to_google: b
                 # which would cause a duplicate if we also send an explicit message notification.
                 if not notification_message:
                     logger.info(f"Syncing class '{class_id}' to Google Wallet")
+                    # For Generic classes, Google only persists a limited schema. We still call
+                    # create_pass_class(), but it will internally restrict the payload so the
+                    # user doesn't expect branding fields to appear on the class response.
                     wallet_client.create_pass_class(
                         class_data=updated_class['class_json'],
                         class_type=updated_class.get('class_type', 'Generic')

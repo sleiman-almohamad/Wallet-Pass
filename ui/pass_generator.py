@@ -15,8 +15,12 @@ import string
 # Field configurations for each pass type
 PASS_TYPE_FIELDS = {
     "Generic": [
+        {"name": "issuer_name", "label": "label.issuer_name", "type": "text", "hint": "e.g., Your Business Name"},
         {"name": "header_value", "label": "label.header_value", "type": "text", "hint": "e.g., VIP Member"},
-        {"name": "subheader", "label": "label.subheader", "type": "text", "hint": "e.g., Premium Access"},
+        {"name": "barcode_type", "label": "label.barcode_type", "type": "text", "hint": "e.g., QR_CODE"},
+        {"name": "barcode_value", "label": "label.barcode_value", "type": "text", "hint": "e.g., https://example.com/abc"},
+        {"name": "message_header", "label": "label.message_header", "type": "text", "hint": "e.g., Welcome"},
+        {"name": "message_body", "label": "label.message_body", "type": "text", "hint": "e.g., Your pass is ready"},
     ],
     "EventTicket": [
         {"name": "event_date", "label": "label.event_date", "type": "text", "hint": "e.g., 2024-12-25", "template_field": True},
@@ -221,33 +225,37 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             # Initialize custom color with template color
             custom_color_state["background_color"] = base_color
             
-            # Create/update color picker with the template's base color
-            nonlocal color_picker_component
-            
-            # Create a simple state object that mimics template_state interface
-            class SimpleColorState:
-                def __init__(self, initial_color, on_change_callback):
-                    self.color = initial_color
-                    self.on_change = on_change_callback
+            # For Generic we keep pass creation minimal (no per-pass visuals here).
+            if class_type != "Generic":
+                # Create/update color picker with the template's base color
+                nonlocal color_picker_component
                 
-                def get(self, key, default=None):
-                    if key == "background_color":
-                        return self.color
-                    return default
+                # Create a simple state object that mimics template_state interface
+                class SimpleColorState:
+                    def __init__(self, initial_color, on_change_callback):
+                        self.color = initial_color
+                        self.on_change = on_change_callback
+                    
+                    def get(self, key, default=None):
+                        if key == "background_color":
+                            return self.color
+                        return default
+                    
+                    def update(self, key, value):
+                        if key == "background_color":
+                            self.color = value
+                            custom_color_state["background_color"] = value
+                            if self.on_change:
+                                self.on_change()
                 
-                def update(self, key, value):
-                    if key == "background_color":
-                        self.color = value
-                        custom_color_state["background_color"] = value
-                        if self.on_change:
-                            self.on_change()
-            
-            color_state = SimpleColorState(base_color, on_color_change)
-            
-            # Import and use the function-based color picker
-            from ui.components.color_picker import create_color_picker
-            color_picker_component = create_color_picker(page, color_state, on_color_change)
-            color_picker_container.content = color_picker_component
+                color_state = SimpleColorState(base_color, on_color_change)
+                
+                # Import and use the function-based color picker
+                from ui.components.color_picker import create_color_picker
+                color_picker_component = create_color_picker(page, color_state, on_color_change)
+                color_picker_container.content = color_picker_component
+            else:
+                color_picker_container.content = None
             
             # Clear dynamic fields
             dynamic_fields_container.controls.clear()
@@ -264,6 +272,14 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 # Pre-populate template fields with values from class
                 initial_value = ""
                 is_readonly = False
+                if class_type == "Generic":
+                    # Reasonable defaults for "minimal object" UX
+                    if field_config["name"] == "barcode_type":
+                        initial_value = "QR_CODE"
+                    elif field_config["name"] == "message_header":
+                        initial_value = "Welcome"
+                    elif field_config["name"] == "message_body":
+                        initial_value = "Your pass is ready"
                 if field_config.get("template_field", False):
                     is_readonly = True  # Template fields are read-only
                     if field_config["name"] == "event_date" and template_event_date:
@@ -283,30 +299,9 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 
                 dynamic_fields_container.controls.append(field)
 
-            # Conditionally inject TextModuleRowEditor for Generic passes
-            if class_type == "Generic":
-                def on_pass_rows_change(modules):
-                    # This callback is triggered by the editor itself, so we just need to update the preview
-                    update_preview()
-
-                # Prepopulate with class-level rows if present (adapted for pass level)
-                initial_class_rows = class_data.get("text_module_rows", []) or []
-                if "textModulesData" in class_data.get("class_json", {}):
-                    # If class_json has textModulesData, use that as the base
-                    initial_class_rows = class_data["class_json"]["textModulesData"]
-                
-                # Check for existing pass-level textModulesData if any (e.g., from a loaded pass)
-                # For pass generation, we usually start fresh or from class defaults.
-                # The editor will manage its own state.
-
-                row_editor = TextModuleRowEditor(initial_class_rows, on_change=on_pass_rows_change, state=state, mode="pass")
-                pass_row_editor_ref[0] = row_editor
-                
-                dynamic_fields_container.controls.append(ft.Divider())
-                dynamic_fields_container.controls.append(ft.Text(state.t("label.template_fields"), weight=ft.FontWeight.BOLD))
-                dynamic_fields_container.controls.append(row_editor)
-            else:
-                pass_row_editor_ref[0] = None
+            # For Generic passes, visuals/content (including text modules) are edited per-pass
+            # in "Manage Passes", so the generator stays minimal.
+            pass_row_editor_ref[0] = None
             
             status_ref.current.value = state.t("msg.loaded_template_type", type=class_type)
             status_ref.current.color = "green"
@@ -411,11 +406,27 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             class_type = current_class_data.get("class_type", "Generic")
             
             # Get custom color from state
-            custom_color = custom_color_state.get("background_color")
+            custom_color = custom_color_state.get("background_color") if class_type != "Generic" else None
             
             # Get message type from dropdown
             message_type = message_type_ref.current.value if message_type_ref.current else "TEXT_AND_NOTIFY"
             
+            # For Generic, we create a minimal object and encode notification behavior
+            # as an explicit `messages` entry (so it gets persisted to local DB too).
+            if class_type == "Generic":
+                msg_header = pass_data.get("message_header") or "Welcome"
+                msg_body = pass_data.get("message_body") or "Your pass has been created"
+                msg_id = f"create_msg_{timestamp}"
+                pass_data["messages"] = [{
+                    "id": msg_id,
+                    "header": msg_header,
+                    "body": msg_body,
+                    "messageType": message_type,
+                }]
+                # Only persist barcode type when a payload is provided
+                if not pass_data.get("barcode_value"):
+                    pass_data.pop("barcode_type", None)
+
             # Build the appropriate pass object for Google Wallet
             if class_type == "EventTicket":
                 google_pass_object = wallet_client.build_event_ticket_object(
@@ -445,7 +456,8 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                     holder_email=holder_email_ref.current.value,
                     pass_data=pass_data,
                     custom_color=custom_color,
-                    message_type=message_type
+                    # Generic messages are provided via `pass_data["messages"]`
+                    message_type=None
                 )
             
             # Create pass object in Google Wallet

@@ -387,6 +387,31 @@ class WalletClient:
             Created class from Google Wallet API
         """
         try:
+            # Google Wallet "GenericClass" has a restricted schema. Many fields commonly used
+            # in our local `class_json` (issuerName, header, cardTitle, logo, heroImage,
+            # hexBackgroundColor, reviewStatus) are either object-level or not supported and
+            # will be silently dropped by Google. To avoid confusion and accidental wipes,
+            # only patch GenericClass with the subset we actually expect to persist.
+            if class_type == "Generic" and isinstance(class_data, dict):
+                allowed_generic_keys = {
+                    "id",
+                    "textModulesData",
+                    "linksModuleData",
+                    "imageModulesData",
+                    "classTemplateInfo",
+                    "messages",
+                    "multipleDevicesAndHoldersAllowedStatus",
+                    "viewUnlockRequirement",
+                    "callbackOptions",
+                    "securityAnimation",
+                    "enableSmartTap",
+                    "redemptionIssuers",
+                    "merchantLocations",
+                    "valueAddedModuleData",
+                    "appLinkData",
+                }
+                class_data = {k: v for k, v in class_data.items() if k in allowed_generic_keys}
+
             # Sanitize reviewStatus field to prevent invalid values
             # Google Wallet only accepts: "UNDER_REVIEW", "DRAFT", or "APPROVED"
             allowed_review_statuses = {"UNDER_REVIEW", "DRAFT", "APPROVED"}
@@ -795,19 +820,32 @@ class WalletClient:
             
             now = datetime.utcnow()
             msg_id = f"notif_{int(_time.time())}"
+            # If user explicitly provided messages, use their messageType for the push message too.
+            push_message_type = "TEXT_AND_NOTIFY"
+            user_messages = pass_data.get("messages") if isinstance(pass_data, dict) else None
+            if isinstance(user_messages, list) and user_messages:
+                last_type = user_messages[-1].get("messageType") or user_messages[-1].get("message_type")
+                if isinstance(last_type, str) and last_type.strip():
+                    push_message_type = last_type.strip()
             new_msg = {
                 "header": "Mertesacker Home Office",
                 "body": msg_body,
                 "kind": "walletobjects#walletObjectMessage",
                 "id": msg_id,
-                "messageType": "TEXT_AND_NOTIFY",
+                "messageType": push_message_type,
                 "displayInterval": {
                     "start": {"date": (now - timedelta(minutes=1)).isoformat() + "Z"},
                     "end": {"date": (now + timedelta(hours=24)).isoformat() + "Z"}
                 }
             }
-            # Merge with existing messages (keep history but add new one)
-            object_data["messages"] = existing_messages + [new_msg]
+            # If Generic pass_data includes user-managed messages, prefer those over existing history.
+            managed_messages_present = isinstance(user_messages, list) and user_messages and class_type == "Generic"
+            if managed_messages_present:
+                managed_messages = object_data.get("messages") or []
+                object_data["messages"] = managed_messages + [new_msg]
+            else:
+                # Merge with existing messages (keep history but add new one)
+                object_data["messages"] = existing_messages + [new_msg]
             
             # ANDROID UI TRICK: Force immediate refresh by changing groupingId
             # This is critical to make the notification pop up immediately
@@ -1069,18 +1107,15 @@ class WalletClient:
     def build_generic_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY", status=None):
         # Extract explicit generic fields sent by UI
         pd = pass_data or {}
-        header_text = pd.get("header_value", holder_name) # Fallback to holder_name
-        subheader_text = pd.get("subheader_value", "")
+        card_title = pd.get("card_title")
+        header_text = pd.get("header_value")
+        subheader_text = pd.get("subheader_value")
 
         # Generic *object*-level branding (Google ignores these on GenericClass)
         branding_logo_url = pd.get("logo_url") or pd.get("logoUrl")
         branding_hero_url = pd.get("hero_image_url") or pd.get("heroImageUrl") or pd.get("hero_url")
-        branding_bg = (
-            custom_color
-            or pd.get("hexBackgroundColor")
-            or pd.get("background_color")
-            or pd.get("base_color")
-        )
+        branding_bg = custom_color or pd.get("hexBackgroundColor") or pd.get("background_color") or pd.get("base_color")
+        branding_bg = branding_bg if isinstance(branding_bg, str) and branding_bg.strip() else None
         
         # Map local status to Google Wallet state
         gw_state = "ACTIVE"
@@ -1093,17 +1128,29 @@ class WalletClient:
             "id": object_id,
             "classId": class_id,
             "state": gw_state,
-            "header": {
+        }
+
+        # header_text → Google "header"
+        if isinstance(header_text, str) and header_text.strip():
+            obj["header"] = {
                 "defaultValue": {
                     "language": "en-US",
                     "value": header_text
                 }
             }
-        }
-        
-        # Subheader maps to cardTitle in Google Wallet Generic Objects
-        if subheader_text:
+
+        # card_title → Google "cardTitle" (large text on card)
+        if isinstance(card_title, str) and card_title.strip():
             obj["cardTitle"] = {
+                "defaultValue": {
+                    "language": "en-US",
+                    "value": card_title
+                }
+            }
+        
+        # subheader_value → Google "subheader"
+        if isinstance(subheader_text, str) and subheader_text.strip():
+            obj["subheader"] = {
                 "defaultValue": {
                     "language": "en-US",
                     "value": subheader_text
@@ -1119,8 +1166,40 @@ class WalletClient:
         if branding_hero_url:
             obj["heroImage"] = {"sourceUri": {"uri": str(branding_hero_url)}}
         
-        # Add message with specified messageType
-        if message_type:
+        # Barcode support (minimal: type + value)
+        barcode_obj = None
+        if isinstance(pd.get("barcode"), dict):
+            barcode_obj = pd.get("barcode")
+        else:
+            bc_type = pd.get("barcode_type") or pd.get("barcodeType")
+            bc_value = pd.get("barcode_value") or pd.get("barcodeValue")
+            if (isinstance(bc_type, str) and bc_type.strip()) or (isinstance(bc_value, str) and bc_value.strip()):
+                barcode_obj = {
+                    "type": bc_type if bc_type else "QR_CODE",
+                    "value": bc_value if bc_value else "",
+                }
+        if isinstance(barcode_obj, dict) and isinstance(barcode_obj.get("value"), str) and barcode_obj["value"].strip():
+            obj["barcode"] = barcode_obj
+
+        # Messages support
+        user_messages = pd.get("messages")
+        if isinstance(user_messages, list) and user_messages:
+            def _map_user_message(m):
+                if not isinstance(m, dict):
+                    return None
+                msg_type = m.get("messageType") or m.get("message_type") or "TEXT_AND_NOTIFY"
+                msg_obj = {
+                    "header": m.get("header") or "",
+                    "body": m.get("body") or "",
+                    "messageType": msg_type,
+                }
+                if m.get("id"):
+                    msg_obj["id"] = m.get("id")
+                return msg_obj
+            mapped = [x for x in (_map_user_message(m) for m in user_messages) if x]
+            if mapped:
+                obj["messages"] = mapped
+        elif message_type:
             obj["messages"] = [{
                 "header": "Welcome",
                 "body": "Your pass has been created",
@@ -1157,6 +1236,13 @@ class WalletClient:
                 "subheader_value",
                 "description",
                 "textModulesData",
+                "messages",
+                "messageType",
+                "message_header",
+                "message_body",
+                "barcode",
+                "barcode_type",
+                "barcode_value",
                 # Branding fields used above (should not appear as info rows)
                 "logo_url",
                 "logoUrl",

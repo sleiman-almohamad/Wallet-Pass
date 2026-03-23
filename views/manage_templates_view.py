@@ -48,7 +48,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
     manage_status = ft.Text("", size=12)
 
     edit_class_id_field = ft.TextField(
-        label=state.t("label.class_id"), width=400, read_only=True, bgcolor="grey100"
+        label=state.t("label.class_id"), width=400
     )
     edit_class_type_field = ft.TextField(
         label=state.t("label.class_type"), width=400, read_only=True, bgcolor="grey100"
@@ -165,8 +165,12 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             # The Manage Templates UI expects `text_module_rows` to exist in the JSON it edits,
             # but `class_json` coming from Google does not include that structure.
             if class_type == "Generic":
-                json_data = json_data.copy()  # avoid mutating shared dict
-                json_data["text_module_rows"] = class_data.get("text_module_rows", []) or []
+                # Generic class is rules-only; do NOT inject text_module_rows or branding.
+                # Strip any branding fields that may have been synthesized by _build_class_json.
+                for key in ["issuerName", "header", "cardTitle", "logo", "heroImage",
+                            "hexBackgroundColor", "reviewStatus", "textModulesData",
+                            "text_module_rows"]:
+                    json_data.pop(key, None)
 
             edit_class_id_field.value = class_id
             edit_class_type_field.value = class_type
@@ -187,23 +191,24 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
 
             custom_form_controls = []
             nonlocal manage_row_editor
-            
+
             if class_type == "Generic":
-                def on_rows_change(rows):
-                    nonlocal manage_current_json
-                    manage_current_json["text_module_rows"] = rows
-                    on_manage_form_change(manage_current_json)
-                
-                initial_rows = manage_current_json.get("text_module_rows", [])
-                if not initial_rows and "textModulesData" in manage_current_json:
-                    # Normally Manage templates reads local DB so it should have text_module_rows.
-                    # But if rehydrating from raw google JSON, we pass the flat structure.
-                    # We will rely on TextModuleRowEditor's "pass" mode parsing logic indirectly if needed, 
-                    # but here we are in "class" mode. The API handles fetching as row dicts.
-                    pass
-                manage_row_editor = TextModuleRowEditor(initial_rows, on_change=on_rows_change, state=state, mode="class")
-                custom_form_controls.append(ft.Divider())
-                custom_form_controls.append(manage_row_editor)
+                # Generic classes are rules-only; no text module row editor.
+                manage_row_editor = None
+                custom_form_controls.append(ft.Container(height=5))
+                custom_form_controls.append(
+                    ft.Container(
+                        content=ft.Row([
+                            ft.Icon("info_outline", color="blue", size=18),
+                            ft.Text(
+                                state.t("msg.generic_visuals_per_pass") if hasattr(state, 't') else
+                                "ℹ️ Generic pass visuals/content are edited per pass in Manage Passes.",
+                                size=12, color="blue700", italic=True,
+                            ),
+                        ], spacing=6),
+                        bgcolor="blue50", padding=10, border_radius=8,
+                    )
+                )
             else:
                 manage_row_editor = None
 
@@ -236,14 +241,10 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             updated_json = manage_dynamic_form.get_json_data()
             extras = {}
             if manage_current_class_type == "Generic":
-                # Always read latest rows from the row editor (the row editor does not
-                # update manage_dynamic_form.json_data automatically).
-                if manage_row_editor and hasattr(manage_row_editor, "get_rows"):
-                    updated_json["text_module_rows"] = manage_row_editor.get_rows()
+                # Generic classes are rules-only: only send rule fields.
                 extras["multiple_devices_allowed"] = updated_json.get("multiple_devices_allowed")
                 extras["view_unlock_requirement"] = updated_json.get("view_unlock_requirement")
                 extras["enable_smart_tap"] = updated_json.get("enable_smart_tap")
-                extras["text_module_rows"] = updated_json.get("text_module_rows", [])
 
             # Perform the update with sync_to_google=True
             response = api_client.update_class(

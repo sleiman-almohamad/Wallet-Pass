@@ -8,7 +8,7 @@ from ui.components.json_editor import JSONEditor
 from ui.components.json_form_mapper import DynamicForm
 from ui.components.text_module_row_editor import TextModuleRowEditor
 from ui.components.preview_builder import build_comprehensive_preview
-from ui.components.preview_builder import build_comprehensive_preview
+from ui.components.color_picker import create_color_picker
 import configs
 
 
@@ -261,10 +261,35 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
 
             elif class_type == "Generic":
                 pd = p_data.get("pass_data", {})
+                passes_current_json["issuer_name"] = str(pd.get("card_title", pd.get("issuer_name", "")))
                 passes_current_json["header_value"] = str(pd.get("header_value", ""))
                 passes_current_json["subheader_value"] = str(pd.get("subheader_value", ""))
+                passes_current_json["barcode_type"] = str(pd.get("barcode_type", "") or "")
+                passes_current_json["barcode_value"] = str(pd.get("barcode_value", "") or "")
+                passes_current_json["logo_url"] = str(pd.get("logo_url", ""))
+                passes_current_json["hero_image_url"] = str(pd.get("hero_image_url", ""))
+                passes_current_json["hexBackgroundColor"] = str(pd.get("hexBackgroundColor", pd.get("hex_background_color", "")))
+                # Persisted messages are stored as a list; we expose a single editable message here.
+                existing_messages = pd.get("messages", []) if isinstance(pd.get("messages"), list) else []
+                if existing_messages:
+                    first = existing_messages[0] or {}
+                    passes_current_json["message_header"] = str(first.get("header", "") or "")
+                    passes_current_json["message_body"] = str(first.get("body", "") or "")
+                    inferred_message_type = first.get("messageType") or first.get("message_type")
+                    if inferred_message_type:
+                        passes_current_json["messageType"] = inferred_message_type
+                        json_data["messageType"] = inferred_message_type
+                else:
+                    passes_current_json["message_header"] = "Welcome"
+                    passes_current_json["message_body"] = "Your pass has been created"
+                field_mappings["issuer_name"] = {"label": state.t("label.issuer_name"), "type": "text", "hint": "e.g., Your Business Name"}
                 field_mappings["header_value"] = {"label": state.t("label.header_value"), "type": "text"}
                 field_mappings["subheader_value"] = {"label": state.t("label.subheader"), "type": "text"}
+                field_mappings["barcode_type"] = {"label": state.t("label.barcode_type"), "type": "text", "hint": "e.g., QR_CODE"}
+                field_mappings["barcode_value"] = {"label": state.t("label.barcode_value"), "type": "text"}
+                field_mappings["logo_url"] = {"label": state.t("label.logo_url"), "type": "url", "hint": "https://example.com/logo.png"}
+                field_mappings["hero_image_url"] = {"label": state.t("label.hero_image_url"), "type": "url", "hint": "https://example.com/hero.jpg"}
+                # hexBackgroundColor is handled via the color picker below, not as a form field
 
             # Dynamic fields from pass_data
             if p_data.get("pass_data"):
@@ -277,6 +302,9 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                     "imageModulesData", "groupingInfo", "issuerId", "reviewStatus",
                     "confirmationCode", "seatNumber", "section", "gate",
                     "header_value", "subheader_value", "header", "subheader",
+                    "issuer_name", "logo_url", "hero_image_url", "hexBackgroundColor",
+                    "hex_background_color", "logo", "heroImage",
+                    "barcode_type", "barcode_value", "card_title",
                 }
                 for key in p_data["pass_data"].keys():
                     if key not in ignored_keys:
@@ -304,9 +332,37 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 initial_pass_rows = passes_current_json.get("textModulesData", [])
                 row_editor = TextModuleRowEditor(initial_pass_rows, on_change=on_pass_rows_change, state=state, mode="pass")
                 passes_row_editor_ref[0] = row_editor
-                
+
                 custom_form_controls.append(ft.Divider())
                 custom_form_controls.append(row_editor)
+
+                # Color picker for Generic passes (same UX as Pass Generator)
+                pass_color_state = {"background_color": passes_current_json.get("hexBackgroundColor", "#4285f4")}
+
+                class PassColorState:
+                    def __init__(self, initial_color, json_ref):
+                        self.color = initial_color
+                        self.json_ref = json_ref
+                    def get(self, key, default=None):
+                        if key == "background_color":
+                            return self.color
+                        return default
+                    def update(self, key, value):
+                        if key == "background_color":
+                            self.color = value
+                            self.json_ref["hexBackgroundColor"] = value
+
+                color_state_obj = PassColorState(
+                    passes_current_json.get("hexBackgroundColor", "#4285f4"),
+                    passes_current_json,
+                )
+
+                def on_pass_color_change():
+                    on_passes_form_change(passes_current_json)
+
+                color_picker_widget = create_color_picker(page, color_state_obj, on_pass_color_change)
+                custom_form_controls.append(ft.Divider())
+                custom_form_controls.append(color_picker_widget)
             else:
                 passes_row_editor_ref[0] = None
 
@@ -353,6 +409,24 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             # Re-read textModulesData directly from component if Generic, or rely on pass_data
             if passes_current_class_type == "Generic" and passes_row_editor_ref[0]:
                 form_data["textModulesData"] = passes_row_editor_ref[0].get_rows() if hasattr(passes_row_editor_ref[0], 'get_rows') else form_data.get("textModulesData", [])
+
+            # For Generic, convert the single editable message into the `messages` list
+            # that our backend persists + syncs to Google Wallet.
+            if passes_current_class_type == "Generic":
+                msg_type = form_data.get("messageType") or "TEXT_AND_NOTIFY"
+                msg_header = form_data.pop("message_header", "") or ""
+                msg_body = form_data.pop("message_body", "") or ""
+                msg_id = f"managed_{object_id}_0"
+                form_data["messages"] = [{
+                    "id": msg_id,
+                    "header": msg_header,
+                    "body": msg_body,
+                    "messageType": msg_type,
+                }]
+                
+                # Map UI field back to API expected field
+                if "issuer_name" in form_data:
+                    form_data["card_title"] = form_data.pop("issuer_name")
 
             pass_data = form_data
 

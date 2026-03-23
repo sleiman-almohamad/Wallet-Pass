@@ -231,6 +231,12 @@ class GenericFields(Base):
     )
     header_value = Column(String(255))
     subheader_value = Column(String(255))
+    card_title = Column(String(255), nullable=True)
+    logo_url = Column(Text, nullable=True)
+    hero_image_url = Column(Text, nullable=True)
+    hex_background_color = Column(String(50), nullable=True)
+    barcode_type = Column(String(100), nullable=True)
+    barcode_value = Column(Text, nullable=True)
 
     parent_pass = relationship("PassesTable", back_populates="generic_fields")
 

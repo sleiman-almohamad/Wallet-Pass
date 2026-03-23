@@ -1,20 +1,3 @@
 {
-    "id": "3388000000023033675.Manchester_United",
-    "textModulesData": [
-        {
-            "header": "Stadium",
-            "body": "Old Trafford",
-            "id": "row_0_left"
-        },
-        {
-            "header": "Season",
-            "body": "25/26",
-            "id": "row_0_middle"
-        },
-        {
-            "header": "Class",
-            "body": "A",
-            "id": "row_0_right"
-        }
-    ]
+    "id": "3388000000023033675.Manchester_United"
 }

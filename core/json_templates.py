@@ -208,88 +208,24 @@ class JSONTemplateManager:
     
     @staticmethod
     def _generic_template(class_id: str, **kwargs) -> Dict[str, Any]:
-        """Generic template"""
+        """Generic template — rules-only.
+
+        Google's GenericClass only persists policy/rule fields.
+        Branding (logo, hero, color, header, cardTitle) belongs on
+        GenericObject and is managed per-pass.
+        """
         template = {
             "id": class_id,
-            "issuerName": kwargs.get("issuer_name", "Your Business"),
-            "header": {
-                "defaultValue": {
-                    "language": "en-US",
-                    "value": kwargs.get("header_text", "Business Name")
-                }
-            },
-            "cardTitle": {
-                "defaultValue": {
-                    "language": "en-US",
-                    "value": kwargs.get("card_title", "Pass Title")
-                }
-            },
-            "logo": {
-                "sourceUri": {
-                    "uri": kwargs.get("logo_url", "https://images.unsplash.com/photo-1512568400610-62da28bc8a13?auto=format&fit=crop&w=660&h=660")
-                },
-                "contentDescription": {
-                    "defaultValue": {
-                        "language": "en-US",
-                        "value": kwargs.get("logo_description", "Logo")
-                    }
-                }
-            },
-            "hexBackgroundColor": kwargs.get("background_color", "#4285f4"),
-            "heroImage": {
-                "sourceUri": {
-                    "uri": kwargs.get("hero_image_url", "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1032&h=336")
-                },
-                "contentDescription": {
-                    "defaultValue": {
-                        "language": "en-US",
-                        "value": kwargs.get("hero_description", "Hero Image")
-                    }
-                }
-            },
-            "reviewStatus": "UNDER_REVIEW"
         }
 
         if kwargs.get("multiple_devices_allowed"):
             template["multipleDevicesAndHoldersAllowedStatus"] = kwargs["multiple_devices_allowed"]
-        
+
         if kwargs.get("view_unlock_requirement"):
             template["viewUnlockRequirement"] = kwargs["view_unlock_requirement"]
-            
+
         if kwargs.get("enable_smart_tap") is not None:
             template["enableSmartTap"] = bool(kwargs["enable_smart_tap"])
-
-        if kwargs.get("text_module_rows"):
-            text_modules = []
-            for row in kwargs.get("text_module_rows", []):
-                # row can be a dict (from API payload) or TextModuleRowModel object
-                if hasattr(row, 'dict'):
-                    row = row.dict()
-                
-                # left
-                if row.get('left_header') or row.get('left_body'):
-                    text_modules.append({
-                        "header": row.get('left_header', ''),
-                        "body": row.get('left_body', ''),
-                        "id": f"row_{row.get('row_index', 0)}_left"
-                    })
-                # middle
-                if row.get('middle_header') or row.get('middle_body'):
-                    text_modules.append({
-                        "header": row.get('middle_header', ''),
-                        "body": row.get('middle_body', ''),
-                        "id": f"row_{row.get('row_index', 0)}_middle"
-                    })
-                # right
-                if row.get('right_header') or row.get('right_body'):
-                    text_modules.append({
-                        "header": row.get('right_header', ''),
-                        "body": row.get('right_body', ''),
-                        "id": f"row_{row.get('row_index', 0)}_right"
-                    })
-            
-            if text_modules:
-                template["textModulesData"] = text_modules
 
         return template
     
@@ -423,34 +359,8 @@ class JSONTemplateManager:
                     "hint": "https://example.com/hero.jpg (1032x336px recommended)"
                 }
             }
-        else:  # Generic
+        else:  # Generic — rules-only (branding is per-pass)
             return {
-                **common_fields,
-                "issuerName": {
-                    "label": "label.issuer_name",
-                    "type": "text",
-                    "hint": "Your Business"
-                },
-                "header.defaultValue.value": {
-                    "label": "label.header_text",
-                    "type": "text",
-                    "hint": "Business Name"
-                },
-                "cardTitle.defaultValue.value": {
-                    "label": "label.card_title",
-                    "type": "text",
-                    "hint": "Pass Title"
-                },
-                "logo.sourceUri.uri": {
-                    "label": "label.logo_url",
-                    "type": "url",
-                    "hint": "https://example.com/logo.png"
-                },
-                "heroImage.sourceUri.uri": {
-                    "label": "label.hero_image_url",
-                    "type": "url",
-                    "hint": "https://example.com/hero.jpg (1032x336px recommended)"
-                },
                 "multiple_devices_allowed": {
                     "label": "label.multiple_devices_allowed",
                     "type": "select",

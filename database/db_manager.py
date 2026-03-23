@@ -393,6 +393,12 @@ class DatabaseManager:
                     object_id=object_id,
                     header_value=gd.get('header_value', gd.get('header')),
                     subheader_value=gd.get('subheader_value'),
+                    card_title=gd.get('card_title'),
+                    logo_url=gd.get('logo_url'),
+                    hero_image_url=gd.get('hero_image_url'),
+                    hex_background_color=gd.get('hex_background_color', gd.get('hexBackgroundColor')),
+                    barcode_type=gd.get('barcode_type', gd.get('barcodeType')),
+                    barcode_value=gd.get('barcode_value', gd.get('barcodeValue')),
                 ))
 
             # 3. Text modules
@@ -458,6 +464,12 @@ class DatabaseManager:
             core['generic_data'] = {
                 'header_value': gf.header_value,
                 'subheader_value': gf.subheader_value,
+                'card_title': gf.card_title,
+                'logo_url': gf.logo_url,
+                'hero_image_url': gf.hero_image_url,
+                'hex_background_color': gf.hex_background_color,
+                'barcode_type': gf.barcode_type,
+                'barcode_value': gf.barcode_value,
             }
 
         # Text modules
@@ -599,19 +611,43 @@ class DatabaseManager:
                 else:
                     header_value = pd.get('header_value', pd.get('header'))
                     subheader_value = pd.get('subheader_value')
+                    card_title = pd.get('card_title')
+                    logo_url = pd.get('logo_url')
+                    hero_image_url = pd.get('hero_image_url')
+                    hex_bg = pd.get('hex_background_color', pd.get('hexBackgroundColor'))
+                    barcode_type = pd.get('barcode_type', pd.get('barcodeType'))
+                    barcode_value = pd.get('barcode_value', pd.get('barcodeValue'))
 
                     print(f"DB DEBUG Generic: header_value={header_value}, "
-                          f"subheader_value={subheader_value}")
+                          f"subheader_value={subheader_value}, card_title={card_title}, logo_url={logo_url}")
 
                     if p.generic_fields:
                         gf = p.generic_fields
                         gf.header_value = header_value
                         gf.subheader_value = subheader_value
+                        if card_title is not None:
+                            gf.card_title = card_title
+                        if logo_url is not None:
+                            gf.logo_url = logo_url
+                        if hero_image_url is not None:
+                            gf.hero_image_url = hero_image_url
+                        if hex_bg is not None:
+                            gf.hex_background_color = hex_bg
+                        if barcode_type is not None:
+                            gf.barcode_type = barcode_type
+                        if barcode_value is not None:
+                            gf.barcode_value = barcode_value
                     else:
                         p.generic_fields = GenericFields(
                             object_id=object_id,
                             header_value=header_value,
                             subheader_value=subheader_value,
+                            card_title=card_title,
+                            logo_url=logo_url,
+                            hero_image_url=hero_image_url,
+                            hex_background_color=hex_bg,
+                            barcode_type=barcode_type,
+                            barcode_value=barcode_value,
                         )
 
                 # Text modules (replace-all strategy)

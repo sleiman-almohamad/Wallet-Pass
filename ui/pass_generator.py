@@ -468,7 +468,7 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             wallet_result = wallet_client.create_pass_object(google_pass_object, class_type)
             
             # Generate JWT-signed save link
-            save_link = wallet_client.generate_save_link(object_id, class_type)
+            save_link = wallet_client.generate_save_link(object_id, class_type, class_id)
             
             # Try to create pass in local database (optional - for record keeping)
             try:

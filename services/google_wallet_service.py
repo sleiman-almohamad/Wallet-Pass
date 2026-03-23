@@ -481,7 +481,7 @@ class WalletClient:
                 ) from e
     
     
-    def generate_save_link(self, object_id, class_type="EventTicket"):
+    def generate_save_link(self, object_id, class_type="EventTicket", class_id=None):
         """
         Generate a "Save to Google Wallet" link with JWT token
         
@@ -503,17 +503,23 @@ class WalletClient:
         
         payload_key = payload_key_map.get(class_type, "genericObjects")
         
+        # Ensure proper prefix (Issuer ID must be present for the link to work)
+        object_id = self._prepare_ids_to_try(object_id)[0]
+        
+        obj_payload = {"id": object_id}
+        if class_id:
+            class_id = self._prepare_ids_to_try(class_id)[0]
+            obj_payload["classId"] = class_id
+
         # Create JWT claims
         claims = {
             "iss": self.credentials.service_account_email,
             "aud": "google",
             "origins": [],
             "typ": "savetowallet",
-            "iat": datetime.utcnow(),
+            "iat": int(datetime.utcnow().timestamp()),
             "payload": {
-                payload_key: [{
-                    "id": object_id
-                }]
+                payload_key: [obj_payload]
             }
         }
         

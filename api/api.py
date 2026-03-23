@@ -822,6 +822,36 @@ async def push_pass_to_google(object_id: str):
         raise HTTPException(status_code=500, detail=f"Google Wallet push failed: {str(e)}")
 
 
+@app.get("/passes/{object_id}/save-link", tags=["Passes"])
+async def generate_pass_save_link(object_id: str):
+    """Generate a Google Wallet JWT save link for a given pass"""
+    try:
+        existing_pass = db.get_pass(object_id)
+        if not existing_pass:
+            raise HTTPException(status_code=404, detail=f"Pass '{object_id}' not found")
+            
+        if not wallet_client:
+            raise HTTPException(status_code=503, detail="Google Wallet client missing")
+            
+        class_info = db.get_class(existing_pass['class_id'])
+        if not class_info:
+            raise HTTPException(status_code=404, detail="Class info missing for this pass.")
+            
+        logger.info(f"Generating save link for pass '{object_id}'")
+        save_link = wallet_client.generate_save_link(
+            object_id=object_id,
+            class_type=class_info.get("class_type", "Generic"),
+            class_id=class_info.get("class_id")
+        )
+        
+        return {"save_link": save_link}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate save link: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate save link: {str(e)}")
+
+
 @app.put("/passes/{object_id}/status", response_model=MessageResponse, tags=["Passes"])
 async def update_pass_status(object_id: str, status_data: PassStatusUpdate):
     """Update only the status of a pass"""

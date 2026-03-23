@@ -74,6 +74,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
         ),
         expand=True,
     )
+    passes_result_container = ft.Container(content=None)
 
     # ── Helpers ──
 
@@ -455,6 +456,66 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             _set_status(f"❌ Sync failed: {ex}", "red")
         page.update()
 
+    def generate_save_link_handler(e):
+        object_id = passes_object_id_field.value
+        if not object_id:
+            _set_status("❌ Please select a pass first", "red"); page.update()
+            return
+
+        _set_status("⏳ Generating link...", "blue"); page.update()
+        try:
+            from core.qr_generator import generate_qr_code
+            import time
+            
+            save_link = api_client.generate_save_link(object_id=object_id)
+            if not save_link:
+                
+                raise Exception("Empty link retrieved from backend")
+                
+            qr_filename = f"pass_qr_{int(time.time())}"
+            qr_image_path = generate_qr_code(save_link, qr_filename)
+        
+            passes_result_container.content = ft.Column([
+                ft.Text("✅ Link generated successfully", color="green", size=16, weight=ft.FontWeight.BOLD),
+                ft.Container(height=15),
+                
+                # QR Code Section
+                ft.Text(state.t("msg.pass_qr_scan") if hasattr(state, "t") else "Scan this QR code with your phone:", size=14, weight=ft.FontWeight.BOLD),
+                ft.Container(height=5),
+                ft.Container(
+                    content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
+                    alignment=ft.alignment.center,
+                    bgcolor="white",
+                    border_radius=10,
+                    padding=10
+                ),
+                ft.Text(state.t("msg.pass_qr_hint") if hasattr(state, "t") else "Scan with your camera app", size=10, color="grey", text_align=ft.TextAlign.CENTER),
+                
+                ft.Container(height=15),
+                
+                # Link Section
+                ft.Text(state.t("label.or_use_link") if hasattr(state, "t") else "Or use this link directly:", size=14, weight=ft.FontWeight.BOLD),
+                ft.Row([
+                    ft.TextField(value=save_link, read_only=True, expand=True, text_size=10),
+                    ft.IconButton(icon="content_copy", tooltip=state.t("tooltip.copy_link") if hasattr(state, "t") else "Copy Link", on_click=lambda ev: page.set_clipboard(save_link))
+                ]),
+                ft.Container(height=5),
+                ft.ElevatedButton(
+                    state.t("btn.open_google_wallet") if hasattr(state, "t") else "Open Google Wallet",
+                    icon="open_in_new",
+                    on_click=lambda ev: page.launch_url(save_link),
+                    style=ft.ButtonStyle(bgcolor="blue", color="white")
+                ),
+                ft.Container(height=10),
+                ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
+            ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+            
+            _set_status("✅ Link generated successfully", "green"); page.update()
+            
+        except Exception as ex:
+            import traceback; traceback.print_exc()
+            _set_status(f"❌ Error generating link: {ex}", "red"); page.update()
+
     # ── Startup ──
     startup_sync_passes()
     load_passes_classes()
@@ -495,6 +556,13 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 style=ft.ButtonStyle(bgcolor="blue", color="white"),
             ),
             ft.Container(height=10),
+            ft.ElevatedButton(
+                "Generate Save Link", icon="qr_code",
+                on_click=generate_save_link_handler, width=380,
+                style=ft.ButtonStyle(bgcolor="green", color="white"),
+            ),
+            ft.Container(height=10),
+            passes_result_container,
         ], spacing=8, scroll="auto"),
         padding=15, bgcolor="white",
     )

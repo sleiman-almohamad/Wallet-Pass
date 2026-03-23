@@ -297,6 +297,24 @@ class APIClient:
         except Exception as e:
             raise APIClientError(f"Error updating pass: {e}") from e
 
+    def generate_save_link(self, object_id: str) -> str:
+        """Generate a Google Wallet JWT save link for a given pass"""
+        try:
+            response = requests.get(f"{self.base_url}/passes/{object_id}/save-link")
+            response.raise_for_status()
+            return response.json().get("save_link", "")
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(
+                f"Error generating save link: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except APIClientError:
+            raise
+        except Exception as e:
+            raise APIClientError(f"Error generating save link: {e}") from e
+
     def push_pass_to_google(self, object_id: str) -> Dict[str, Any]:
         """Push a pass to Google Wallet using the local database state"""
         try:

@@ -113,12 +113,15 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             
             if classes and len(classes) > 0:
                 manage_passes_class_dropdown.options = [
-                    ft.dropdown.Option(key=cls["class_id"], text=f"{cls['class_id']} ({cls.get('class_type', 'Unknown')})")
-                    for cls in classes
+                    ft.dropdown.Option(
+                        key=str(cls.get("class_id", "")), 
+                        text=f"{str(cls.get('class_id', '')).split('.')[-1]} ({cls.get('class_type', 'Unknown')})"
+                    )
+                    for cls in classes if cls.get("class_id")
                 ]
                 
                 # Preserve selection if still valid
-                if current_val and any(c["class_id"] == current_val for c in classes):
+                if current_val and any(str(c.get("class_id", "")) == current_val for c in classes):
                     manage_passes_class_dropdown.value = current_val
                 else:
                     manage_passes_class_dropdown.value = None
@@ -160,8 +163,11 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             passes = api_client.get_passes_by_class(class_id) if api_client else []
             if passes and len(passes) > 0:
                 manage_passes_dropdown.options = [
-                    ft.dropdown.Option(key=p["object_id"], text=f"{p['object_id']} ({p.get('holder_name', 'Unknown')})")
-                    for p in passes
+                    ft.dropdown.Option(
+                        key=str(p.get("object_id", "")),
+                        text=f"{str(p.get('object_id', '')).split('.')[-1]} ({p.get('holder_name', 'Unknown')})"
+                    )
+                    for p in passes if p.get("object_id")
                 ]
                 manage_passes_dropdown.value = None
                 manage_passes_dropdown.hint_text = state.t("label.select_pass")
@@ -204,8 +210,10 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             if not p_data:
                 _set_status(state.t("msg.template_not_found", id=object_id), "red"); page.update(); return
 
+            passes_object_id_field.value = str(object_id).split('.')[-1]
             passes_object_id_field.value = object_id
-            passes_class_id_field.value = p_data.get("class_id")
+            class_id_raw = str(p_data.get("class_id",""))
+            passes_class_id_field.value = class_id_raw.split('.')[-1]
 
             class_info = api_client.get_class(p_data["class_id"])
             class_type = (
@@ -230,8 +238,8 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
 
             # Editable fields
             field_mappings = {
-                "id": {"label": "label.object_id", "type": "text", "read_only": True, "section": "Pass details"},
-                "classId": {"label": "label.class_id", "type": "text", "read_only": True, "section": "Pass details"},
+                #"id": {"label": "label.object_id", "type": "text", "read_only": True, "section": "Pass details"},
+                #"classId": {"label": "label.class_id", "type": "text", "read_only": True, "section": "Pass details"},
                 "holder_name": {"label": state.t("label.holder_name"), "type": "text", "section": "Pass details"},
                 "holder_email": {"label": state.t("label.email_req"), "type": "text", "section": "Pass details"},
                 "status": {"label": state.t("label.status"), "type": "select", "options": ["Active", "Completed", "Expired"], "section": "Status & notification"},
@@ -428,7 +436,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
         _set_status("⏳ Updating and syncing to Google...", "blue"); page.update()
 
         try:
-            object_id = passes_object_id_field.value
+            object_id = passes_object_id_field.data
             # We use passes_current_json instead of dynamic_form.get_json_data() 
             # because the color picker updates passes_current_json directly,
             # and may not be synced to the form's internal state.
@@ -495,7 +503,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
         page.update()
 
     def generate_save_link_handler(e):
-        object_id = passes_object_id_field.value
+        object_id = passes_object_id_field.data
         if not object_id:
             _set_status("❌ Please select a pass first", "red"); page.update()
             return

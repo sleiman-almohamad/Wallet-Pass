@@ -168,12 +168,11 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             # The Manage Templates UI expects `text_module_rows` to exist in the JSON it edits,
             # but `class_json` coming from Google does not include that structure.
             if class_type == "Generic":
-                # Generic class is rules-only; do NOT inject text_module_rows or branding.
-                # Strip any branding fields that may have been synthesized by _build_class_json.
-                for key in ["issuerName", "header", "cardTitle", "logo", "heroImage",
-                            "hexBackgroundColor", "reviewStatus", "textModulesData",
-                            "text_module_rows"]:
-                    json_data.pop(key, None)
+                # Generic class: We want to keep text_module_rows if they exist in class_data
+                # so they can be edited as the 'Blueprint'.
+                # Branding still usually belongs to the pass, but the layout is defined here.
+                if class_data.get("text_module_rows"):
+                    json_data["text_module_rows"] = class_data["text_module_rows"]
 
             edit_class_id_field.value = class_id
             edit_class_type_field.value = class_type
@@ -196,22 +195,27 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             nonlocal manage_row_editor
 
             if class_type == "Generic":
-                # Generic classes are rules-only; no text module row editor.
-                manage_row_editor = None
+                # Generic classes now use the Row Editor to define the Blueprint (Headers).
+                initial_rows = json_data.get("text_module_rows", [])
+                manage_row_editor = TextModuleRowEditor(initial_rows, state=state, mode="class")
+                
                 custom_form_controls.append(ft.Container(height=5))
                 custom_form_controls.append(
                     ft.Container(
                         content=ft.Row([
                             ft.Icon("info_outline", color="blue", size=18),
                             ft.Text(
-                                state.t("msg.generic_visuals_per_pass") if hasattr(state, 't') else
-                                "ℹ️ Generic pass visuals/content are edited per pass in Manage Passes.",
+                                state.t("msg.generic_blueprint_hint") if hasattr(state, 't') else
+                                "ℹ️ Define the headers below. These will appear as input fields when creating a pass.",
                                 size=12, color="blue700", italic=True,
                             ),
                         ], spacing=6),
                         bgcolor="blue50", padding=10, border_radius=8,
                     )
                 )
+                custom_form_controls.append(ft.Text(state.t("label.text_modules_blueprint"), size=14, weight=ft.FontWeight.BOLD))
+                custom_form_controls.append(manage_row_editor)
+                custom_form_controls.append(ft.Divider(height=10))
             else:
                 manage_row_editor = None
 
@@ -249,6 +253,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 class_id=edit_class_id_field.value,
                 class_type=edit_class_type_field.value,
                 class_json=updated_json,
+                text_module_rows=manage_row_editor.get_rows() if manage_row_editor else [],
                 sync_to_google=True,
                 **extras
             )

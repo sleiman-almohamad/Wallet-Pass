@@ -208,17 +208,75 @@ class JSONTemplateManager:
     
     @staticmethod
     def _generic_template(class_id: str, **kwargs) -> Dict[str, Any]:
-        """Generic template — rules-only.
-
-        Google's GenericClass only persists policy/rule fields.
-        Branding (logo, hero, color, header, cardTitle) belongs on
-        GenericObject and is managed per-pass.
+        """Generic template.
+        
+        Maps text_module_rows from the local DB into Google's cardTemplateOverride
+        so that object-level textModulesData (with specific IDs) can be displayed
+        on the front of the pass.
         """
         template = {
             "id": class_id,
         }
 
-        return template
+        text_module_rows = kwargs.get("text_module_rows", [])
+        if text_module_rows:
+            card_row_template_infos = []
+            for i, row in enumerate(text_module_rows):
+                row_items = []
+                
+                # Check which items are present in the blueprint
+                if row.get("left_header"):
+                    row_items.append({
+                        "firstValue": {
+                            "fields": [{"fieldPath": f"object.textModulesData['row_{i}_left']"}]
+                        }
+                    })
+                
+                if row.get("middle_header"):
+                    row_items.append({
+                        "firstValue": {
+                            "fields": [{"fieldPath": f"object.textModulesData['row_{i}_middle']"}]
+                        }
+                    })
+                
+                if row.get("right_header"):
+                    row_items.append({
+                        "firstValue": {
+                            "fields": [{"fieldPath": f"object.textModulesData['row_{i}_right']"}]
+                        }
+                    })
+
+                if not row_items:
+                    continue
+
+                # Determine layout based on number of items
+                row_template = {}
+                if len(row_items) == 1:
+                    row_template = {"oneItem": {"item": row_items[0]}}
+                elif len(row_items) == 2:
+                    row_template = {
+                        "twoItems": {
+                            "startItem": row_items[0],
+                            "endItem": row_items[1]
+                        }
+                    }
+                elif len(row_items) >= 3:
+                    row_template = {
+                        "threeItems": {
+                            "startItem": row_items[0],
+                            "middleItem": row_items[1],
+                            "endItem": row_items[2]
+                        }
+                    }
+                
+                card_row_template_infos.append(row_template)
+
+            if card_row_template_infos:
+                template["classTemplateInfo"] = {
+                    "cardTemplateOverride": {
+                        "cardRowTemplateInfos": card_row_template_infos
+                    }
+                }
 
         return template
     

@@ -29,6 +29,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
     passes_current_class_type = None
     passes_dynamic_form = None
     passes_row_editor_ref = [None]
+    passes_dynamic_text_modules = {} # To store dynamic fields for Generic passes
 
     # ── UI Controls ──
     manage_passes_class_dropdown = ft.Dropdown(
@@ -211,9 +212,10 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 _set_status(state.t("msg.template_not_found", id=object_id), "red"); page.update(); return
 
             passes_object_id_field.value = str(object_id).split('.')[-1]
-            passes_object_id_field.value = object_id
+            passes_object_id_field.data = object_id  # Store full ID in data for API calls
             class_id_raw = str(p_data.get("class_id",""))
             passes_class_id_field.value = class_id_raw.split('.')[-1]
+            passes_class_id_field.data = class_id_raw
 
             class_info = api_client.get_class(p_data["class_id"])
             class_type = (
@@ -350,15 +352,52 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
 
             custom_section_controls = {}
             if class_type == "Generic":
-                def on_pass_rows_change(modules):
-                    nonlocal passes_current_json
-                    passes_current_json["textModulesData"] = modules
-                    on_passes_form_change(passes_current_json)
+                # Dynamic text module fields based on Template Blueprint
+                class_rows = class_info.get("text_module_rows", []) if class_info else []
+                pass_modules_list = passes_current_json.get("textModulesData", [])
+                if not isinstance(pass_modules_list, list): pass_modules_list = []
+                pass_modules = {m.get("id"): m for m in pass_modules_list}
+                
+                module_controls = []
+                passes_dynamic_text_modules.clear()
+                
+                def create_on_mod_change(mid, h):
+                    def on_mod_change(e):
+                        nonlocal passes_current_json
+                        if "textModulesData" not in passes_current_json:
+                            passes_current_json["textModulesData"] = []
+                        
+                        found = False
+                        for m in passes_current_json["textModulesData"]:
+                            if m.get("id") == mid:
+                                m["body"] = e.control.value
+                                found = True
+                                break
+                        if not found:
+                            passes_current_json["textModulesData"].append({"id": mid, "header": h, "body": e.control.value})
+                        
+                        on_passes_form_change(passes_current_json)
+                    return on_mod_change
 
-                # Initialize from existing pass data if any
-                initial_pass_rows = passes_current_json.get("textModulesData", [])
-                row_editor = TextModuleRowEditor(initial_pass_rows, on_change=on_pass_rows_change, state=state, mode="pass")
-                passes_row_editor_ref[0] = row_editor
+                for i, row in enumerate(class_rows):
+                    row_controls = []
+                    for pos in ["left", "middle", "right"]:
+                        header = row.get(f"{pos}_header")
+                        if header:
+                            mod_id = f"row_{i}_{pos}"
+                            existing_body = pass_modules.get(mod_id, {}).get("body", "")
+                            
+                            tf = ft.TextField(
+                                label=header, 
+                                value=existing_body, 
+                                on_change=create_on_mod_change(mod_id, header),
+                                expand=True
+                            )
+                            passes_dynamic_text_modules[mod_id] = tf
+                            row_controls.append(tf)
+                    
+                    if row_controls:
+                        module_controls.append(ft.Row(row_controls, spacing=10))
 
                 # Color picker for Generic passes (same UX as Pass Generator)
                 pass_color_state = {"background_color": passes_current_json.get("hexBackgroundColor", "#4285f4")}
@@ -402,9 +441,11 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                         content=ft.Text(state.t("label.section_information_rows"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
                         padding=ft.padding.only(top=10, bottom=5)
                     ),
-                    row_editor,
+                    *module_controls,
                     ft.Divider(height=10)
                 ]
+                # No row editor needed here anymore
+                passes_row_editor_ref[0] = None
             else:
                 passes_row_editor_ref[0] = None
 
@@ -452,8 +493,13 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             form_data.pop("event_date", None)
             form_data.pop("event_time", None)
 
-            # Re-read textModulesData directly from component if Generic, or rely on pass_data
-            if passes_current_class_type == "Generic" and passes_row_editor_ref[0]:
+            # Re-read textModulesData directly from components if Generic
+            if passes_current_class_type == "Generic" and passes_dynamic_text_modules:
+                form_data["textModulesData"] = [
+                    {"id": mid, "header": tf.label, "body": tf.value}
+                    for mid, tf in passes_dynamic_text_modules.items()
+                ]
+            elif passes_row_editor_ref[0]:
                 form_data["textModulesData"] = passes_row_editor_ref[0].get_rows() if hasattr(passes_row_editor_ref[0], 'get_rows') else form_data.get("textModulesData", [])
 
             # For Generic, convert the single editable message into the `messages` list

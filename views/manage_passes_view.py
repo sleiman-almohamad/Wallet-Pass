@@ -230,10 +230,12 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
 
             # Editable fields
             field_mappings = {
-                "holder_name": {"label": state.t("label.holder_name"), "type": "text"},
-                "holder_email": {"label": state.t("label.email_req"), "type": "text"},
-                "status": {"label": state.t("label.status"), "type": "select", "options": ["Active", "Completed", "Expired"]},
-                "messageType": {"label": state.t("label.notification_type"), "type": "select", "options": ["TEXT", "TEXT_AND_NOTIFY"]},
+                "id": {"label": "label.object_id", "type": "text", "read_only": True, "section": "Pass details"},
+                "classId": {"label": "label.class_id", "type": "text", "read_only": True, "section": "Pass details"},
+                "holder_name": {"label": state.t("label.holder_name"), "type": "text", "section": "Pass details"},
+                "holder_email": {"label": state.t("label.email_req"), "type": "text", "section": "Pass details"},
+                "status": {"label": state.t("label.status"), "type": "select", "options": ["Active", "Completed", "Expired"], "section": "Status & notification"},
+                "messageType": {"label": state.t("label.notification_type"), "type": "select", "options": ["TEXT", "TEXT_AND_NOTIFY"], "section": "Status & notification"},
             }
 
             if "messageType" not in json_data:
@@ -287,32 +289,26 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 passes_current_json["issuer_name"] = str(pd.get("card_title", pd.get("issuer_name", "")))
                 passes_current_json["header_value"] = str(pd.get("header_value", ""))
                 passes_current_json["subheader_value"] = str(pd.get("subheader_value", ""))
-                passes_current_json["barcode_type"] = str(pd.get("barcode_type", "") or "")
-                passes_current_json["barcode_value"] = str(pd.get("barcode_value", "") or "")
                 passes_current_json["logo_url"] = str(pd.get("logo_url", ""))
-                passes_current_json["hero_image_url"] = str(pd.get("hero_image_url", ""))
                 passes_current_json["hexBackgroundColor"] = str(pd.get("hexBackgroundColor", pd.get("hex_background_color", "")))
-                # Persisted messages are stored as a list; we expose a single editable message here.
+                
+                # Setup basic notification preferences
                 existing_messages = pd.get("messages", []) if isinstance(pd.get("messages"), list) else []
                 if existing_messages:
                     first = existing_messages[0] or {}
-                    passes_current_json["message_header"] = str(first.get("header", "") or "")
-                    passes_current_json["message_body"] = str(first.get("body", "") or "")
                     inferred_message_type = first.get("messageType") or first.get("message_type")
                     if inferred_message_type:
                         passes_current_json["messageType"] = inferred_message_type
                         json_data["messageType"] = inferred_message_type
-                else:
-                    passes_current_json["message_header"] = "Welcome"
-                    passes_current_json["message_body"] = "Your pass has been created"
-                field_mappings["issuer_name"] = {"label": state.t("label.issuer_name"), "type": "text", "hint": "e.g., Your Business Name"}
-                field_mappings["header_value"] = {"label": state.t("label.header_value"), "type": "text"}
-                field_mappings["subheader_value"] = {"label": state.t("label.subheader"), "type": "text"}
-                field_mappings["barcode_type"] = {"label": state.t("label.barcode_type"), "type": "text", "hint": "e.g., QR_CODE"}
-                field_mappings["barcode_value"] = {"label": state.t("label.barcode_value"), "type": "text"}
-                field_mappings["logo_url"] = {"label": state.t("label.logo_url"), "type": "url", "hint": "https://example.com/logo.png"}
-                field_mappings["hero_image_url"] = {"label": state.t("label.hero_image_url"), "type": "url", "hint": "https://example.com/hero.jpg"}
+                
+                # Setup dynamic fields for Generic
+                field_mappings["logo_url"] = {"label": state.t("label.logo_url"), "type": "url", "hint": "https://example.com/logo.png", "section": "Header"}
+                field_mappings["issuer_name"] = {"label": state.t("label.issuer_name"), "type": "text", "hint": "e.g., Your Business Name", "section": "Header"}
+                field_mappings["subheader_value"] = {"label": state.t("label.subheader"), "type": "text", "section": "Top Row"}
+                field_mappings["header_value"] = {"label": state.t("label.header_value"), "type": "text", "section": "Top Row"}
                 # hexBackgroundColor is handled via the color picker below, not as a form field
+                # textModulesData is handled via the row editor below, not as a form field
+
 
             # Dynamic fields from pass_data
             if p_data.get("pass_data"):
@@ -344,7 +340,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                     passes_preview_container.content = ft.Text(state.t("msg.no_details"))
                 page.update()
 
-            custom_form_controls = []
+            custom_section_controls = {}
             if class_type == "Generic":
                 def on_pass_rows_change(modules):
                     nonlocal passes_current_json
@@ -355,9 +351,6 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 initial_pass_rows = passes_current_json.get("textModulesData", [])
                 row_editor = TextModuleRowEditor(initial_pass_rows, on_change=on_pass_rows_change, state=state, mode="pass")
                 passes_row_editor_ref[0] = row_editor
-
-                custom_form_controls.append(ft.Divider())
-                custom_form_controls.append(row_editor)
 
                 # Color picker for Generic passes (same UX as Pass Generator)
                 pass_color_state = {"background_color": passes_current_json.get("hexBackgroundColor", "#4285f4")}
@@ -384,12 +377,30 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                     on_passes_form_change(passes_current_json)
 
                 color_picker_widget = create_color_picker(page, color_state_obj, on_pass_color_change)
-                custom_form_controls.append(ft.Divider())
-                custom_form_controls.append(color_picker_widget)
+                
+                # Use custom_section_controls to insert them in the middle
+                custom_section_controls["Pass details"] = [
+                    ft.Container(
+                        content=ft.Text(state.t("label.section_modify_customized_card_color"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                        padding=ft.padding.only(top=10, bottom=5)
+                    ),
+                    color_picker_widget,
+                    ft.Divider(height=10)
+                ]
+                
+                custom_section_controls["Top Row"] = [
+                    ft.Container(
+                        content=ft.Text(state.t("label.section_information_rows"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                        padding=ft.padding.only(top=10, bottom=5)
+                    ),
+                    row_editor,
+                    ft.Divider(height=10)
+                ]
             else:
                 passes_row_editor_ref[0] = None
 
-            passes_dynamic_form = DynamicForm(field_mappings, passes_current_json, state=state, on_change_callback=on_passes_form_change, custom_controls=custom_form_controls)
+            passes_dynamic_form = DynamicForm(field_mappings, passes_current_json, state=state, on_change_callback=on_passes_form_change, custom_section_controls=custom_section_controls)
+
             passes_form_container.controls = passes_dynamic_form.build()
 
             passes_json_editor = JSONEditor(passes_current_json, state=state, read_only=True)
@@ -437,13 +448,11 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             # that our backend persists + syncs to Google Wallet.
             if passes_current_class_type == "Generic":
                 msg_type = form_data.get("messageType") or "TEXT_AND_NOTIFY"
-                msg_header = form_data.pop("message_header", "") or ""
-                msg_body = form_data.pop("message_body", "") or ""
                 msg_id = f"managed_{object_id}_0"
                 form_data["messages"] = [{
                     "id": msg_id,
-                    "header": msg_header,
-                    "body": msg_body,
+                    "header": "Update",
+                    "body": "Your pass information has been updated.",
                     "messageType": msg_type,
                 }]
                 
@@ -565,11 +574,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             ),
             passes_status,
             ft.Divider(height=20),
-            ft.Text(state.t("header.manage_passes") + " Details", size=16, weight=ft.FontWeight.BOLD),
-            passes_object_id_field,
-            passes_class_id_field,
             ft.Container(height=5),
-            ft.Text(state.t("label.editable_fields"), size=14, weight=ft.FontWeight.W_500, color="grey700"),
             passes_form_container,
             ft.Divider(height=20),
             ft.ElevatedButton(

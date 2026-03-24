@@ -259,6 +259,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 state.refresh_ui("pass_generator_templates")
                 state.refresh_ui("manage_templates_list")
                 state.refresh_ui("manage_passes_list")
+                state.refresh_ui("send_notification_list")
         except Exception as ex:
             import traceback; traceback.print_exc()
             _set_status(f"❌ Error: {ex}", "red")

@@ -198,6 +198,7 @@ def create_template_builder(page, state, api_client=None):
                     state.refresh_ui("pass_generator_templates")
                     state.refresh_ui("manage_templates_list")
                     state.refresh_ui("manage_passes_list")
+                    state.refresh_ui("send_notification_list")
             else:
                 status_text_ref.current.value = state.t("msg.api_not_connected")
                 status_text_ref.current.color = "orange"

@@ -81,10 +81,16 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     def load_classes():
         try:
             classes = api_client.get_classes()
+            current_val = class_dropdown.value
+            
             class_dropdown.options = [
                 ft.dropdown.Option(key=cls["class_id"], text=f"{cls['class_id']} ({cls.get('class_type', 'Unknown')})")
                 for cls in classes
             ]
+            
+            if current_val and any(c["class_id"] == current_val for c in classes):
+                class_dropdown.value = current_val
+                
             page.update()
         except Exception as e:
             _set_status(state.t("msg.error_syncing", error=str(e)), "red")
@@ -182,6 +188,13 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         page.update()
 
     ns.subscribe(on_state_change)
+
+    def refresh_send_notification():
+        load_classes()
+        if mode_radio.value == "single" and email_field.value and email_field.value.strip():
+            on_find_passes(None)
+
+    state.register_refresh_callback("send_notification_list", refresh_send_notification)
 
     # ── Initial Load ──
     load_classes()

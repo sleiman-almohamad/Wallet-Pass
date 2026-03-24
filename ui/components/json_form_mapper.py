@@ -144,7 +144,8 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
 def generate_dynamic_form(field_mappings: Dict[str, Dict[str, str]], 
                           json_data: Dict[str, Any],
                           on_field_change: Callable,
-                          state) -> list:
+                          state,
+                          custom_section_controls: Optional[Dict[str, list]] = None) -> list:
     """
     Generate a list of Flet form controls from field mappings
     
@@ -157,8 +158,29 @@ def generate_dynamic_form(field_mappings: Dict[str, Dict[str, str]],
         List of Flet controls
     """
     form_controls = []
+    current_section = None
     
+    # Track when a section is changed to insert custom controls
+    def insert_custom_controls(section_name):
+        if custom_section_controls and section_name in custom_section_controls:
+            form_controls.extend(custom_section_controls[section_name])
+
     for field_path, field_metadata in field_mappings.items():
+        if "section" in field_metadata and field_metadata["section"] != current_section:
+            # If we were in a section, check if it had custom controls to append at the end
+            if current_section is not None:
+                insert_custom_controls(current_section)
+                
+            current_section = field_metadata["section"]
+            # Map section name to translation if possible, else title case
+            section_title = state.t(f"label.section_{current_section.replace(' ', '_').lower()}", default=current_section)
+            form_controls.append(
+                ft.Container(
+                    content=ft.Text(section_title, size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    padding=ft.padding.only(top=10, bottom=5)
+                )
+            )
+            
         # Get current value from JSON
         current_value = get_nested_value(json_data, field_path)
         
@@ -173,6 +195,10 @@ def generate_dynamic_form(field_mappings: Dict[str, Dict[str, str]],
         
         form_controls.append(field)
     
+    # Append custom controls for the last section if any
+    if current_section:
+        insert_custom_controls(current_section)
+    
     return form_controls
 
 
@@ -183,7 +209,8 @@ class DynamicForm:
                  initial_json: Dict[str, Any],
                  state,
                  on_change_callback: Optional[Callable] = None,
-                 custom_controls: Optional[list] = None):
+                 custom_controls: Optional[list] = None,
+                 custom_section_controls: Optional[Dict[str, list]] = None):
         """
         Initialize dynamic form
         
@@ -191,13 +218,15 @@ class DynamicForm:
             field_mappings: Field definitions
             initial_json: Initial JSON data
             on_change_callback: Optional callback when form data changes
-            custom_controls: Optional list of additional Flet controls to render at bottom
+            custom_controls: Optional list of additional Flet controls to render at the VERY bottom
+            custom_section_controls: Optional dict mapping section names to lists of controls to append at the end of that section
         """
         self.field_mappings = field_mappings
         self.json_data = initial_json.copy()
         self.state = state
         self.on_change_callback = on_change_callback
         self.custom_controls = custom_controls or []
+        self.custom_section_controls = custom_section_controls or {}
         self.controls = []
     
     def _on_field_change(self, field_path: str, new_value: Any):
@@ -210,12 +239,13 @@ class DynamicForm:
             self.on_change_callback(self.json_data)
     
     def build(self) -> list:
-        """Build and return form controls"""
+        """Build and return form controls slice"""
         self.controls = generate_dynamic_form(
             self.field_mappings,
             self.json_data,
             self._on_field_change,
-            self.state
+            self.state,
+            custom_section_controls=self.custom_section_controls
         )
         if self.custom_controls:
             self.controls.extend(self.custom_controls)

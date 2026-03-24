@@ -367,6 +367,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                         if key == "background_color":
                             self.color = value
                             self.json_ref["hexBackgroundColor"] = value
+                            self.json_ref["hex_background_color"] = value
 
                 color_state_obj = PassColorState(
                     passes_current_json.get("hexBackgroundColor", "#4285f4"),
@@ -463,6 +464,9 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 if "issuer_name" in form_data:
                     form_data["card_title"] = form_data.pop("issuer_name")
 
+                if "hexBackgroundColor" in form_data:
+                    form_data["hex_background_color"] = form_data["hexBackgroundColor"]
+                        
             pass_data = form_data
 
             response = api_client.update_pass(

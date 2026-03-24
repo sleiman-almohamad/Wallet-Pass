@@ -15,45 +15,48 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     # ── UI Controls ──
     mode_radio = ft.RadioGroup(
         content=ft.Row([
-            ft.Radio(value="single", label=state.t("mode.single")),
-            ft.Radio(value="template", label=state.t("mode.template")),
+            ft.Radio(value="single", label=state.t("mode.single") if hasattr(state, "t") else "Single Pass"),
+            ft.Radio(value="template", label=state.t("mode.template") if hasattr(state, "t") else "Template/Class"),
         ], spacing=20),
-        value=ns.get("mode"),
+        value=ns.get("mode") or "single",
     )
 
     class_dropdown = ft.Dropdown(
-        label=state.t("label.select_template"),
-        hint_text=state.t("label.select_template"),
+        label=state.t("label.select_template") if hasattr(state, "t") else "Select Template",
+        hint_text="Choose a template",
         width=400,
         options=[],
         visible=False,
     )
 
-    email_field = ft.TextField(
-        label=state.t("label.customer_email"),
-        hint_text=state.t("label.customer_email"),
+    # ✅ التعديل الأول: تغيير حقل الإيميل ليصبح حقل بحث بالاسم
+    search_holder_field = ft.TextField(
+        label=state.t("label.search_holder") if hasattr(state, "t") else "Search by Holder Name",
+        hint_text="e.g., Sleiman",
         width=400,
         visible=True,
+        prefix_icon="search",
+        on_submit=lambda e: on_find_passes(e) # للبحث عند ضغط Enter
     )
 
     find_passes_btn = ft.ElevatedButton(
-        state.t("btn.find_passes"),
+        state.t("btn.find_passes") if hasattr(state, "t") else "Find Passes",
         icon="search",
         width=400,
         visible=True,
     )
 
     pass_dropdown = ft.Dropdown(
-        label=state.t("label.select_pass"),
-        hint_text=state.t("label.select_pass"),
+        label=state.t("label.select_pass") if hasattr(state, "t") else "Select Pass",
+        hint_text="Choose a pass",
         width=400,
         visible=True,
         options=[],
     )
 
     message_field = ft.TextField(
-        label=state.t("label.message"),
-        hint_text=state.t("label.message"),
+        label=state.t("label.message") if hasattr(state, "t") else "Notification Message",
+        hint_text="Enter your message here...",
         multiline=True,
         min_lines=3,
         max_lines=5,
@@ -64,7 +67,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     loading_indicator = ft.ProgressBar(width=400, visible=ns.get("is_loading"), color="blue")
 
     send_btn = ft.ElevatedButton(
-        state.t("btn.send_notification"),
+        state.t("btn.send_notification") if hasattr(state, "t") else "Send Notification",
         icon="send",
         width=400,
         style=ft.ButtonStyle(bgcolor="blue", color="white"),
@@ -83,17 +86,21 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             classes = api_client.get_classes()
             current_val = class_dropdown.value
             
+            # ✅ تطبيق الخدعة لإخفاء الـ Prefix من اسم الكلاس
             class_dropdown.options = [
-                ft.dropdown.Option(key=cls["class_id"], text=f"{cls['class_id']} ({cls.get('class_type', 'Unknown')})")
-                for cls in classes
+                ft.dropdown.Option(
+                    key=str(cls.get("class_id", "")), 
+                    text=f"{str(cls.get('class_id', '')).split('.')[-1]} ({cls.get('class_type', 'Unknown')})"
+                )
+                for cls in classes if cls.get("class_id")
             ]
             
-            if current_val and any(c["class_id"] == current_val for c in classes):
+            if current_val and any(c.get("class_id") == current_val for c in classes):
                 class_dropdown.value = current_val
                 
             page.update()
         except Exception as e:
-            _set_status(state.t("msg.error_syncing", error=str(e)), "red")
+            _set_status(f"Error loading templates: {e}", "red")
 
     # ── Event Handlers ──
     def on_mode_change(e):
@@ -101,7 +108,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         ns.update("mode", mode)
         
         is_single = mode == "single"
-        email_field.visible = is_single
+        search_holder_field.visible = is_single
         find_passes_btn.visible = is_single
         pass_dropdown.visible = is_single
         class_dropdown.visible = not is_single
@@ -113,33 +120,49 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
 
     mode_radio.on_change = on_mode_change
 
+    # ✅ التعديل الثاني: تابع البحث الذكي بالاسم (Holder Name)
     def on_find_passes(e):
-        email = email_field.value.strip()
-        if not email:
-            _set_status(state.t("msg.enter_email"), "red")
+        search_query = search_holder_field.value.strip().lower()
+        if not search_query:
+            _set_status("⚠️ Please enter a name to search", "orange")
+            page.update()
             return
 
         ns.update("is_loading", True)
         page.update()
 
         try:
-            passes = api_client.get_passes_by_email(email)
-            if not passes:
-                _set_status(state.t("msg.no_passes_found"), "orange")
+            # جلب كل البطاقات وفلترتها محلياً لتسريع العملية
+            all_passes = api_client.get_passes() if api_client else []
+            matching_passes = [
+                p for p in all_passes 
+                if search_query in str(p.get("holder_name", "")).lower()
+            ]
+
+            if not matching_passes:
+                _set_status(f"❌ No passes found matching '{search_query}'.", "orange")
                 pass_dropdown.options = []
+                pass_dropdown.value = None
             else:
+                # عرض الأسماء بوضوح بدون الـ Prefix المعقد
                 pass_dropdown.options = [
-                    ft.dropdown.Option(key=p["object_id"], text=f"{p['object_id']} ({p.get('class_id')})")
-                    for p in passes
+                    ft.dropdown.Option(
+                        key=str(p.get("object_id", "")), 
+                        text=f"{p.get('holder_name', 'Unknown')} ({str(p.get('class_id', 'Unknown Template')).split('.')[-1]})"
+                    )
+                    for p in matching_passes if p.get("object_id")
                 ]
-                _set_status(state.t("msg.found_passes", count=len(passes)), "green")
+                # اختيار أول نتيجة تلقائياً
+                pass_dropdown.value = str(matching_passes[0].get("object_id", ""))
+                _set_status(f"✅ Found {len(matching_passes)} pass(es).", "green")
             
             ns.update_multiple({
-                "passes_found": passes,
+                "passes_found": matching_passes,
                 "is_loading": False
             })
         except Exception as ex:
-            _set_status(f"Error finding passes: {ex}", "red")
+            import traceback; traceback.print_exc()
+            _set_status(f"❌ Error finding passes: {ex}", "red")
         
         page.update()
 
@@ -150,7 +173,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         message = message_field.value.strip()
         
         if not message:
-            _set_status(state.t("msg.enter_message"), "red")
+            _set_status("⚠️ Please enter a message to send", "red")
             return
 
         ns.update("is_loading", True)
@@ -160,21 +183,21 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             if mode == "single":
                 pass_id = pass_dropdown.value
                 if not pass_id:
-                    _set_status(state.t("msg.select_pass_err"), "red")
+                    _set_status("❌ Please select a pass first", "red")
                     return
                 
                 result = api_client.send_pass_notification(pass_id, message)
-                _set_status(state.t("msg.notification_sent"), "green")
+                _set_status("✅ Notification sent successfully to the pass!", "green")
             else:
                 class_id = class_dropdown.value
                 if not class_id:
-                    _set_status(state.t("msg.select_template_err"), "red")
+                    _set_status("❌ Please select a template first", "red")
                     return
                 
                 result = api_client.send_class_notification(class_id, message)
-                _set_status(state.t("msg.bulk_notification"), "green")
+                _set_status("✅ Bulk notification sent successfully to all template holders!", "green")
         except Exception as ex:
-            _set_status(f"Error sending notification: {ex}", "red")
+            _set_status(f"❌ Error sending notification: {ex}", "red")
         
         page.update()
 
@@ -191,7 +214,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
 
     def refresh_send_notification():
         load_classes()
-        if mode_radio.value == "single" and email_field.value and email_field.value.strip():
+        if mode_radio.value == "single" and search_holder_field.value and search_holder_field.value.strip():
             on_find_passes(None)
 
     state.register_refresh_callback("send_notification_list", refresh_send_notification)
@@ -203,22 +226,22 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     left_panel = ft.Container(
         width=450,
         content=ft.Column([
-            ft.Text(state.t("header.send_notification"), size=22, weight=ft.FontWeight.BOLD),
-            ft.Text(state.t("subtitle.send_notification"), size=11, color="grey"),
+            ft.Text(state.t("header.send_notification") if hasattr(state, "t") else "Send Notification", size=22, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("subtitle.send_notification") if hasattr(state, "t") else "Broadcast messages to users", size=11, color="grey"),
             ft.Divider(),
             
-            ft.Text(state.t("label.mode"), size=14, weight=ft.FontWeight.W_500),
+            ft.Text(state.t("label.mode") if hasattr(state, "t") else "Select Mode:", size=14, weight=ft.FontWeight.W_500),
             mode_radio,
             ft.Divider(height=10, color="transparent"),
             
-            ft.Text(state.t("label.target"), size=14, weight=ft.FontWeight.W_500),
-            email_field,
+            ft.Text(state.t("label.target") if hasattr(state, "t") else "Select Target:", size=14, weight=ft.FontWeight.W_500),
+            search_holder_field,  # ✅ تم وضع حقل البحث هنا
             find_passes_btn,
             pass_dropdown,
             class_dropdown,
             ft.Divider(height=10, color="transparent"),
             
-            ft.Text(state.t("label.step_message"), size=14, weight=ft.FontWeight.W_500),
+            ft.Text(state.t("label.step_message") if hasattr(state, "t") else "Enter Message:", size=14, weight=ft.FontWeight.W_500),
             message_field,
             ft.Divider(height=10, color="transparent"),
             

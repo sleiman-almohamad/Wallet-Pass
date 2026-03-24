@@ -402,6 +402,11 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 if field_ref.current and field_ref.current.value:
                     pass_data[field_name] = field_ref.current.value
             
+            # Ensure background color is included in pass_data for local DB persistence
+            custom_color = custom_color_state.get("background_color")
+            if custom_color:
+                pass_data["hexBackgroundColor"] = custom_color
+            
             # Add text module rows if editor is present
             if pass_row_editor_ref[0]:
                 pass_data["textModulesData"] = pass_row_editor_ref[0].get_rows()

@@ -428,7 +428,10 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
 
         try:
             object_id = passes_object_id_field.value
-            form_data = passes_dynamic_form.get_json_data() if passes_dynamic_form else {}
+            # We use passes_current_json instead of dynamic_form.get_json_data() 
+            # because the color picker updates passes_current_json directly,
+            # and may not be synced to the form's internal state.
+            form_data = passes_current_json.copy() if passes_current_json else {}
 
             holder_name = form_data.pop("holder_name", None)
             holder_email = form_data.pop("holder_email", None)

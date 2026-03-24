@@ -1033,7 +1033,6 @@ class WalletClient:
             "accountId": holder_email
         }
         
-        # Add custom background color if provided
         if custom_color:
             obj["hexBackgroundColor"] = custom_color
         
@@ -1120,7 +1119,7 @@ class WalletClient:
         # Generic *object*-level branding (Google ignores these on GenericClass)
         branding_logo_url = pd.get("logo_url") or pd.get("logoUrl")
         branding_hero_url = pd.get("hero_image_url") or pd.get("heroImageUrl") or pd.get("hero_url")
-        branding_bg = custom_color or pd.get("hexBackgroundColor") or pd.get("background_color") or pd.get("base_color")
+        branding_bg = custom_color or pd.get("hexBackgroundColor") or pd.get("hex_background_color") or pd.get("background_color") or pd.get("base_color")
         branding_bg = branding_bg if isinstance(branding_bg, str) and branding_bg.strip() else None
         
         # Map local status to Google Wallet state

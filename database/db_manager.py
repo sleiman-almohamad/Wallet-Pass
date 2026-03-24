@@ -452,6 +452,7 @@ class DatabaseManager:
                 'logo_url': gf.logo_url,
                 'hero_image_url': gf.hero_image_url,
                 'hex_background_color': gf.hex_background_color,
+                'hexBackgroundColor': gf.hex_background_color, # Alias for consistency
                 'barcode_type': gf.barcode_type,
                 'barcode_value': gf.barcode_value,
             }

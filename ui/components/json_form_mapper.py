@@ -71,7 +71,12 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
     field_type = field_metadata.get("type", "text")
     label = state.t(field_metadata.get("label", field_path))
     hint = field_metadata.get("hint", "")
+    hide_label = field_metadata.get("hide_label", False)
     
+    # If label is hidden, use label text as hint for cleaner "non-edge" appearance
+    display_label = None if hide_label else label
+    display_hint = label if hide_label else hint
+
     if field_type == "boolean":
         # Checkbox / Switch field
         is_checked = str(current_value).lower() == 'true' if current_value is not None else False
@@ -84,8 +89,8 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
     if field_type == "color":
         # Color field with hex input
         color_field = ft.TextField(
-            label=label,
-            hint_text=hint,
+            label=display_label,
+            hint_text=display_hint,
             value=current_value or "",
             width=300,
             prefix_text="#",
@@ -100,8 +105,8 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
     elif field_type == "url":
         # URL field with validation
         return ft.TextField(
-            label=label,
-            hint_text=hint,
+            label=display_label,
+            hint_text=display_hint,
             value=current_value or "",
             width=400,
             keyboard_type=ft.KeyboardType.URL,
@@ -111,8 +116,8 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
     elif field_type == "datetime":
         # Datetime field
         return ft.TextField(
-            label=label,
-            hint_text=hint,
+            label=display_label,
+            hint_text=display_hint,
             value=current_value or "",
             width=300,
             on_change=lambda e: on_change(field_path, e.control.value)
@@ -122,8 +127,8 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
         # Dropdown for select fields
         options = field_metadata.get("options", [])
         return ft.Dropdown(
-            label=label,
-            hint_text=hint,
+            label=display_label,
+            hint_text=display_hint,
             value=current_value or "",
             width=300,
             options=[ft.dropdown.Option(opt) for opt in options],
@@ -133,8 +138,8 @@ def create_form_field(field_path: str, field_metadata: Dict[str, str],
     else:  # text or default
         # Standard text field
         return ft.TextField(
-            label=label,
-            hint_text=hint,
+            label=display_label,
+            hint_text=display_hint,
             value=current_value or "",
             width=400,
             on_change=lambda e: on_change(field_path, e.control.value)

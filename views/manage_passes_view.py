@@ -33,26 +33,26 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
 
     # ── UI Controls ──
     manage_passes_class_dropdown = ft.Dropdown(
-        label=state.t("label.select_template"),
         hint_text=state.t("label.select_template"),
         width=400,
         options=[],
+        label=None
     )
 
     manage_passes_dropdown = ft.Dropdown(
-        label=state.t("label.select_pass"),
         hint_text=state.t("label.select_pass"),
         width=400,
         options=[],
+        label=None
     )
 
     passes_status = ft.Text("", size=12)
 
     passes_object_id_field = ft.TextField(
-        label=state.t("label.object_id"), width=400, read_only=True, bgcolor="grey100"
+        hint_text=state.t("label.object_id"), width=400, read_only=True, bgcolor="grey100", label=None
     )
     passes_class_id_field = ft.TextField(
-        label=state.t("label.class_id"), width=400, read_only=True, bgcolor="grey100"
+        hint_text=state.t("label.class_id"), width=400, read_only=True, bgcolor="grey100", label=None
     )
 
     passes_form_container = ft.Column(
@@ -243,10 +243,10 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 #"id": {"label": "label.object_id", "type": "text", "read_only": True, "section": "Pass details"},
                 #"classId": {"label": "label.class_id", "type": "text", "read_only": True, "section": "Pass details"},
                 #{"name": "holder_name", "label": "label.holder_name", "type": "text", "hint": "e.g., https://example.com/logo.png", "section": "Header"},
-                "holder_name": {"label": state.t("label.holder_name"), "type": "text", "section": "Pass details"},
-                "holder_email": {"label": state.t("label.email_req"), "type": "text", "section": "Pass details"},
-                "status": {"label": state.t("label.status"), "type": "select", "options": ["Active", "Completed", "Expired"], "section": "Status & notification"},
-                "messageType": {"label": state.t("label.notification_type"), "type": "select", "options": ["TEXT", "TEXT_AND_NOTIFY"], "section": "Status & notification"},
+                "holder_name": {"label": state.t("label.holder_name"), "type": "text", "section": "Pass details", "hide_label": True},
+                "holder_email": {"label": state.t("label.email_req"), "type": "text", "section": "Pass details", "hide_label": True},
+                "status": {"label": state.t("label.status"), "type": "select", "options": ["Active", "Completed", "Expired"], "section": "Status & notification", "hide_label": True},
+                "messageType": {"label": state.t("label.notification_type"), "type": "select", "options": ["TEXT", "TEXT_AND_NOTIFY"], "section": "Status & notification", "hide_label": True},
             }
 
             if "messageType" not in json_data:
@@ -280,20 +280,20 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                     json_data["event_time"] = template_event_time
                     passes_current_json["event_time"] = template_event_time
 
-                field_mappings["event_date"] = {"label": state.t("label.event_date"), "type": "text", "read_only": True}
-                field_mappings["event_time"] = {"label": state.t("label.event_time"), "type": "text", "read_only": True}
+                field_mappings["event_date"] = {"label": state.t("label.event_date"), "type": "text", "read_only": True, "hide_label": True}
+                field_mappings["event_time"] = {"label": state.t("label.event_time"), "type": "text", "read_only": True, "hide_label": True}
 
                 pd = p_data.get("pass_data", {})
                 passes_current_json["ticket_holder_name"] = str(pd.get("ticketHolderName", ""))
-                field_mappings["ticket_holder_name"] = {"label": state.t("label.ticket_holder_name"), "type": "text"}
+                field_mappings["ticket_holder_name"] = {"label": state.t("label.ticket_holder_name"), "type": "text", "hide_label": True}
                 passes_current_json["confirmation_code"] = str(pd.get("confirmationCode", ""))
-                field_mappings["confirmation_code"] = {"label": state.t("label.confirmation_code"), "type": "text"}
+                field_mappings["confirmation_code"] = {"label": state.t("label.confirmation_code"), "type": "text", "hide_label": True}
                 passes_current_json["seat"] = str(pd.get("seatNumber", ""))
                 passes_current_json["section"] = str(pd.get("section", ""))
                 passes_current_json["gate"] = str(pd.get("gate", ""))
-                field_mappings["seat"] = {"label": state.t("label.seat"), "type": "text"}
-                field_mappings["section"] = {"label": state.t("label.section"), "type": "text"}
-                field_mappings["gate"] = {"label": state.t("label.gate"), "type": "text"}
+                field_mappings["seat"] = {"label": state.t("label.seat"), "type": "text", "hide_label": True}
+                field_mappings["section"] = {"label": state.t("label.section"), "type": "text", "hide_label": True}
+                field_mappings["gate"] = {"label": state.t("label.gate"), "type": "text", "hide_label": True}
 
             elif class_type == "Generic":
                 pd = p_data.get("pass_data", {})
@@ -314,11 +314,11 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                         json_data["messageType"] = inferred_message_type
                 
                 # Setup dynamic fields for Generic
-                field_mappings["logo_url"] = {"label": state.t("label.logo_url"), "type": "url", "hint": "https://example.com/logo.png", "section": "Header"}
-                field_mappings["hero_image_url"] = {"label": "Hero Image URL", "type": "url", "hint": "https://example.com/hero.png", "section": "Header"}
-                field_mappings["issuer_name"] = {"label": state.t("label.issuer_name"), "type": "text", "hint": "e.g., Your Business Name", "section": "Header"}
-                field_mappings["subheader_value"] = {"label": state.t("label.subheader"), "type": "text", "section": "Top Row"}
-                field_mappings["header_value"] = {"label": state.t("label.header_value"), "type": "text", "section": "Top Row"}
+                field_mappings["logo_url"] = {"label": state.t("label.logo_url"), "type": "url", "hint": "https://example.com/logo.png", "section": "Header", "hide_label": True}
+                field_mappings["hero_image_url"] = {"label": "Hero Image URL", "type": "url", "hint": "https://example.com/hero.png", "section": "Header", "hide_label": True}
+                field_mappings["issuer_name"] = {"label": state.t("label.issuer_name"), "type": "text", "hint": "e.g., Your Business Name", "section": "Header", "hide_label": True}
+                field_mappings["subheader_value"] = {"label": state.t("label.subheader"), "type": "text", "section": "Top Row", "hide_label": True}
+                field_mappings["header_value"] = {"label": state.t("label.header_value"), "type": "text", "section": "Top Row", "hide_label": True}
                 # hexBackgroundColor is handled via the color picker below, not as a form field
                 # textModulesData is handled via the row editor below, not as a form field
 
@@ -340,7 +340,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 }
                 for key in p_data["pass_data"].keys():
                     if key not in ignored_keys:
-                        field_mappings[key] = {"label": key.replace("_", " ").title(), "type": "text"}
+                        field_mappings[key] = {"label": key.replace("_", " ").title(), "type": "text", "hide_label": True}
 
             def on_passes_form_change(updated_json):
                 nonlocal passes_current_json
@@ -391,10 +391,11 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                             existing_body = pass_modules.get(mod_id, {}).get("body", "")
                             
                             tf = ft.TextField(
-                                label=header, 
+                                hint_text=header, 
                                 value=existing_body, 
                                 on_change=create_on_mod_change(mod_id, header),
-                                expand=True
+                                expand=True,
+                                label=None
                             )
                             passes_dynamic_text_modules[mod_id] = tf
                             row_controls.append(tf)
@@ -499,7 +500,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             # Re-read textModulesData directly from components if Generic
             if passes_current_class_type == "Generic" and passes_dynamic_text_modules:
                 form_data["textModulesData"] = [
-                    {"id": mid, "header": tf.label, "body": tf.value}
+                    {"id": mid, "header": tf.label if tf.label else tf.hint_text, "body": tf.value}
                     for mid, tf in passes_dynamic_text_modules.items()
                 ]
             elif passes_row_editor_ref[0]:

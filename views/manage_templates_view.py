@@ -187,8 +187,16 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 manage_current_json = updated_json
                 if manage_json_editor:
                     manage_json_editor.update_json(updated_json)
-                # Update preview
-                manage_preview_container.content = build_comprehensive_preview(updated_json, state=state)
+                
+                # Create a preview copy with mapped fields
+                preview_data = updated_json.copy()
+                if "issuerName" in preview_data and "cardTitle" not in preview_data:
+                    preview_data["card_title"] = preview_data["issuerName"]
+                elif "eventName" in preview_data:
+                    preview_data["card_title"] = preview_data["eventName"]
+
+                # Update preview - pass as class_data, with empty pass_data
+                manage_preview_container.content = build_comprehensive_preview(preview_data, pass_data={}, state=state)
                 page.update()
 
             custom_form_controls = []
@@ -226,7 +234,13 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             manage_json_container.content = manage_json_editor.build()
 
             # Initial preview
-            manage_preview_container.content = build_comprehensive_preview(manage_current_json, state=state)
+            preview_data = manage_current_json.copy()
+            if "issuerName" in preview_data and "cardTitle" not in preview_data:
+                preview_data["card_title"] = preview_data["issuerName"]
+            elif "eventName" in preview_data:
+                preview_data["card_title"] = preview_data["eventName"]
+            
+            manage_preview_container.content = build_comprehensive_preview(preview_data, pass_data={}, state=state)
 
             _set_status(state.t("msg.template_loaded"))
         except Exception as ex:

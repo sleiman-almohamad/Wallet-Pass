@@ -347,8 +347,16 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 passes_current_json = updated_json
                 if passes_json_editor:
                     passes_json_editor.update_json(updated_json)
+                
+                # Create a preview copy with mapped fields
+                preview_data = updated_json.copy()
+                if "hero_image_url" in preview_data:
+                    preview_data["hero_image"] = preview_data["hero_image_url"]
+                if "issuer_name" in preview_data:
+                    preview_data["card_title"] = preview_data["issuer_name"]
+
                 if class_info and class_info.get("class_json"):
-                    passes_preview_container.content = build_comprehensive_preview(class_info["class_json"], passes_current_json, state=state)
+                    passes_preview_container.content = build_comprehensive_preview(class_info["class_json"], preview_data, state=state)
                 else:
                     passes_preview_container.content = ft.Text(state.t("msg.no_details"))
                 page.update()

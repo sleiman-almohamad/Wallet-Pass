@@ -10,12 +10,12 @@ def build_comprehensive_preview(class_data: Dict, pass_data: Optional[Dict] = No
     if pass_data is None:
         pass_data = {}
 
+    # Extract properties
     bg_color = pass_data.get("hexBackgroundColor") or class_data.get("hexBackgroundColor") or class_data.get("base_color", "#4285f4")
-    class_type = class_data.get("class_type", "Generic")
-
+    
     # 1. Logo Extraction
     logo_url = None
-    for src in [class_data, pass_data]:
+    for src in [pass_data, class_data]:
         if "programLogo" in src:
             logo_url = src.get("programLogo", {}).get("sourceUri", {}).get("uri")
         elif "logo" in src:
@@ -27,7 +27,7 @@ def build_comprehensive_preview(class_data: Dict, pass_data: Optional[Dict] = No
 
     # 2. Hero Image Extraction
     hero_url = None
-    for src in [class_data, pass_data]:
+    for src in [pass_data, class_data]:
         if "heroImage" in src:
             hero_url = src.get("heroImage", {}).get("sourceUri", {}).get("uri")
         elif "hero_image_url" in src:
@@ -37,172 +37,141 @@ def build_comprehensive_preview(class_data: Dict, pass_data: Optional[Dict] = No
         if hero_url:
             break
 
-    # 3. Header / Title Extraction
-    header_text = state.t("placeholder.business_name") if state else "Business Name"
-    card_title = state.t("placeholder.pass_title") if state else "Pass Title"
-
-    for src in [class_data, pass_data]:
-        if "localizedIssuerName" in src:
-            header_text = src.get("localizedIssuerName", {}).get("defaultValue", {}).get("value", header_text)
-        elif "issuerName" in src:
-            header_text = src.get("issuerName", header_text)
-        elif "issuer_name" in src:
-            header_text = src.get("issuer_name", header_text)
-
-        if "localizedProgramName" in src:
-            card_title = src.get("localizedProgramName", {}).get("defaultValue", {}).get("value", card_title)
-        elif "eventName" in src:
-            card_title = src.get("eventName", {}).get("defaultValue", {}).get("value", card_title)
-        elif "header" in src:
-            header_text = src.get("header", {}).get("defaultValue", {}).get("value", header_text)
+    # 3. Card Title Extraction
+    card_title = "Wallet Pass"
+    for src in [pass_data, class_data]:
         if "cardTitle" in src:
             card_title = src.get("cardTitle", {}).get("defaultValue", {}).get("value", card_title)
         elif "card_title" in src:
-            card_title = src.get("card_title", card_title)
+            # Check if it's a dict or a string (some parts of the app use different structures)
+            val = src.get("card_title")
+            if isinstance(val, dict):
+                card_title = val.get("defaultValue", {}).get("value", card_title)
+            else:
+                card_title = val or card_title
+                
+        if card_title != "Wallet Pass":
+            break
 
-    # 4. Holder Info
-    holder_name = pass_data.get("holder_name", state.t("label.sample_user") if state else "Pass Holder")
-
-    # Build Logo Control
-    if logo_url:
-        logo_control = ft.Container(
-            width=50, height=50, border_radius=25,
-            clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            content=ft.Image(src=logo_url, width=50, height=50, fit=ft.ImageFit.COVER),
-        )
-    else:
-        logo_control = ft.Container(
-            width=50, height=50, border_radius=25, bgcolor="white30",
-            content=ft.Icon("business", color="white", size=30),
-            alignment=ft.alignment.center,
-        )
-
-    # Build Hero Control
-    if hero_url:
-        hero_control = ft.Container(
-            height=150,
-            content=ft.Image(src=hero_url, width=300, height=150, fit=ft.ImageFit.COVER),
-        )
-    else:
-        hero_control = ft.Container(
-            height=150, bgcolor="black12",
-            content=ft.Column(
-                [ft.Icon("image", size=40, color="grey"), ft.Text(state.t("placeholder.hero_image") if state else "Hero Image", size=12, color="grey")],
-                alignment=ft.MainAxisAlignment.CENTER,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            ),
-        )
-
-    # 5. Extract Detailed Fields by Class Type
-    detail_lines = []
-
-    if class_type == "EventTicket":
-        if 'seat_number' in pass_data and pass_data.get('seat_number'):
-            detail_lines.append((state.t("label.seat") if state else "Seat", pass_data.get('seat_number')))
-        if 'event_time' in pass_data and pass_data.get('event_time'):
-            detail_lines.append((state.t("label.time") if state else "Time", pass_data.get('event_time')))
-        if 'gate' in pass_data and pass_data.get('gate'):
-            detail_lines.append((state.t("label.gate") if state else "Gate", pass_data.get('gate')))
-
-    elif class_type == "LoyaltyCard":
-        detail_lines.append((state.t("label.points") if state else "Points", pass_data.get('points_balance', '0')))
-        detail_lines.append((state.t("label.tier") if state else "Tier", pass_data.get('tier_level', 'Standard')))
-        if 'account_name' in pass_data:
-            detail_lines.append((state.t("label.account") if state else "Account", pass_data.get('account_name')))
-
-    elif class_type == "GiftCard":
-        balance = pass_data.get('balance') or class_data.get('balance', '0.00')
-        detail_lines.append((state.t("label.balance") if state else "Balance", f"${balance}"))
-        if 'card_number' in pass_data:
-            detail_lines.append((state.t("label.card_number") if state else "Card", pass_data.get('card_number')))
-        if 'pin' in pass_data:
-            detail_lines.append((state.t("label.pin") if state else "PIN", pass_data.get('pin')))
-
-    elif class_type == "TransitPass":
-        detail_lines.append((state.t("label.type") if state else "Type", pass_data.get('pass_type', 'Standard')))
-        if pass_data.get('valid_from') and pass_data.get('valid_until'):
-            detail_lines.append((state.t("label.valid") if state else "Valid", f"{pass_data.get('valid_from')} - {pass_data.get('valid_until')}"))
-
-    # 6. Extract Text Module Rows
-    # Combine rows from class and pass priorities (pass overrides or appends)
-    text_modules = []
+    # 4. Text Modules
+    text_modules = pass_data.get("textModulesData", [])
     
-    class_modules = class_data.get("textModulesData", [])
-    if isinstance(class_modules, list):
-        text_modules.extend(class_modules)
-        
-    pass_modules = pass_data.get("textModulesData", [])
-    if isinstance(pass_modules, list):
-        text_modules.extend(pass_modules)
+    # Fallback for Template View: If no pass data, use template rows
+    if not text_modules and class_data.get("text_module_rows"):
+        rows = class_data.get("text_module_rows", [])
+        for row in rows:
+            # Each row can have Left, Middle, Right modules
+            if "left" in row and row["left"]:
+                text_modules.append({"header": row["left"], "body": "Sample Value"})
+            if "middle" in row and row["middle"]:
+                text_modules.append({"header": row["middle"], "body": "Sample Value"})
+            if "right" in row and row["right"]:
+                text_modules.append({"header": row["right"], "body": "Sample Value"})
 
+    # Prepare modules in rows (max 3 per row)
+    module_rows = []
+    current_row = []
     for module in text_modules:
-        if isinstance(module, dict):
-            h = module.get("header")
-            b = module.get("body")
-            if h or b:
-                detail_lines.append((h or (state.t("label.info") if state else "Info"), b or ""))
+        header = module.get("header", "")
+        body = module.get("body", "")
+        
+        col = ft.Column([
+            ft.Text(header.upper(), size=10, color="white70", weight="w400"),
+            ft.Text(body, size=14, color="white", weight="bold", no_wrap=True, overflow="ellipsis"),
+        ], spacing=2, tight=True, expand=True)
+        
+        current_row.append(col)
+        if len(current_row) == 3:
+            module_rows.append(ft.Row(current_row, spacing=20, alignment="start"))
+            current_row = []
+            
+    if current_row:
+        # Fill the rest with empty containers if needed for alignment, but Row handles it
+        module_rows.append(ft.Row(current_row, spacing=20, alignment="start"))
 
-    # Extra Details Control
-    details_controls = [
-        ft.Text(state.t("label.pass_details") if state else "Pass Details", color="grey", size=11, weight=ft.FontWeight.W_500),
-        ft.Divider(height=10, color="grey300")
-    ]
+    # 5. Holder Info
+    holder_name = pass_data.get("holder_name") or "Holder Name"
+
+    # Build UI Components
     
-    if detail_lines:
-        for header, body in detail_lines:
-            details_controls.append(
-                ft.Row([
-                    ft.Text(f"{header}:", weight=ft.FontWeight.BOLD, size=12, color="black87", width=100),
-                    ft.Text(str(body), size=12, color="black54", expand=True)
-                ])
-            )
-            details_controls.append(ft.Container(height=2))
-    else:
-        details_controls.append(ft.Text(state.t("msg.no_details") if state else "No additional details", size=12, color="grey500", italic=True))
+    # Header Row
+    header_section = ft.Container(
+        padding=ft.padding.only(left=20, right=20, top=20, bottom=10),
+        content=ft.Row([
+            ft.Container(
+                width=40, height=40, border_radius=20,
+                bgcolor="white24" if not logo_url else None,
+                clip_behavior="antiAlias",
+                content=ft.Image(
+                    src=logo_url,
+                    fit="cover",
+                ) if logo_url else ft.Icon("image", color="white30", size=20),
+            ),
+            ft.Text(card_title, size=18, weight="bold", color="white", expand=True),
+        ], vertical_alignment="center", spacing=15),
+    )
 
-    return ft.Container(
-        width=300,
-        bgcolor=bg_color,
-        border_radius=15,
-        clip_behavior=ft.ClipBehavior.HARD_EDGE,
-        shadow=ft.BoxShadow(blur_radius=15, color="black26", offset=ft.Offset(0, 5)),
+    # Hero Image Section
+    hero_section = ft.Container()
+    if hero_url:
+        hero_section = ft.Container(
+            padding=ft.padding.symmetric(horizontal=20, vertical=10),
+            content=ft.Container(
+                width=280, height=120, border_radius=12,
+                clip_behavior="antiAlias",
+                content=ft.Image(
+                    src=hero_url,
+                    fit="cover",
+                ),
+                shadow=ft.BoxShadow(blur_radius=10, color="black26"),
+            )
+        )
+    else:
+        # Minimal height if no hero image
+        hero_section = ft.Container(height=10)
+
+    # Text Modules Section
+    modules_section = ft.Container(
+        padding=ft.padding.symmetric(horizontal=20, vertical=15),
+        content=ft.Column(module_rows, spacing=15),
+        expand=True,
+    )
+
+    # Barcode Section
+    barcode_section = ft.Container(
+        margin=ft.margin.only(top=10),
+        padding=ft.padding.only(bottom=20, left=20, right=20, top=10),
+        bgcolor="white",
+        border_radius=ft.border_radius.only(bottom_left=20, bottom_right=20),
         content=ft.Column([
-            # Top Header
             ft.Container(
-                padding=15,
-                content=ft.Row([
-                    logo_control,
-                    ft.Container(width=10),
-                    ft.Text(header_text, color="white", weight=ft.FontWeight.BOLD, size=14, expand=True),
-                ]),
-            ),
-            # Title
-            ft.Container(
-                padding=ft.padding.only(left=15, right=15, bottom=10),
-                content=ft.Text(card_title, color="white", size=20, weight=ft.FontWeight.BOLD),
-            ),
-            # Hero Graphic
-            hero_control,
-            # Barcode / QR
-            ft.Container(
-                bgcolor="white", padding=15,
+                alignment=ft.alignment.center,
+                padding=10,
                 content=ft.Column([
-                    ft.Row([
-                        ft.Container(
-                            width=70, height=70, bgcolor="grey200", border_radius=5,
-                            content=ft.Icon("qr_code_2", size=50, color="grey"),
-                            alignment=ft.alignment.center,
-                        ),
-                        ft.Container(width=10),
-                        ft.Column([
-                            ft.Text(holder_name, weight=ft.FontWeight.BOLD, size=13, color="black"),
-                            ft.Text(f"ID: {pass_data.get('object_id') or '...preview...'}", size=11, color="grey"),
-                        ]),
-                    ]),
-                    ft.Container(height=15),
-                    # Dynamic Details Column
-                    *details_controls
-                ]),
-            ),
-        ], spacing=0),
+                    ft.Icon("qr_code_2", size=70, color="black87"),
+                    ft.Text(holder_name, size=14, color="black54", weight="w500"),
+                ], horizontal_alignment="center", spacing=5),
+            )
+        ], horizontal_alignment="center"),
+    )
+
+    # Main Card Container
+    return ft.Container(
+        width=320,
+        height=520,
+        bgcolor=bg_color,
+        border_radius=20,
+        clip_behavior="antiAlias",
+        shadow=ft.BoxShadow(
+            spread_radius=1,
+            blur_radius=25,
+            color="black26",
+            offset=ft.Offset(0, 10),
+        ),
+        content=ft.Column([
+            header_section,
+            hero_section,
+            modules_section,
+            barcode_section,
+        ], spacing=0, scroll="hidden"),
     )

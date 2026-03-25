@@ -111,17 +111,46 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
 
         # Collect pass data from form
         pass_data = {
-            "holder_name": holder_name_ref.current.value if holder_name_ref.current else "John Doe"
+            "holder_name": holder_name_ref.current.value if holder_name_ref.current else "John Doe",
         }
+
+        # Inject background color
+        if custom_color_state.get("background_color"):
+             pass_data["hexBackgroundColor"] = custom_color_state["background_color"]
 
         # Add dynamic field values
         for field_name, field_ref in dynamic_field_refs.items():
             if field_ref.current:
-                pass_data[field_name] = field_ref.current.value or ""
+                val = field_ref.current.value or ""
+                pass_data[field_name] = val
+                
+                # Direct mappings for preview builder
+                if field_name == "logo_url":
+                    pass_data["logo_url"] = val
+                elif field_name == "hero_image_url":
+                    pass_data["hero_image"] = val
+                elif field_name == "card_title":
+                    pass_data["card_title"] = val
 
-        # Add text module rows if editor is present
-        if pass_row_editor_ref[0]:
-            pass_data["textModulesData"] = pass_row_editor_ref[0].get_rows()
+        # Handle Generic Text Modules
+        class_type = current_class_data.get("class_type", "Generic")
+        if class_type == "Generic":
+            text_modules_data = []
+            template_rows = current_class_data.get("text_module_rows", [])
+            for row in template_rows:
+                row_idx = row.get("row_index", 0)
+                for col in ["left", "middle", "right"]:
+                    header_text = row.get(f"{col}_header")
+                    field_id = f"row_{row_idx}_{col}"
+                    if header_text and field_id in dynamic_field_refs:
+                        field_val = dynamic_field_refs[field_id].current.value
+                        if field_val:
+                            text_modules_data.append({
+                                "header": header_text,
+                                "body": field_val
+                            })
+            if text_modules_data:
+                pass_data["textModulesData"] = text_modules_data
 
         # Update visual preview
         preview_container.content = build_preview(current_class_data, pass_data)

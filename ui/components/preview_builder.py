@@ -30,6 +30,10 @@ def build_comprehensive_preview(class_data: Dict, pass_data: Optional[Dict] = No
     for src in [class_data, pass_data]:
         if "heroImage" in src:
             hero_url = src.get("heroImage", {}).get("sourceUri", {}).get("uri")
+        elif "hero_image_url" in src:
+            hero_url = src.get("hero_image_url")
+        elif "hero_image" in src:
+            hero_url = src.get("hero_image")
         if hero_url:
             break
 

@@ -242,6 +242,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             field_mappings = {
                 #"id": {"label": "label.object_id", "type": "text", "read_only": True, "section": "Pass details"},
                 #"classId": {"label": "label.class_id", "type": "text", "read_only": True, "section": "Pass details"},
+                #{"name": "holder_name", "label": "label.holder_name", "type": "text", "hint": "e.g., https://example.com/logo.png", "section": "Header"},
                 "holder_name": {"label": state.t("label.holder_name"), "type": "text", "section": "Pass details"},
                 "holder_email": {"label": state.t("label.email_req"), "type": "text", "section": "Pass details"},
                 "status": {"label": state.t("label.status"), "type": "select", "options": ["Active", "Completed", "Expired"], "section": "Status & notification"},
@@ -300,6 +301,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 passes_current_json["header_value"] = str(pd.get("header_value", ""))
                 passes_current_json["subheader_value"] = str(pd.get("subheader_value", ""))
                 passes_current_json["logo_url"] = str(pd.get("logo_url", ""))
+                passes_current_json["hero_image_url"] = str(pd.get("hero_image_url", ""))
                 passes_current_json["hexBackgroundColor"] = str(pd.get("hexBackgroundColor", pd.get("hex_background_color", "")))
                 
                 # Setup basic notification preferences
@@ -313,6 +315,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
                 
                 # Setup dynamic fields for Generic
                 field_mappings["logo_url"] = {"label": state.t("label.logo_url"), "type": "url", "hint": "https://example.com/logo.png", "section": "Header"}
+                field_mappings["hero_image_url"] = {"label": "Hero Image URL", "type": "url", "hint": "https://example.com/hero.png", "section": "Header"}
                 field_mappings["issuer_name"] = {"label": state.t("label.issuer_name"), "type": "text", "hint": "e.g., Your Business Name", "section": "Header"}
                 field_mappings["subheader_value"] = {"label": state.t("label.subheader"), "type": "text", "section": "Top Row"}
                 field_mappings["header_value"] = {"label": state.t("label.header_value"), "type": "text", "section": "Top Row"}

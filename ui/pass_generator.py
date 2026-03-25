@@ -16,6 +16,7 @@ import string
 PASS_TYPE_FIELDS = {
     "Generic": [
         {"name": "logo_url", "label": "label.logo_url", "type": "text", "hint": "e.g., https://example.com/logo.png", "section": "Header"},
+        {"name": "hero_image_url", "label": "Hero Image URL", "type": "text", "hint": "e.g., https://example.com/hero.png", "section": "Header"},
         {"name": "card_title", "label": "label.issuer_name", "type": "text", "hint": "e.g., Your Business Name", "section": "Header"},
         {"name": "subheader_value", "label": "label.subheader_value", "type": "text", "hint": "e.g., VIP Level", "section": "Top Row"},
         {"name": "header_value", "label": "label.header_value", "type": "text", "hint": "e.g., VIP Member", "section": "Top Row"},
@@ -280,6 +281,8 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 if class_type == "Generic":
                     if field_config["name"] == "logo_url" and logo_url:
                         initial_value = logo_url
+                    elif field_config["name"] == "hero_image_url" and class_data.get("hero_image_url"):
+                        initial_value = class_data.get("hero_image_url")
                     elif field_config["name"] == "card_title" and card_title:
                         initial_value = card_title
                     elif field_config["name"] == "header_value" and header_text:
@@ -305,17 +308,56 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 dynamic_fields_container.controls.append(field)
 
             # For Generic passes, we now inject the TextModuleRowEditor here
+            # For Generic passes, generate dynamic TextFields based on the Template's rows
             if class_type == "Generic":
-                dynamic_fields_container.controls.append(
-                    ft.Container(
-                        content=ft.Text("Information Rows", size=16, weight=ft.FontWeight.W_500, color="blue700"),
-                        padding=ft.padding.only(top=10, bottom=5)
+                pass_row_editor_ref[0] = None # Disable the old row editor completely
+                
+                # Fetch the text_module_rows associated with this template from the local DB
+                template_rows = class_data.get("text_module_rows", [])
+                
+                if template_rows:
+                    dynamic_fields_container.controls.append(
+                        ft.Container(
+                            content=ft.Text("Information Fields", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                            padding=ft.padding.only(top=10, bottom=5)
+                        )
                     )
-                )
-                from ui.components.text_module_row_editor import TextModuleRowEditor
-                row_editor = TextModuleRowEditor(state=state, on_change=lambda r: update_preview(), mode="pass")
-                pass_row_editor_ref[0] = row_editor
-                dynamic_fields_container.controls.append(row_editor)
+                    
+                    # Iterate through the rows defined in the template
+                    for row in template_rows:
+                        row_idx = row.get("row_index", 0)
+                        
+                        # ✅ التعديل الرئيسي: إنشاء "صف أفقي" لهذه المجموعة من الحقول
+                        fields_row = ft.Row(spacing=10, alignment=ft.MainAxisAlignment.START)
+                        
+                        # Helper to build fields and add them to the specific Row
+                        def add_dynamic_field(col_name, header_key, parent_row):
+                            header_text = row.get(header_key)
+                            if header_text:
+                                field_id = f"row_{row_idx}_{col_name}"
+                                field_ref = ft.Ref[ft.TextField]()
+                                dynamic_field_refs[field_id] = field_ref # Register it in our dynamic refs
+                                
+                                field = ft.TextField(
+                                    ref=field_ref,
+                                    label=header_text,
+                                    hint_text=f"Enter {header_text}",
+                                    expand=True, # ✅ جعل الحقول تتقاسم عرض الصف بالتساوي
+                                    on_change=lambda e: update_preview()
+                                )
+                                # ✅ إضافة الحقل إلى "الصف" وليس "العمود"
+                                parent_row.controls.append(field)
+                                
+                        # إضافة الحقول المتاحة (L, M, R) لهذا الصف
+                        add_dynamic_field("left", "left_header", fields_row)
+                        add_dynamic_field("middle", "middle_header", fields_row)
+                        add_dynamic_field("right", "right_header", fields_row)
+                        
+                        # ✅ إضافة الصف الممتلئ بالحقول إلى حاوية العمود الرئيسية
+                        if fields_row.controls:
+                            dynamic_fields_container.controls.append(
+                                ft.Container(content=fields_row, padding=ft.padding.only(bottom=5))
+                            )
             else:
                 pass_row_editor_ref[0] = None
             
@@ -408,8 +450,34 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 pass_data["hexBackgroundColor"] = custom_color
             
             # Add text module rows if editor is present
-            if pass_row_editor_ref[0]:
-                pass_data["textModulesData"] = pass_row_editor_ref[0].get_rows()
+            # Add text module rows dynamically based on the generated TextFields
+            if class_type == "Generic":
+                text_modules_data = []
+                # Fetch rows from template again to know the structure
+                template_rows = current_class_data.get("text_module_rows", [])
+                
+                for row in template_rows:
+                    row_idx = row.get("row_index", 0)
+                    
+                    def append_module(col_name, header_key):
+                        header_text = row.get(header_key)
+                        field_id = f"row_{row_idx}_{col_name}"
+                        if header_text and field_id in dynamic_field_refs:
+                            field_val = dynamic_field_refs[field_id].current.value
+                            # Only add if user entered a value
+                            if field_val:
+                                text_modules_data.append({
+                                    "id": field_id,
+                                    "header": header_text,
+                                    "body": field_val
+                                })
+                                
+                    append_module("left", "left_header")
+                    append_module("middle", "middle_header")
+                    append_module("right", "right_header")
+                
+                if text_modules_data:
+                    pass_data["textModulesData"] = text_modules_data
 
             # Generate unique object ID
             import time

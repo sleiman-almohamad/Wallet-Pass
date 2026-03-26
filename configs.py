@@ -32,3 +32,13 @@ ALLOW_GOOGLE_CLASS_SYNC = os.getenv("ALLOW_GOOGLE_CLASS_SYNC", "false").lower() 
 
 # Pass sync can still be allowed independently.
 ALLOW_GOOGLE_PASS_SYNC = os.getenv("ALLOW_GOOGLE_PASS_SYNC", "true").lower() in ("1", "true", "yes", "y", "on")
+
+# ---------------------------------------------------------------------------
+# Apple Wallet
+# ---------------------------------------------------------------------------
+APPLE_TEAM_ID = os.getenv("APPLE_TEAM_ID")
+APPLE_PASS_TYPE_ID = os.getenv("APPLE_PASS_TYPE_ID")
+APPLE_CERT_PATH = os.getenv("APPLE_CERT_PATH", "certs/pass_certificate.pem")
+APPLE_KEY_PATH = os.getenv("APPLE_KEY_PATH", "certs/pass_key.pem")
+APPLE_WWDR_PATH = os.getenv("APPLE_WWDR_PATH", "certs/wwdr.pem")
+APPLE_KEY_PASSWORD = os.getenv("APPLE_KEY_PASSWORD", "")

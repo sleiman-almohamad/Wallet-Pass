@@ -1651,6 +1651,19 @@ wheels = [
 ]
 
 [[package]]
+name = "wallet"
+version = "2.1.525"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/37/a0d5a895bf3238ffbc1f4ba6b6f5fa106d53e751213ed15a21fde158ea4f/wallet-2.1.525.tar.gz", hash = "sha256:63bd66e370a6952e579e78ecd2643a181cc33a5b1a59c5856384d562ad23208a", size = 333936, upload-time = "2022-12-07T05:54:48.745Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/db/ff/1c89e6a2d565523a0907d7a74872a79326f1ed8b3dcd06bf241afb32b3ff/wallet-2.1.525-py3-none-any.whl", hash = "sha256:baf45c618782346af9f2b70419beb7bf9a00f22be45a7505c0891ed5e2247732", size = 995629, upload-time = "2022-12-07T05:54:45.623Z" },
+]
+
+[[package]]
 name = "walletpassesapp"
 version = "0.1.0"
 source = { virtual = "." }
@@ -1673,6 +1686,7 @@ dependencies = [
     { name = "requests" },
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
+    { name = "wallet" },
 ]
 
 [package.metadata]
@@ -1695,6 +1709,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.32.0" },
     { name = "sqlalchemy", specifier = ">=2.0.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
+    { name = "wallet", specifier = ">=2.1.525" },
 ]
 
 [[package]]

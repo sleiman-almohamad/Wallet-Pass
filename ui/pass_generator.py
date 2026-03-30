@@ -139,38 +139,38 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
 
             dynamic_fields_container.controls.extend([
                 ft.Container(
-                    content=ft.Text("1. Pass Holder Information", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    content=ft.Text(state.t("label.step_pass_holder"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
                     padding=ft.padding.only(top=10, bottom=5)
                 ),
                 ft.TextField(
                     ref=holder_name_ref,
                     label=state.t("label.name_req") if state.t("label.name_req") != "label.name_req" else "Holder Name",
-                    hint_text="e.g., John Doe",
+                    hint_text=state.t("hint.john_doe"),
                     width=380,
                     on_change=lambda e: update_preview()
                 ),
                 ft.TextField(
                     ref=holder_email_ref,
                     label=state.t("label.email_req") if state.t("label.email_req") != "label.email_req" else "Holder Email",
-                    hint_text="e.g., john@example.com",
+                    hint_text=state.t("hint.john_email"),
                     width=380
                 ),
                 ft.Container(
-                    content=ft.Text("2. Customize Card Color", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    content=ft.Text(state.t("label.step_customize_color"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
                     padding=ft.padding.only(top=10, bottom=5)
                 ),
                 color_picker_container,
                 ft.Container(
-                    content=ft.Text("3. Pass Details", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    content=ft.Text(state.t("label.step_pass_details"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
                     padding=ft.padding.only(top=10, bottom=5)
                 )
             ])
 
             for f_name, f_label, f_hint in [
-                ("apple_org_name", "Organization Name", "e.g., My Company"),
-                ("apple_logo_text", "Logo Text", "e.g., PASS"),
-                ("apple_logo_url", "Logo & Icon URL", "e.g., https://example.com/logo.png"),
-                ("apple_strip_url", "Strip/Hero Image URL", "e.g., https://example.com/strip.png")
+                ("apple_org_name", state.t("label.organization_name"), state.t("hint.my_company")),
+                ("apple_logo_text", state.t("label.logo_text"), state.t("hint.pass")),
+                ("apple_logo_url", state.t("label.logo_icon_url"), state.t("hint.logo_url")),
+                ("apple_strip_url", state.t("label.strip_hero_image_url"), state.t("hint.strip_url"))
             ]:
                 f_ref = ft.Ref[ft.TextField]()
                 dynamic_field_refs[f_name] = f_ref
@@ -186,26 +186,26 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
 
             dynamic_fields_container.controls.append(
                 ft.Container(
-                    content=ft.Text("4. Top Row", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    content=ft.Text(state.t("label.step_top_row"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
                     padding=ft.padding.only(top=10, bottom=5)
                 )
             )
-            _add_apple_field_pair("apple_header", dynamic_fields_container)
+            _add_apple_field_pair("apple_header", dynamic_fields_container, state.t("label.step_top_row"))
 
             dynamic_fields_container.controls.append(
                 ft.Container(
-                    content=ft.Text("5. Information Rows", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    content=ft.Text(state.t("label.step_info_rows"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
                     padding=ft.padding.only(top=10, bottom=5)
                 )
             )
-            dynamic_fields_container.controls.append(ft.Text("Primary Field", size=12, weight=ft.FontWeight.W_500, color="grey700"))
-            _add_apple_field_pair("apple_primary", dynamic_fields_container)
-            dynamic_fields_container.controls.append(ft.Text("Secondary Field", size=12, weight=ft.FontWeight.W_500, color="grey700"))
-            _add_apple_field_pair("apple_sec", dynamic_fields_container)
-            dynamic_fields_container.controls.append(ft.Text("Auxiliary Field", size=12, weight=ft.FontWeight.W_500, color="grey700"))
-            _add_apple_field_pair("apple_aux", dynamic_fields_container)
-            dynamic_fields_container.controls.append(ft.Text("Back Field", size=12, weight=ft.FontWeight.W_500, color="grey700"))
-            _add_apple_field_pair("apple_back", dynamic_fields_container)
+            dynamic_fields_container.controls.append(ft.Text(state.t("label.primary_field"), size=12, weight=ft.FontWeight.W_500, color="grey700"))
+            _add_apple_field_pair("apple_primary", dynamic_fields_container, state.t("label.primary_field"))
+            dynamic_fields_container.controls.append(ft.Text(state.t("label.secondary_field"), size=12, weight=ft.FontWeight.W_500, color="grey700"))
+            _add_apple_field_pair("apple_sec", dynamic_fields_container, state.t("label.secondary_field"))
+            dynamic_fields_container.controls.append(ft.Text(state.t("label.auxiliary_field"), size=12, weight=ft.FontWeight.W_500, color="grey700"))
+            _add_apple_field_pair("apple_aux", dynamic_fields_container, state.t("label.auxiliary_field"))
+            dynamic_fields_container.controls.append(ft.Text(state.t("label.back_field"), size=12, weight=ft.FontWeight.W_500, color="grey700"))
+            _add_apple_field_pair("apple_back", dynamic_fields_container, state.t("label.back_field"))
             
             pass_row_editor_ref[0] = None
 
@@ -359,8 +359,8 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             else:
                 pass_row_editor_ref[0] = None
 
-    def _add_apple_field_pair(prefix: str, container):
-        """Add a Label + Value row for an Apple Passkit field."""
+    def _add_apple_field_pair(prefix: str, container, header_name: str = "Top Row"):
+        """Add a Label + Value row for an Apple StoreCard field."""
         label_ref = ft.Ref[ft.TextField]()
         value_ref = ft.Ref[ft.TextField]()
         dynamic_field_refs[f"{prefix}_label"] = label_ref
@@ -370,15 +370,15 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             ft.Row([
                 ft.TextField(
                     ref=label_ref,
-                    label="Label",
-                    hint_text="e.g., Member ID",
+                    label=state.t("label.field_label"),
+                    hint_text=state.t("hint.dynamic_label", header=header_name),
                     expand=True,
                     on_change=lambda e: update_preview()
                 ),
                 ft.TextField(
                     ref=value_ref,
-                    label="Value",
-                    hint_text="e.g., 12345",
+                    label=state.t("label.field_value"),
+                    hint_text=state.t("hint.dynamic_value", header=header_name),
                     expand=True,
                     on_change=lambda e: update_preview()
                 ),
@@ -941,7 +941,7 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                     ),
                     ft.Container(height=10),
                     ft.ElevatedButton(
-                        text="Open Folder",
+                        text=state.t("btn.open_apple_folder"),
                         icon=ft.Icons.FOLDER_OPEN,
                         on_click=lambda e, folder=apple_folder: _open_folder(folder),
                         style=ft.ButtonStyle(bgcolor="black", color="white")

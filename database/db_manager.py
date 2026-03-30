@@ -811,9 +811,43 @@ class DatabaseManager:
             p = session.get(ApplePassesTable, serial_number)
             if not p:
                 return False
+                
+            store_card_data = kwargs.pop("store_card_data", None)
+            
             for k, v in kwargs.items():
                 if hasattr(p, k):
                     setattr(p, k, v)
+                    
+            if store_card_data:
+                if getattr(p, 'visual_data', None):
+                    p.visual_data.background_color = store_card_data.get("background_color")
+                    p.visual_data.logo_url = store_card_data.get("logo_url")
+                    p.visual_data.icon_url = store_card_data.get("icon_url")
+                    p.visual_data.strip_url = store_card_data.get("strip_url")
+                    p.visual_data.organization_name = store_card_data.get("organization_name")
+                    p.visual_data.logo_text = store_card_data.get("logo_text")
+                    p.visual_data.header_fields = store_card_data.get("header_fields", [])
+                    p.visual_data.primary_fields = store_card_data.get("primary_fields", [])
+                    p.visual_data.secondary_fields = store_card_data.get("secondary_fields", [])
+                    p.visual_data.auxiliary_fields = store_card_data.get("auxiliary_fields", [])
+                    p.visual_data.back_fields = store_card_data.get("back_fields", [])
+                else:
+                    visuals = ApplePassDataTable(
+                        serial_number=serial_number,
+                        background_color=store_card_data.get("background_color"),
+                        logo_url=store_card_data.get("logo_url"),
+                        icon_url=store_card_data.get("icon_url"),
+                        strip_url=store_card_data.get("strip_url"),
+                        organization_name=store_card_data.get("organization_name"),
+                        logo_text=store_card_data.get("logo_text"),
+                        header_fields=store_card_data.get("header_fields", []),
+                        primary_fields=store_card_data.get("primary_fields", []),
+                        secondary_fields=store_card_data.get("secondary_fields", []),
+                        auxiliary_fields=store_card_data.get("auxiliary_fields", []),
+                        back_fields=store_card_data.get("back_fields", [])
+                    )
+                    session.add(visuals)
+                    
             return True
 
     def delete_apple_pass(self, serial_number: str) -> bool:

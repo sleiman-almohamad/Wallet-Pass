@@ -15,7 +15,7 @@ from database.models import (
     PassesTable, EventTicketFields, GenericFields,
     PassTextModules, PassMessages,
     NotificationsTable,
-    ApplePassesTable,
+    ApplePassesTable, ApplePassDataTable,
     AppleNotificationsTable, AppleDeviceRegistrations,
 )
 
@@ -198,6 +198,25 @@ class DatabaseBackupTool:
             for p in session.query(ApplePassesTable).all()
         ]
 
+        # --- Apple Pass Data ---
+        apple_pass_data = [
+            {
+                "serial_number": p.serial_number,
+                "background_color": p.background_color,
+                "logo_url": p.logo_url,
+                "icon_url": p.icon_url,
+                "strip_url": p.strip_url,
+                "organization_name": p.organization_name,
+                "logo_text": p.logo_text,
+                "header_fields": p.header_fields,
+                "primary_fields": p.primary_fields,
+                "secondary_fields": p.secondary_fields,
+                "auxiliary_fields": p.auxiliary_fields,
+                "back_fields": p.back_fields,
+            }
+            for p in session.query(ApplePassDataTable).all()
+        ]
+
         # --- Apple Notifications ---
         apple_notifications = [
             {
@@ -231,6 +250,7 @@ class DatabaseBackupTool:
             "passes": passes,
             "notifications": notifications,
             "apple_passes": apple_passes,
+            "apple_pass_data": apple_pass_data,
             "apple_notifications": apple_notifications,
             "apple_device_registrations": apple_device_registrations,
         }
@@ -258,7 +278,7 @@ class DatabaseBackupTool:
             total = sum(
                 len(data.get(k, []))
                 for k in ("classes", "passes", "notifications",
-                          "apple_passes",
+                          "apple_passes", "apple_pass_data",
                           "apple_notifications", "apple_device_registrations")
             )
             return True, f"Restore complete – {total} records imported."
@@ -267,6 +287,8 @@ class DatabaseBackupTool:
 
     def _restore_from_dict(self, session, data: dict):
         """Insert / merge rows respecting FK order."""
+        if "apple_classes" in data:
+            print("Notice: Ignoring deprecated 'apple_classes' from legacy backup.")
 
         # ── 1. Google Classes ──
         for c in data.get("classes", []):
@@ -432,6 +454,25 @@ class DatabaseBackupTool:
                 auth_token=p.get("auth_token", ""),
                 pass_data=p.get("pass_data"),
             ))
+        session.flush()
+
+        # ── 5.5 Apple Pass Data ──
+        for p in data.get("apple_pass_data", []):
+            session.merge(ApplePassDataTable(
+                serial_number=p["serial_number"],
+                background_color=p.get("background_color"),
+                logo_url=p.get("logo_url"),
+                icon_url=p.get("icon_url"),
+                strip_url=p.get("strip_url"),
+                organization_name=p.get("organization_name"),
+                logo_text=p.get("logo_text"),
+                header_fields=p.get("header_fields", []),
+                primary_fields=p.get("primary_fields", []),
+                secondary_fields=p.get("secondary_fields", []),
+                auxiliary_fields=p.get("auxiliary_fields", []),
+                back_fields=p.get("back_fields", [])
+            ))
+        session.flush()
 
         # ── 6. Apple Notifications (append only) ──
         existing_apple_notif_ids = {

@@ -75,7 +75,7 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
     json_editor = None
 
     # Container for dynamic fields
-    dynamic_fields_container = ft.Column(spacing=10)
+    dynamic_fields_container = ft.Column(spacing=15)
     dynamic_field_refs = {}  # Store refs for dynamic fields
     pass_row_editor_ref = [None]  # List to hold reference mutably
     
@@ -133,74 +133,193 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
         dynamic_fields_container.controls.clear()
         dynamic_field_refs.clear()
 
-        # -----------------------------------------------------------
-        # Common fields (from PASS_TYPE_FIELDS) — shared across both
-        # -----------------------------------------------------------
-        fields_config = PASS_TYPE_FIELDS.get(class_type, [])
-        current_section = None
-        for field_config in fields_config:
-            if "section" in field_config and field_config["section"] != current_section:
-                current_section = field_config["section"]
+        if platform == "apple":
+            dynamic_field_refs["apple_holder_name"] = holder_name_ref
+            dynamic_field_refs["apple_holder_email"] = holder_email_ref
+
+            dynamic_fields_container.controls.extend([
+                ft.Container(
+                    content=ft.Text("1. Pass Holder Information", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    padding=ft.padding.only(top=10, bottom=5)
+                ),
+                ft.TextField(
+                    ref=holder_name_ref,
+                    label=state.t("label.name_req") if state.t("label.name_req") != "label.name_req" else "Holder Name",
+                    hint_text="e.g., John Doe",
+                    width=380,
+                    on_change=lambda e: update_preview()
+                ),
+                ft.TextField(
+                    ref=holder_email_ref,
+                    label=state.t("label.email_req") if state.t("label.email_req") != "label.email_req" else "Holder Email",
+                    hint_text="e.g., john@example.com",
+                    width=380
+                ),
+                ft.Container(
+                    content=ft.Text("2. Customize Card Color", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    padding=ft.padding.only(top=10, bottom=5)
+                ),
+                color_picker_container,
+                ft.Container(
+                    content=ft.Text("3. Pass Details", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    padding=ft.padding.only(top=10, bottom=5)
+                )
+            ])
+
+            for f_name, f_label, f_hint in [
+                ("apple_org_name", "Organization Name", "e.g., My Company"),
+                ("apple_logo_text", "Logo Text", "e.g., PASS"),
+                ("apple_logo_url", "Logo & Icon URL", "e.g., https://example.com/logo.png"),
+                ("apple_strip_url", "Strip/Hero Image URL", "e.g., https://example.com/strip.png")
+            ]:
+                f_ref = ft.Ref[ft.TextField]()
+                dynamic_field_refs[f_name] = f_ref
                 dynamic_fields_container.controls.append(
-                    ft.Container(
-                        content=ft.Text(current_section, size=16, weight=ft.FontWeight.W_500, color="blue700"),
-                        padding=ft.padding.only(top=10, bottom=5)
+                    ft.TextField(
+                        ref=f_ref,
+                        label=f_label,
+                        hint_text=f_hint,
+                        width=380,
+                        on_change=lambda e: update_preview()
                     )
                 )
 
-            field_ref = ft.Ref[ft.TextField]()
-            dynamic_field_refs[field_config["name"]] = field_ref
-
-            # Pre-populate template fields with values from class
-            initial_value = ""
-            is_readonly = False
-            if class_type == "Generic":
-                logo_url = current_class_data.get("logo_url")
-                card_title = current_class_data.get("card_title")
-                header_text = current_class_data.get("header_text")
-                if field_config["name"] == "logo_url" and logo_url:
-                    initial_value = logo_url
-                elif field_config["name"] == "hero_image_url" and current_class_data.get("hero_image_url"):
-                    initial_value = current_class_data.get("hero_image_url")
-                elif field_config["name"] == "card_title" and card_title:
-                    initial_value = card_title
-                elif field_config["name"] == "header_value" and header_text:
-                    initial_value = header_text
-
-            if field_config.get("template_field", False):
-                is_readonly = True
-                class_json = current_class_data.get("class_json", {})
-                dt_obj = class_json.get("dateTime", {})
-                start_dt = dt_obj.get("start", "")
-                if "T" in start_dt:
-                    t_date, t_time = start_dt.split("T")
-                    t_time = t_time[:5]
-                else:
-                    t_date = t_time = ""
-                if field_config["name"] == "event_date" and t_date:
-                    initial_value = t_date
-                elif field_config["name"] == "event_time" and t_time:
-                    initial_value = t_time
-
-            field = ft.TextField(
-                ref=field_ref,
-                label=state.t(field_config["label"]) if state.t(field_config["label"]) != field_config["label"] else field_config["label"].replace("label.", "").replace("_", " ").title(),
-                hint_text=field_config["hint"],
-                value=initial_value,
-                read_only=is_readonly,
-                width=400,
-                on_change=lambda e: update_preview()
+            dynamic_fields_container.controls.append(
+                ft.Container(
+                    content=ft.Text("4. Top Row", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    padding=ft.padding.only(top=10, bottom=5)
+                )
             )
-            dynamic_fields_container.controls.append(field)
+            _add_apple_field_pair("apple_header", dynamic_fields_container)
 
-        # -----------------------------------------------------------
-        # Platform-specific information fields (Generic only)
-        # -----------------------------------------------------------
-        if class_type == "Generic":
+            dynamic_fields_container.controls.append(
+                ft.Container(
+                    content=ft.Text("5. Information Rows", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                    padding=ft.padding.only(top=10, bottom=5)
+                )
+            )
+            dynamic_fields_container.controls.append(ft.Text("Primary Field", size=12, weight=ft.FontWeight.W_500, color="grey700"))
+            _add_apple_field_pair("apple_primary", dynamic_fields_container)
+            dynamic_fields_container.controls.append(ft.Text("Secondary Field", size=12, weight=ft.FontWeight.W_500, color="grey700"))
+            _add_apple_field_pair("apple_sec", dynamic_fields_container)
+            dynamic_fields_container.controls.append(ft.Text("Auxiliary Field", size=12, weight=ft.FontWeight.W_500, color="grey700"))
+            _add_apple_field_pair("apple_aux", dynamic_fields_container)
+            dynamic_fields_container.controls.append(ft.Text("Back Field", size=12, weight=ft.FontWeight.W_500, color="grey700"))
+            _add_apple_field_pair("apple_back", dynamic_fields_container)
+            
             pass_row_editor_ref[0] = None
 
-            if platform == "google":
-                # ── Google: render template rows (left / middle / right) ──
+        elif platform == "google":
+            # Pass Holder Info
+            dynamic_fields_container.controls.extend([
+                ft.Container(
+                    content=ft.Text(state.t("label.pass_holder_info") if state.t("label.pass_holder_info") != "label.pass_holder_info" else "Pass Holder Information", size=16, weight=ft.FontWeight.BOLD),
+                    padding=ft.padding.only(top=10, bottom=5)
+                ),
+                ft.TextField(
+                    ref=holder_name_ref,
+                    label=state.t("label.name_req") if state.t("label.name_req") != "label.name_req" else "Holder Name",
+                    hint_text="e.g., John Doe",
+                    width=380,
+                    on_change=lambda e: update_preview()
+                ),
+                ft.TextField(
+                    ref=holder_email_ref,
+                    label=state.t("label.email_req") if state.t("label.email_req") != "label.email_req" else "Holder Email",
+                    hint_text="e.g., john@example.com",
+                    width=380
+                ),
+                ft.Container(height=5),
+                ft.Dropdown(
+                    ref=message_type_ref,
+                    label=state.t("label.notification_type") if state.t("label.notification_type") != "label.notification_type" else "Notification Type",
+                    hint_text=state.t("label.notification_type") if state.t("label.notification_type") != "label.notification_type" else "Notification Type",
+                    width=380,
+                    value="TEXT_AND_NOTIFY",
+                    options=[
+                        ft.dropdown.Option(key="TEXT", text=state.t("option.notification_none") if state.t("option.notification_none") != "option.notification_none" else "No Notification"),
+                        ft.dropdown.Option(key="TEXT_AND_NOTIFY", text=state.t("option.notification_push") if state.t("option.notification_push") != "option.notification_push" else "Send Push Notification"),
+                    ]
+                ),
+                ft.Container(height=10),
+                ft.Column([
+                    ft.Text(state.t("label.customize_color") if state.t("label.customize_color") != "label.customize_color" else "Customize Color", size=16, weight=ft.FontWeight.BOLD),
+                    ft.Text(state.t("subtitle.choose_color") if state.t("subtitle.choose_color") != "subtitle.choose_color" else "Choose a custom color", size=10, color="grey"),
+                    color_picker_container
+                ]),
+                ft.Container(height=10),
+                ft.Container(
+                    content=ft.Text(state.t("label.pass_details") if state.t("label.pass_details") != "label.pass_details" else "Pass Details", size=16, weight=ft.FontWeight.BOLD),
+                    padding=ft.padding.only(top=10, bottom=5)
+                )
+            ])
+
+            # -----------------------------------------------------------
+            # Common fields (from PASS_TYPE_FIELDS)
+            # -----------------------------------------------------------
+            fields_config = PASS_TYPE_FIELDS.get(class_type, [])
+            current_section = None
+            for field_config in fields_config:
+                if "section" in field_config and field_config["section"] != current_section:
+                    current_section = field_config["section"]
+                    dynamic_fields_container.controls.append(
+                        ft.Container(
+                            content=ft.Text(current_section, size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                            padding=ft.padding.only(top=10, bottom=5)
+                        )
+                    )
+
+                field_ref = ft.Ref[ft.TextField]()
+                dynamic_field_refs[field_config["name"]] = field_ref
+
+                # Pre-populate template fields with values from class
+                initial_value = ""
+                is_readonly = False
+                if class_type == "Generic":
+                    logo_url = current_class_data.get("logo_url")
+                    card_title = current_class_data.get("card_title")
+                    header_text = current_class_data.get("header_text")
+                    if field_config["name"] == "logo_url" and logo_url:
+                        initial_value = logo_url
+                    elif field_config["name"] == "hero_image_url" and current_class_data.get("hero_image_url"):
+                        initial_value = current_class_data.get("hero_image_url")
+                    elif field_config["name"] == "card_title" and card_title:
+                        initial_value = card_title
+                    elif field_config["name"] == "header_value" and header_text:
+                        initial_value = header_text
+
+                if field_config.get("template_field", False):
+                    is_readonly = True
+                    class_json = current_class_data.get("class_json", {})
+                    dt_obj = class_json.get("dateTime", {})
+                    start_dt = dt_obj.get("start", "")
+                    if "T" in start_dt:
+                        t_date, t_time = start_dt.split("T")
+                        t_time = t_time[:5]
+                    else:
+                        t_date = t_time = ""
+                    if field_config["name"] == "event_date" and t_date:
+                        initial_value = t_date
+                    elif field_config["name"] == "event_time" and t_time:
+                        initial_value = t_time
+
+                field = ft.TextField(
+                    ref=field_ref,
+                    label=state.t(field_config["label"]) if state.t(field_config["label"]) != field_config["label"] else field_config["label"].replace("label.", "").replace("_", " ").title(),
+                    hint_text=field_config["hint"],
+                    value=initial_value,
+                    read_only=is_readonly,
+                    width=380,
+                    on_change=lambda e: update_preview()
+                )
+                dynamic_fields_container.controls.append(field)
+
+            # -----------------------------------------------------------
+            # Platform-specific information fields (Generic only)
+            # -----------------------------------------------------------
+            if class_type == "Generic":
+                pass_row_editor_ref[0] = None
+
                 template_rows = current_class_data.get("text_module_rows", [])
                 if template_rows:
                     dynamic_fields_container.controls.append(
@@ -237,39 +356,8 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                             dynamic_fields_container.controls.append(
                                 ft.Container(content=fields_row, padding=ft.padding.only(bottom=5))
                             )
-
-            elif platform == "apple":
-                # ── Apple: explicit Passkit dictionary fields ──
-                # Primary Field (1)
-                dynamic_fields_container.controls.append(
-                    ft.Container(
-                        content=ft.Text("Primary Field", size=16, weight=ft.FontWeight.W_500, color="blue700"),
-                        padding=ft.padding.only(top=10, bottom=5)
-                    )
-                )
-                _add_apple_field_pair("apple_primary", dynamic_fields_container)
-
-                # Secondary Fields (up to 3)
-                dynamic_fields_container.controls.append(
-                    ft.Container(
-                        content=ft.Text("Secondary Fields", size=16, weight=ft.FontWeight.W_500, color="blue700"),
-                        padding=ft.padding.only(top=10, bottom=5)
-                    )
-                )
-                for i in range(1, 4):
-                    _add_apple_field_pair(f"apple_sec{i}", dynamic_fields_container)
-
-                # Auxiliary Fields (up to 3)
-                dynamic_fields_container.controls.append(
-                    ft.Container(
-                        content=ft.Text("Auxiliary Fields", size=16, weight=ft.FontWeight.W_500, color="blue700"),
-                        padding=ft.padding.only(top=10, bottom=5)
-                    )
-                )
-                for i in range(1, 4):
-                    _add_apple_field_pair(f"apple_aux{i}", dynamic_fields_container)
-        else:
-            pass_row_editor_ref[0] = None
+            else:
+                pass_row_editor_ref[0] = None
 
     def _add_apple_field_pair(prefix: str, container):
         """Add a Label + Value row for an Apple Passkit field."""
@@ -318,12 +406,11 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                             text_modules.append({"id": field_id, "header": header_text, "body": val})
 
         elif platform == "apple":
-            # Apple: collect primary → secondary → auxiliary
-            # Slot ordering: index 0 = primary, 1-3 = secondary, 4-6 = auxiliary
             apple_slots = [
                 "apple_primary",
-                "apple_sec1", "apple_sec2", "apple_sec3",
-                "apple_aux1", "apple_aux2", "apple_aux3",
+                "apple_sec",
+                "apple_aux",
+                "apple_back",
             ]
             for slot in apple_slots:
                 lbl_key = f"{slot}_label"
@@ -337,6 +424,7 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                         text_modules.append({"id": slot, "header": lbl or "", "body": val or ""})
 
         return text_modules
+
 
     def on_color_change():
         """Handle color change from color picker"""
@@ -794,6 +882,35 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 auth_token = secrets.token_hex(16)
                 
                 # Call the API client to save the pass to the database
+                def safe_field(label_ref, value_ref, key_name):
+                    if label_ref in dynamic_field_refs and value_ref in dynamic_field_refs:
+                        if dynamic_field_refs[label_ref].current and dynamic_field_refs[value_ref].current:
+                            l = dynamic_field_refs[label_ref].current.value
+                            v = dynamic_field_refs[value_ref].current.value
+                            if l and v:
+                                return [{"key": key_name, "label": l, "value": v}]
+                    return []
+
+                def get_val(key):
+                    if key in dynamic_field_refs and dynamic_field_refs[key].current:
+                        val = dynamic_field_refs[key].current.value
+                        return val if val else None
+                    return None
+
+                store_card_data = {
+                    "background_color": custom_color_state.get("background_color"),
+                    "logo_url": get_val("apple_logo_url"),
+                    "icon_url": get_val("apple_logo_url"),
+                    "strip_url": get_val("apple_strip_url"),
+                    "organization_name": get_val("apple_org_name"),
+                    "logo_text": get_val("apple_logo_text"),
+                    "header_fields": safe_field("apple_header_label", "apple_header_value", "header"),
+                    "primary_fields": safe_field("apple_primary_label", "apple_primary_value", "primary"),
+                    "secondary_fields": safe_field("apple_sec_label", "apple_sec_value", "secondary1"),
+                    "auxiliary_fields": safe_field("apple_aux_label", "apple_aux_value", "aux1"),
+                    "back_fields": safe_field("apple_back_label", "apple_back_value", "back1"),
+                }
+
                 db_saved = False
                 try:
                     db_class_id = class_id.split('.')[-1] if '.' in class_id else class_id
@@ -801,10 +918,11 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                         serial_number=object_id, # Using object_id as Apple serial_number
                         class_id=db_class_id,
                         pass_type_id=configs.APPLE_PASS_TYPE_ID,
-                        holder_name=holder_name_ref.current.value,
-                        holder_email=holder_email_ref.current.value,
+                        holder_name=holder_name_ref.current.value if holder_name_ref.current else "Apple Holder",
+                        holder_email=holder_email_ref.current.value if holder_email_ref.current else "apple@example.com",
                         auth_token=auth_token,
-                        pass_data=pass_data
+                        pass_data=pass_data,
+                        store_card_data=store_card_data
                     )
                     db_saved = True
                     if state:
@@ -878,45 +996,6 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
 
             ft.Container(height=10),
 
-            ft.Text(state.t("label.pass_holder_info"), size=16, weight=ft.FontWeight.BOLD),
-            ft.TextField(
-                ref=holder_name_ref,
-                label=state.t("label.name_req"),
-                hint_text="e.g., John Doe",
-                width=380,
-                on_change=lambda e: update_preview()
-            ),
-            ft.TextField(
-                ref=holder_email_ref,
-                label=state.t("label.email_req"),
-                hint_text="e.g., john@example.com",
-                width=380
-            ),
-
-            ft.Container(height=5),
-
-            ft.Dropdown(
-                ref=message_type_ref,
-                label=state.t("label.notification_type"),
-                hint_text=state.t("label.notification_type"),
-                width=380,
-                value="TEXT_AND_NOTIFY",
-                options=[
-                    ft.dropdown.Option(key="TEXT", text=state.t("option.notification_none")),
-                    ft.dropdown.Option(key="TEXT_AND_NOTIFY", text=state.t("option.notification_push")),
-                ]
-            ),
-
-            ft.Container(height=10),
-
-            # Color Picker Section
-            ft.Text(state.t("label.customize_color"), size=16, weight=ft.FontWeight.BOLD),
-            ft.Text(state.t("subtitle.choose_color"), size=10, color="grey"),
-            color_picker_container,
-
-            ft.Container(height=10),
-
-            ft.Text(state.t("label.pass_details"), size=16, weight=ft.FontWeight.BOLD),
             dynamic_fields_container,
 
             ft.Divider(height=20),

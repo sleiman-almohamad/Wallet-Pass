@@ -1,7 +1,7 @@
 import flet as ft
 from typing import Dict, Optional
 
-def build_comprehensive_preview(class_data: Dict, pass_data: Optional[Dict] = None, state=None) -> ft.Container:
+def build_comprehensive_preview(class_data: Dict, pass_data: Optional[Dict] = None, state=None, platform: str = "google") -> ft.Container:
     """
     Build a comprehensive visual pass preview integrating both class and pass object data.
     This centralized function is used across the Template Builder, Pass Generator,

@@ -4,6 +4,9 @@ Creates individual Google Wallet passes for end users
 """
 
 import flet as ft
+import os
+import subprocess
+import platform as platform_mod
 from typing import Dict, List, Any, Optional
 from core.qr_generator import generate_qr_code
 from ui.components.text_module_row_editor import TextModuleRowEditor
@@ -63,6 +66,7 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
     holder_name_ref = ft.Ref[ft.TextField]()
     holder_email_ref = ft.Ref[ft.TextField]()
     message_type_ref = ft.Ref[ft.Dropdown]()  # For notification behavior
+    platform_ref = ft.Ref[ft.SegmentedButton]()  # Target platform selector
     status_ref = ft.Ref[ft.Text]()
     result_container_ref = ft.Ref[ft.Container]()
     json_container_ref = ft.Ref[ft.Container]()
@@ -90,6 +94,12 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
     color_picker_component = None
     color_picker_container = ft.Container(content=None)
     
+    def _get_selected_platform() -> str:
+        """Return 'google' or 'apple' from the SegmentedButton."""
+        if platform_ref.current and platform_ref.current.selected:
+            return list(platform_ref.current.selected)[0]
+        return "google"
+
     def build_preview(class_data: Dict, pass_data: Dict) -> ft.Container:
         """Build visual pass preview from JSON data using centralized builder"""
         # Inject custom background color if set
@@ -97,8 +107,237 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
         if custom_color_state.get("background_color"):
              preview_class_data["hexBackgroundColor"] = custom_color_state["background_color"]
         
-        return build_comprehensive_preview(preview_class_data, pass_data, state=state)
+        platform = _get_selected_platform()
+        return build_comprehensive_preview(preview_class_data, pass_data, state=state, platform=platform)
+
+    def update_ui_on_platform_change(e):
+        """Called when the user switches between Google / Apple."""
+        # Clear any previous result output
+        if result_container_ref.current:
+            result_container_ref.current.content = None
+        # Rebuild form fields for the new platform
+        build_form_fields()
+        # Refresh the preview
+        update_preview()
+        page.update()
     
+    def build_form_fields():
+        """Clear and rebuild dynamic form fields based on current_class_data and platform."""
+        if not current_class_data:
+            return
+
+        platform = _get_selected_platform()
+        class_type = current_class_data.get("class_type", "Generic")
+
+        # Clear existing dynamic fields
+        dynamic_fields_container.controls.clear()
+        dynamic_field_refs.clear()
+
+        # -----------------------------------------------------------
+        # Common fields (from PASS_TYPE_FIELDS) — shared across both
+        # -----------------------------------------------------------
+        fields_config = PASS_TYPE_FIELDS.get(class_type, [])
+        current_section = None
+        for field_config in fields_config:
+            if "section" in field_config and field_config["section"] != current_section:
+                current_section = field_config["section"]
+                dynamic_fields_container.controls.append(
+                    ft.Container(
+                        content=ft.Text(current_section, size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                        padding=ft.padding.only(top=10, bottom=5)
+                    )
+                )
+
+            field_ref = ft.Ref[ft.TextField]()
+            dynamic_field_refs[field_config["name"]] = field_ref
+
+            # Pre-populate template fields with values from class
+            initial_value = ""
+            is_readonly = False
+            if class_type == "Generic":
+                logo_url = current_class_data.get("logo_url")
+                card_title = current_class_data.get("card_title")
+                header_text = current_class_data.get("header_text")
+                if field_config["name"] == "logo_url" and logo_url:
+                    initial_value = logo_url
+                elif field_config["name"] == "hero_image_url" and current_class_data.get("hero_image_url"):
+                    initial_value = current_class_data.get("hero_image_url")
+                elif field_config["name"] == "card_title" and card_title:
+                    initial_value = card_title
+                elif field_config["name"] == "header_value" and header_text:
+                    initial_value = header_text
+
+            if field_config.get("template_field", False):
+                is_readonly = True
+                class_json = current_class_data.get("class_json", {})
+                dt_obj = class_json.get("dateTime", {})
+                start_dt = dt_obj.get("start", "")
+                if "T" in start_dt:
+                    t_date, t_time = start_dt.split("T")
+                    t_time = t_time[:5]
+                else:
+                    t_date = t_time = ""
+                if field_config["name"] == "event_date" and t_date:
+                    initial_value = t_date
+                elif field_config["name"] == "event_time" and t_time:
+                    initial_value = t_time
+
+            field = ft.TextField(
+                ref=field_ref,
+                label=state.t(field_config["label"]) if state.t(field_config["label"]) != field_config["label"] else field_config["label"].replace("label.", "").replace("_", " ").title(),
+                hint_text=field_config["hint"],
+                value=initial_value,
+                read_only=is_readonly,
+                width=400,
+                on_change=lambda e: update_preview()
+            )
+            dynamic_fields_container.controls.append(field)
+
+        # -----------------------------------------------------------
+        # Platform-specific information fields (Generic only)
+        # -----------------------------------------------------------
+        if class_type == "Generic":
+            pass_row_editor_ref[0] = None
+
+            if platform == "google":
+                # ── Google: render template rows (left / middle / right) ──
+                template_rows = current_class_data.get("text_module_rows", [])
+                if template_rows:
+                    dynamic_fields_container.controls.append(
+                        ft.Container(
+                            content=ft.Text("Information Fields", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                            padding=ft.padding.only(top=10, bottom=5)
+                        )
+                    )
+                    for row in template_rows:
+                        row_idx = row.get("row_index", 0)
+                        fields_row = ft.Row(spacing=10, alignment=ft.MainAxisAlignment.START)
+
+                        def _add_google_field(col_name, header_key, parent_row, _row_idx=row_idx):
+                            header_text = row.get(header_key)
+                            if header_text:
+                                fid = f"row_{_row_idx}_{col_name}"
+                                fref = ft.Ref[ft.TextField]()
+                                dynamic_field_refs[fid] = fref
+                                parent_row.controls.append(
+                                    ft.TextField(
+                                        ref=fref,
+                                        label=header_text,
+                                        hint_text=f"Enter {header_text}",
+                                        expand=True,
+                                        on_change=lambda e: update_preview()
+                                    )
+                                )
+
+                        _add_google_field("left", "left_header", fields_row)
+                        _add_google_field("middle", "middle_header", fields_row)
+                        _add_google_field("right", "right_header", fields_row)
+
+                        if fields_row.controls:
+                            dynamic_fields_container.controls.append(
+                                ft.Container(content=fields_row, padding=ft.padding.only(bottom=5))
+                            )
+
+            elif platform == "apple":
+                # ── Apple: explicit Passkit dictionary fields ──
+                # Primary Field (1)
+                dynamic_fields_container.controls.append(
+                    ft.Container(
+                        content=ft.Text("Primary Field", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                        padding=ft.padding.only(top=10, bottom=5)
+                    )
+                )
+                _add_apple_field_pair("apple_primary", dynamic_fields_container)
+
+                # Secondary Fields (up to 3)
+                dynamic_fields_container.controls.append(
+                    ft.Container(
+                        content=ft.Text("Secondary Fields", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                        padding=ft.padding.only(top=10, bottom=5)
+                    )
+                )
+                for i in range(1, 4):
+                    _add_apple_field_pair(f"apple_sec{i}", dynamic_fields_container)
+
+                # Auxiliary Fields (up to 3)
+                dynamic_fields_container.controls.append(
+                    ft.Container(
+                        content=ft.Text("Auxiliary Fields", size=16, weight=ft.FontWeight.W_500, color="blue700"),
+                        padding=ft.padding.only(top=10, bottom=5)
+                    )
+                )
+                for i in range(1, 4):
+                    _add_apple_field_pair(f"apple_aux{i}", dynamic_fields_container)
+        else:
+            pass_row_editor_ref[0] = None
+
+    def _add_apple_field_pair(prefix: str, container):
+        """Add a Label + Value row for an Apple Passkit field."""
+        label_ref = ft.Ref[ft.TextField]()
+        value_ref = ft.Ref[ft.TextField]()
+        dynamic_field_refs[f"{prefix}_label"] = label_ref
+        dynamic_field_refs[f"{prefix}_value"] = value_ref
+
+        container.controls.append(
+            ft.Row([
+                ft.TextField(
+                    ref=label_ref,
+                    label="Label",
+                    hint_text="e.g., Member ID",
+                    expand=True,
+                    on_change=lambda e: update_preview()
+                ),
+                ft.TextField(
+                    ref=value_ref,
+                    label="Value",
+                    hint_text="e.g., 12345",
+                    expand=True,
+                    on_change=lambda e: update_preview()
+                ),
+            ], spacing=10)
+        )
+
+    def _collect_text_modules() -> list:
+        """Collect textModulesData from dynamic fields, aware of the current platform."""
+        platform = _get_selected_platform()
+        text_modules: list = []
+
+        if platform == "google":
+            # Google: iterate template rows (row_X_left/middle/right)
+            if not current_class_data:
+                return text_modules
+            template_rows = current_class_data.get("text_module_rows", [])
+            for row in template_rows:
+                row_idx = row.get("row_index", 0)
+                for col, hdr_key in [("left", "left_header"), ("middle", "middle_header"), ("right", "right_header")]:
+                    header_text = row.get(hdr_key)
+                    field_id = f"row_{row_idx}_{col}"
+                    if header_text and field_id in dynamic_field_refs and dynamic_field_refs[field_id].current:
+                        val = dynamic_field_refs[field_id].current.value
+                        if val:
+                            text_modules.append({"id": field_id, "header": header_text, "body": val})
+
+        elif platform == "apple":
+            # Apple: collect primary → secondary → auxiliary
+            # Slot ordering: index 0 = primary, 1-3 = secondary, 4-6 = auxiliary
+            apple_slots = [
+                "apple_primary",
+                "apple_sec1", "apple_sec2", "apple_sec3",
+                "apple_aux1", "apple_aux2", "apple_aux3",
+            ]
+            for slot in apple_slots:
+                lbl_key = f"{slot}_label"
+                val_key = f"{slot}_value"
+                if lbl_key in dynamic_field_refs and val_key in dynamic_field_refs:
+                    lbl_ref = dynamic_field_refs[lbl_key]
+                    val_ref = dynamic_field_refs[val_key]
+                    lbl = lbl_ref.current.value if lbl_ref.current else ""
+                    val = val_ref.current.value if val_ref.current else ""
+                    if lbl or val:
+                        text_modules.append({"id": slot, "header": lbl or "", "body": val or ""})
+
+        return text_modules
+
     def on_color_change():
         """Handle color change from color picker"""
         update_preview()
@@ -132,23 +371,10 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 elif field_name == "card_title":
                     pass_data["card_title"] = val
 
-        # Handle Generic Text Modules
+        # Handle Generic Text Modules (platform-aware)
         class_type = current_class_data.get("class_type", "Generic")
         if class_type == "Generic":
-            text_modules_data = []
-            template_rows = current_class_data.get("text_module_rows", [])
-            for row in template_rows:
-                row_idx = row.get("row_index", 0)
-                for col in ["left", "middle", "right"]:
-                    header_text = row.get(f"{col}_header")
-                    field_id = f"row_{row_idx}_{col}"
-                    if header_text and field_id in dynamic_field_refs:
-                        field_val = dynamic_field_refs[field_id].current.value
-                        if field_val:
-                            text_modules_data.append({
-                                "header": header_text,
-                                "body": field_val
-                            })
+            text_modules_data = _collect_text_modules()
             if text_modules_data:
                 pass_data["textModulesData"] = text_modules_data
 
@@ -281,114 +507,8 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             color_picker_component = create_color_picker(page, color_state, on_color_change)
             color_picker_container.content = color_picker_component
             
-            # Clear dynamic fields
-            dynamic_fields_container.controls.clear()
-            dynamic_field_refs.clear()
-            
-            # Get field configuration for this type
-            fields_config = PASS_TYPE_FIELDS.get(class_type, [])
-            
-            # Create dynamic fields
-            # Create dynamic fields
-            current_section = None
-            for field_config in fields_config:
-                if "section" in field_config and field_config["section"] != current_section:
-                    current_section = field_config["section"]
-                    dynamic_fields_container.controls.append(
-                        ft.Container(
-                            content=ft.Text(current_section, size=16, weight=ft.FontWeight.W_500, color="blue700"),
-                            padding=ft.padding.only(top=10, bottom=5)
-                        )
-                    )
-                    
-                field_ref = ft.Ref[ft.TextField]()
-                dynamic_field_refs[field_config["name"]] = field_ref
-                
-                # Pre-populate template fields with values from class
-                initial_value = ""
-                is_readonly = False
-                if class_type == "Generic":
-                    if field_config["name"] == "logo_url" and logo_url:
-                        initial_value = logo_url
-                    elif field_config["name"] == "hero_image_url" and class_data.get("hero_image_url"):
-                        initial_value = class_data.get("hero_image_url")
-                    elif field_config["name"] == "card_title" and card_title:
-                        initial_value = card_title
-                    elif field_config["name"] == "header_value" and header_text:
-                        initial_value = header_text
-
-                if field_config.get("template_field", False):
-                    is_readonly = True  # Template fields are read-only
-                    if field_config["name"] == "event_date" and template_event_date:
-                        initial_value = template_event_date
-                    elif field_config["name"] == "event_time" and template_event_time:
-                        initial_value = template_event_time
-                
-                field = ft.TextField(
-                    ref=field_ref,
-                    label=state.t(field_config["label"]) if state.t(field_config["label"]) != field_config["label"] else field_config["label"].replace("label.", "").replace("_", " ").title(),
-                    hint_text=field_config["hint"],
-                    value=initial_value,  # Pre-fill with template value if available
-                    read_only=is_readonly,  # Make template fields read-only
-                    width=400,
-                    on_change=lambda e: update_preview()
-                )
-                
-                dynamic_fields_container.controls.append(field)
-
-            # For Generic passes, we now inject the TextModuleRowEditor here
-            # For Generic passes, generate dynamic TextFields based on the Template's rows
-            if class_type == "Generic":
-                pass_row_editor_ref[0] = None # Disable the old row editor completely
-                
-                # Fetch the text_module_rows associated with this template from the local DB
-                template_rows = class_data.get("text_module_rows", [])
-                
-                if template_rows:
-                    dynamic_fields_container.controls.append(
-                        ft.Container(
-                            content=ft.Text("Information Fields", size=16, weight=ft.FontWeight.W_500, color="blue700"),
-                            padding=ft.padding.only(top=10, bottom=5)
-                        )
-                    )
-                    
-                    # Iterate through the rows defined in the template
-                    for row in template_rows:
-                        row_idx = row.get("row_index", 0)
-                        
-                        # ✅ التعديل الرئيسي: إنشاء "صف أفقي" لهذه المجموعة من الحقول
-                        fields_row = ft.Row(spacing=10, alignment=ft.MainAxisAlignment.START)
-                        
-                        # Helper to build fields and add them to the specific Row
-                        def add_dynamic_field(col_name, header_key, parent_row):
-                            header_text = row.get(header_key)
-                            if header_text:
-                                field_id = f"row_{row_idx}_{col_name}"
-                                field_ref = ft.Ref[ft.TextField]()
-                                dynamic_field_refs[field_id] = field_ref # Register it in our dynamic refs
-                                
-                                field = ft.TextField(
-                                    ref=field_ref,
-                                    label=header_text,
-                                    hint_text=f"Enter {header_text}",
-                                    expand=True, # ✅ جعل الحقول تتقاسم عرض الصف بالتساوي
-                                    on_change=lambda e: update_preview()
-                                )
-                                # ✅ إضافة الحقل إلى "الصف" وليس "العمود"
-                                parent_row.controls.append(field)
-                                
-                        # إضافة الحقول المتاحة (L, M, R) لهذا الصف
-                        add_dynamic_field("left", "left_header", fields_row)
-                        add_dynamic_field("middle", "middle_header", fields_row)
-                        add_dynamic_field("right", "right_header", fields_row)
-                        
-                        # ✅ إضافة الصف الممتلئ بالحقول إلى حاوية العمود الرئيسية
-                        if fields_row.controls:
-                            dynamic_fields_container.controls.append(
-                                ft.Container(content=fields_row, padding=ft.padding.only(bottom=5))
-                            )
-            else:
-                pass_row_editor_ref[0] = None
+            # Build form fields for the current platform
+            build_form_fields()
             
             status_ref.current.value = state.t("msg.loaded_template_type", type=class_type)
             status_ref.current.color = "green"
@@ -441,8 +561,20 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
     # Register this function for remote refresh
     state.register_refresh_callback("pass_generator_templates", load_templates)
     
+    def _open_folder(folder_path):
+        """Open a folder in the OS file manager."""
+        try:
+            if platform_mod.system() == "Windows":
+                os.startfile(folder_path)
+            elif platform_mod.system() == "Darwin":
+                subprocess.call(["open", folder_path])
+            else:
+                subprocess.call(["xdg-open", folder_path])
+        except Exception as exc:
+            print(f"Warning: Could not open folder: {exc}")
+
     def generate_pass(e):
-        """Generate the pass"""
+        """Generate the pass for the selected platform."""
         # Validate inputs
         if not template_dropdown_ref.current.value:
             status_ref.current.value = state.t("msg.pls_select_template")
@@ -462,7 +594,10 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             page.update()
             return
         
-        status_ref.current.value = state.t("msg.creating_in_google")
+        # Determine target platform
+        platform = _get_selected_platform()  # "google" or "apple"
+        
+        status_ref.current.value = "⏳ Generating pass..."
         status_ref.current.color = "blue"
         page.update()
         
@@ -478,33 +613,10 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             if custom_color:
                 pass_data["hexBackgroundColor"] = custom_color
             
-            # Add text module rows if editor is present
-            # Add text module rows dynamically based on the generated TextFields
+            # Add text module rows dynamically (platform-aware)
+            class_type = current_class_data.get("class_type", "Generic")
             if class_type == "Generic":
-                text_modules_data = []
-                # Fetch rows from template again to know the structure
-                template_rows = current_class_data.get("text_module_rows", [])
-                
-                for row in template_rows:
-                    row_idx = row.get("row_index", 0)
-                    
-                    def append_module(col_name, header_key):
-                        header_text = row.get(header_key)
-                        field_id = f"row_{row_idx}_{col_name}"
-                        if header_text and field_id in dynamic_field_refs:
-                            field_val = dynamic_field_refs[field_id].current.value
-                            # Only add if user entered a value
-                            if field_val:
-                                text_modules_data.append({
-                                    "id": field_id,
-                                    "header": header_text,
-                                    "body": field_val
-                                })
-                                
-                    append_module("left", "left_header")
-                    append_module("middle", "middle_header")
-                    append_module("right", "right_header")
-                
+                text_modules_data = _collect_text_modules()
                 if text_modules_data:
                     pass_data["textModulesData"] = text_modules_data
 
@@ -541,129 +653,185 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                     "messageType": message_type,
                 }]
 
-            # Build the appropriate pass object for Google Wallet
-            if class_type == "EventTicket":
-                google_pass_object = wallet_client.build_event_ticket_object(
-                    object_id=object_id,
-                    class_id=class_id,
-                    holder_name=holder_name_ref.current.value,
-                    holder_email=holder_email_ref.current.value,
-                    pass_data=pass_data,
-                    custom_color=custom_color,
-                    message_type=message_type
-                )
-            elif class_type == "LoyaltyCard":
-                google_pass_object = wallet_client.build_loyalty_object(
-                    object_id=object_id,
-                    class_id=class_id,
-                    holder_name=holder_name_ref.current.value,
-                    holder_email=holder_email_ref.current.value,
-                    pass_data=pass_data,
-                    custom_color=custom_color,
-                    message_type=message_type
-                )
-            else:
-                google_pass_object = wallet_client.build_generic_object(
-                    object_id=object_id,
-                    class_id=class_id,
-                    holder_name=holder_name_ref.current.value,
-                    holder_email=holder_email_ref.current.value,
-                    pass_data=pass_data,
-                    custom_color=custom_color,
-                    # Generic messages are provided via `pass_data["messages"]`
-                    message_type=None
-                )
-            
-            # Create pass object in Google Wallet
-            status_ref.current.value = state.t("msg.creating_in_google")
-            status_ref.current.color = "blue"
-            page.update()
-            
-            wallet_result = wallet_client.create_pass_object(google_pass_object, class_type)
-            
-            # Generate JWT-signed save link
-            save_link = wallet_client.generate_save_link(object_id, class_type, class_id)
-            
-            # Try to create pass in local database (optional - for record keeping)
-            try:
-                status_ref.current.value = state.t("msg.saving_local")
+            # ==============================================================
+            # GOOGLE WALLET GENERATION
+            # ==============================================================
+            if platform == "google":
+                status_ref.current.value = state.t("msg.creating_in_google")
+                status_ref.current.color = "blue"
+                page.update()
+
+                # Build the appropriate pass object for Google Wallet
+                if class_type == "EventTicket":
+                    google_pass_object = wallet_client.build_event_ticket_object(
+                        object_id=object_id,
+                        class_id=class_id,
+                        holder_name=holder_name_ref.current.value,
+                        holder_email=holder_email_ref.current.value,
+                        pass_data=pass_data,
+                        custom_color=custom_color,
+                        message_type=message_type
+                    )
+                elif class_type == "LoyaltyCard":
+                    google_pass_object = wallet_client.build_loyalty_object(
+                        object_id=object_id,
+                        class_id=class_id,
+                        holder_name=holder_name_ref.current.value,
+                        holder_email=holder_email_ref.current.value,
+                        pass_data=pass_data,
+                        custom_color=custom_color,
+                        message_type=message_type
+                    )
+                else:
+                    google_pass_object = wallet_client.build_generic_object(
+                        object_id=object_id,
+                        class_id=class_id,
+                        holder_name=holder_name_ref.current.value,
+                        holder_email=holder_email_ref.current.value,
+                        pass_data=pass_data,
+                        custom_color=custom_color,
+                        message_type=None
+                    )
+                
+                # Create pass object in Google Wallet
+                wallet_result = wallet_client.create_pass_object(google_pass_object, class_type)
+                
+                # Generate JWT-signed save link
+                save_link = wallet_client.generate_save_link(object_id, class_type, class_id)
+                
+                # Try to create pass in local database (optional)
+                db_saved = False
+                try:
+                    status_ref.current.value = state.t("msg.saving_local")
+                    status_ref.current.color = "blue"
+                    page.update()
+                    
+                    db_class_id = class_id.split('.')[-1] if '.' in class_id else class_id
+                    db_result = api_client.create_pass(
+                        object_id=object_id,
+                        class_id=db_class_id,
+                        holder_name=holder_name_ref.current.value,
+                        holder_email=holder_email_ref.current.value,
+                        status="Active",
+                        pass_data=pass_data
+                    )
+                    db_saved = True
+                    if state:
+                        state.refresh_ui("manage_passes_list")
+                        state.refresh_ui("send_notification_list")
+                except Exception as db_error:
+                    print(f"Warning: Could not save to local database: {db_error}")
+                
+                # Generate QR code
+                status_ref.current.value = "⏳ Generating QR code..."
                 status_ref.current.color = "blue"
                 page.update()
                 
-                # Strip issuer prefix from class_id for local database
-                db_class_id = class_id.split('.')[-1] if '.' in class_id else class_id
+                qr_filename = f"pass_qr_{int(time.time())}"
+                qr_image_path = generate_qr_code(save_link, qr_filename)
                 
-                db_result = api_client.create_pass(
+                # Show Google result
+                result_container_ref.current.content = ft.Column([
+                    ft.Text(state.t("status.pass_generated_google"), color="green", size=16, weight=ft.FontWeight.BOLD),
+                    ft.Container(height=5),
+                    ft.Text(
+                        f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
+                        size=10,
+                        color="green" if db_saved else "orange"
+                    ),
+                    ft.Container(height=15),
+                    ft.Text(state.t("msg.pass_qr_scan"), size=14, weight=ft.FontWeight.BOLD),
+                    ft.Container(height=5),
+                    ft.Container(
+                        content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
+                        alignment=ft.alignment.center,
+                        bgcolor="white",
+                        border_radius=10,
+                        padding=10
+                    ),
+                    ft.Text(state.t("msg.pass_qr_hint"), size=10, color="grey", text_align=ft.TextAlign.CENTER),
+                    ft.Container(height=15),
+                    ft.Text(state.t("label.or_use_link"), size=14, weight=ft.FontWeight.BOLD),
+                    ft.Row([
+                        ft.TextField(value=save_link, read_only=True, expand=True, text_size=10),
+                        ft.IconButton(icon="content_copy", tooltip=state.t("tooltip.copy_link"), on_click=lambda e: page.set_clipboard(save_link))
+                    ]),
+                    ft.Container(height=5),
+                    ft.ElevatedButton(
+                        state.t("btn.open_google_wallet"),
+                        icon="open_in_new",
+                        on_click=lambda e: page.launch_url(save_link),
+                        style=ft.ButtonStyle(bgcolor="blue", color="white")
+                    ),
+                    ft.Container(height=10),
+                    ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
+                ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                
+                status_ref.current.value = state.t("status.pass_generated_google")
+                status_ref.current.color = "green"
+
+            # ==============================================================
+            # APPLE WALLET GENERATION
+            # ==============================================================
+            elif platform == "apple":
+                status_ref.current.value = "⏳ Generating Apple Wallet pass..."
+                status_ref.current.color = "blue"
+                page.update()
+
+                from services.apple_wallet_service import AppleWalletService
+                apple_service = AppleWalletService()
+
+                apple_pass_path = apple_service.create_pass(
+                    class_data=current_class_data,
+                    pass_data=pass_data,
                     object_id=object_id,
-                    class_id=db_class_id,
-                    holder_name=holder_name_ref.current.value,
-                    holder_email=holder_email_ref.current.value,
-                    status="Active",
-                    pass_data=pass_data
                 )
-                db_saved = True
-                # Refresh Manage Passes and Send Notification views instantly
-                if state:
-                    state.refresh_ui("manage_passes_list")
-                    state.refresh_ui("send_notification_list")
-            except Exception as db_error:
-                # Local database save failed, but pass was still created in Google Wallet
-                print(f"Warning: Could not save to local database: {db_error}")
+
+                apple_folder = os.path.dirname(apple_pass_path)
+                
+                # Generate a secure random token for APNs
+                import secrets
+                auth_token = secrets.token_hex(16)
+                
+                # Call the API client to save the pass to the database
                 db_saved = False
-            
-            # Generate QR code for the save link
-            status_ref.current.value = "⏳ Generating QR code..."
-            status_ref.current.color = "blue"
-            page.update()
-            
-            import time
-            qr_filename = f"pass_qr_{int(time.time())}"
-            qr_image_path = generate_qr_code(save_link, qr_filename)
-            
-            # Show success result with QR code
-            result_container_ref.current.content = ft.Column([
-                ft.Text(state.t("status.pass_generated_google"), color="green", size=16, weight=ft.FontWeight.BOLD),
-                ft.Container(height=5),
-                ft.Text(
-                    f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
-                    size=10,
-                    color="green" if db_saved else "orange"
-                ),
-                ft.Container(height=15),
+                try:
+                    db_class_id = class_id.split('.')[-1] if '.' in class_id else class_id
+                    api_client.create_apple_pass(
+                        serial_number=object_id, # Using object_id as Apple serial_number
+                        class_id=db_class_id,
+                        pass_type_id=configs.APPLE_PASS_TYPE_ID,
+                        holder_name=holder_name_ref.current.value,
+                        holder_email=holder_email_ref.current.value,
+                        auth_token=auth_token,
+                        pass_data=pass_data
+                    )
+                    db_saved = True
+                    if state:
+                        state.refresh_ui("manage_passes_list")
+                except Exception as db_error:
+                    print(f"Warning: Could not save Apple pass to local database: {db_error}")
+
+                result_container_ref.current.content = ft.Column([
+                    ft.Text("✅ Apple Pass Generated Successfully!", color="green", size=16, weight=ft.FontWeight.BOLD),
+                    ft.Container(height=5),
+                    ft.Text(f"Saved at: {apple_pass_path}", size=10, color="grey", selectable=True),
+                    ft.Text(
+                        f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
+                        size=10,
+                        color="green" if db_saved else "orange"
+                    ),
+                    ft.Container(height=10),
+                    ft.ElevatedButton(
+                        text="Open Folder",
+                        icon=ft.Icons.FOLDER_OPEN,
+                        on_click=lambda e, folder=apple_folder: _open_folder(folder),
+                        style=ft.ButtonStyle(bgcolor="black", color="white")
+                    ),
+                ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
                 
-                # QR Code Section
-                ft.Text(state.t("msg.pass_qr_scan"), size=14, weight=ft.FontWeight.BOLD),
-                ft.Container(height=5),
-                ft.Container(
-                    content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
-                    alignment=ft.alignment.center,
-                    bgcolor="white",
-                    border_radius=10,
-                    padding=10
-                ),
-                ft.Text(state.t("msg.pass_qr_hint"), size=10, color="grey", text_align=ft.TextAlign.CENTER),
-                
-                ft.Container(height=15),
-                
-                # Link Section
-                ft.Text(state.t("label.or_use_link"), size=14, weight=ft.FontWeight.BOLD),
-                ft.Row([
-                    ft.TextField(value=save_link, read_only=True, expand=True, text_size=10),
-                    ft.IconButton(icon="content_copy", tooltip=state.t("tooltip.copy_link"), on_click=lambda e: page.set_clipboard(save_link))
-                ]),
-                ft.Container(height=5),
-                ft.ElevatedButton(
-                    state.t("btn.open_google_wallet"),
-                    icon="open_in_new",
-                    on_click=lambda e: page.launch_url(save_link),
-                    style=ft.ButtonStyle(bgcolor="blue", color="white")
-                ),
-                ft.Container(height=10),
-                ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
-            ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-            
-            status_ref.current.value = state.t("status.pass_generated_google")
-            status_ref.current.color = "green"
+                status_ref.current.value = "✅ Apple Wallet pass generated!"
+                status_ref.current.color = "green"
             
         except Exception as ex:
             import traceback
@@ -682,7 +850,22 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             ft.Text(state.t("subtitle.pass_generator"), size=11, color="grey"),
             ft.Divider(),
 
-            ft.Container(height=10),
+            # ── Platform Selector (SegmentedButton) ──
+            ft.Container(
+                content=ft.SegmentedButton(
+                    ref=platform_ref,
+                    segments=[
+                        ft.Segment(value="google", label=ft.Text("Google Wallet", weight=ft.FontWeight.BOLD)),
+                        ft.Segment(value="apple", label=ft.Text("Apple Wallet", weight=ft.FontWeight.BOLD)),
+                    ],
+                    selected={"google"},
+                    on_change=update_ui_on_platform_change,
+                ),
+                alignment=ft.alignment.center,
+                padding=ft.padding.only(top=10, bottom=5),
+            ),
+
+            ft.Container(height=5),
 
             ft.Text(state.t("label.select_template"), size=16, weight=ft.FontWeight.BOLD),
             ft.Dropdown(

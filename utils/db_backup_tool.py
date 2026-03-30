@@ -15,7 +15,7 @@ from database.models import (
     PassesTable, EventTicketFields, GenericFields,
     PassTextModules, PassMessages,
     NotificationsTable,
-    AppleClassesTable, ApplePassesTable,
+    ApplePassesTable,
     AppleNotificationsTable, AppleDeviceRegistrations,
 )
 
@@ -181,31 +181,11 @@ class DatabaseBackupTool:
             for n in session.query(NotificationsTable).all()
         ]
 
-        # --- Apple Classes ---
-        apple_classes = [
-            {
-                "pass_type_id": c.pass_type_id,
-                "team_id": c.team_id,
-                "pass_style": c.pass_style,
-                "organization_name": c.organization_name,
-                "description": c.description,
-                "background_color": c.background_color,
-                "foreground_color": c.foreground_color,
-                "label_color": c.label_color,
-                "icon_url": c.icon_url,
-                "logo_url": c.logo_url,
-                "strip_url": c.strip_url,
-                "template_json": c.template_json,
-                "created_at": _ts(c.created_at),
-                "updated_at": _ts(c.updated_at),
-            }
-            for c in session.query(AppleClassesTable).all()
-        ]
-
         # --- Apple Passes ---
         apple_passes = [
             {
                 "serial_number": p.serial_number,
+                "class_id": p.class_id,
                 "pass_type_id": p.pass_type_id,
                 "holder_name": p.holder_name,
                 "holder_email": p.holder_email,
@@ -250,7 +230,6 @@ class DatabaseBackupTool:
             "classes": classes,
             "passes": passes,
             "notifications": notifications,
-            "apple_classes": apple_classes,
             "apple_passes": apple_passes,
             "apple_notifications": apple_notifications,
             "apple_device_registrations": apple_device_registrations,
@@ -279,7 +258,7 @@ class DatabaseBackupTool:
             total = sum(
                 len(data.get(k, []))
                 for k in ("classes", "passes", "notifications",
-                          "apple_classes", "apple_passes",
+                          "apple_passes",
                           "apple_notifications", "apple_device_registrations")
             )
             return True, f"Restore complete – {total} records imported."
@@ -441,27 +420,11 @@ class DatabaseBackupTool:
                     message=n.get("message"),
                 ))
 
-        # ── 4. Apple Classes ──
-        for c in data.get("apple_classes", []):
-            session.merge(AppleClassesTable(
-                pass_type_id=c["pass_type_id"],
-                team_id=c.get("team_id", ""),
-                pass_style=c.get("pass_style", "generic"),
-                organization_name=c.get("organization_name"),
-                description=c.get("description"),
-                background_color=c.get("background_color"),
-                foreground_color=c.get("foreground_color"),
-                label_color=c.get("label_color"),
-                icon_url=c.get("icon_url"),
-                logo_url=c.get("logo_url"),
-                strip_url=c.get("strip_url"),
-                template_json=c.get("template_json"),
-            ))
-
         # ── 5. Apple Passes ──
         for p in data.get("apple_passes", []):
             session.merge(ApplePassesTable(
                 serial_number=p["serial_number"],
+                class_id=p.get("class_id"),
                 pass_type_id=p["pass_type_id"],
                 holder_name=p.get("holder_name", ""),
                 holder_email=p.get("holder_email", ""),

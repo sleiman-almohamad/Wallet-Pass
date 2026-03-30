@@ -297,46 +297,13 @@ class NotificationsTable(Base):
 
 from sqlalchemy import JSON
 
-class AppleClassesTable(Base):
-    """Stores Apple Wallet Pass Types (Templates)."""
-    __tablename__ = "Apple_Classes_Table"
-
-    pass_type_id = Column(String(255), primary_key=True) # e.g., pass.com.example.event
-    team_id = Column(String(50), nullable=False)         # Apple Developer Team ID
-    pass_style = Column(String(50), nullable=False)      # eventTicket, storeCard, coupon, generic, boardingPass
-    organization_name = Column(String(255))
-    description = Column(String(255))
-    
-    # Visual Appearance
-    background_color = Column(String(50))
-    foreground_color = Column(String(50))
-    label_color = Column(String(50))
-    icon_url = Column(Text)
-    logo_url = Column(Text)
-    strip_url = Column(Text)
-    
-    # Optional shared format
-    template_json = Column(JSON, nullable=True)
-
-    created_at = Column(TIMESTAMP, server_default=func.now())
-    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
-
-    # Relationship to passes
-    passes = relationship(
-        "ApplePassesTable", back_populates="parent_class",
-        cascade="all, delete-orphan", passive_deletes=True,
-    )
-
-
 class ApplePassesTable(Base):
     """Stores individual Apple Wallet Passes."""
     __tablename__ = "Apple_Passes_Table"
 
     serial_number = Column(String(255), primary_key=True)
-    pass_type_id = Column(
-        String(255), ForeignKey("Apple_Classes_Table.pass_type_id", ondelete="CASCADE", onupdate="CASCADE"),
-        nullable=False,
-    )
+    class_id = Column(String(255), index=True)
+    pass_type_id = Column(String(255), nullable=False)
     
     holder_name = Column(String(255), nullable=False)
     holder_email = Column(String(255), nullable=False)
@@ -351,7 +318,29 @@ class ApplePassesTable(Base):
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    parent_class = relationship("AppleClassesTable", back_populates="passes")
+    visual_data = relationship("ApplePassDataTable", back_populates="pass_info", uselist=False, cascade="all, delete-orphan")
+
+
+class ApplePassDataTable(Base):
+    __tablename__ = "Apple_Pass_Data"
+
+    serial_number = Column(String(255), ForeignKey("Apple_Passes_Table.serial_number", ondelete="CASCADE"), primary_key=True)
+
+    background_color = Column(String(50))
+    logo_url = Column(String(512))
+    icon_url = Column(String(512))
+    strip_url = Column(String(512))
+
+    organization_name = Column(String(255))
+    logo_text = Column(String(255))
+
+    header_fields = Column(JSON, default=list)
+    primary_fields = Column(JSON, default=list)
+    secondary_fields = Column(JSON, default=list)
+    auxiliary_fields = Column(JSON, default=list)
+    back_fields = Column(JSON, default=list)
+
+    pass_info = relationship("ApplePassesTable", back_populates="visual_data")
 
 
 class AppleNotificationsTable(Base):

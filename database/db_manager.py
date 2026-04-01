@@ -729,37 +729,62 @@ class DatabaseManager:
     # Apple Wallet Operations
     # ========================================================================
 
-    def create_apple_pass(self, serial_number: str, class_id: str, pass_type_id: str, holder_name: str, holder_email: str, auth_token: str, pass_data: dict = None, store_card_data: dict = None) -> bool:
-        with self.get_session() as session:
-            p = ApplePassesTable(
-                serial_number=serial_number,
-                class_id=class_id,
-                pass_type_id=pass_type_id,
-                holder_name=holder_name,
-                holder_email=holder_email,
-                auth_token=auth_token,
-                pass_data=pass_data or {}
-            )
-            session.add(p)
-            
-            if store_card_data:
-                visuals = ApplePassDataTable(
+    def create_apple_pass(self, serial_number: str, class_id: str, pass_type_id: str, holder_name: str, holder_email: str, auth_token: str, status: str = "Active", pass_data: dict = None, store_card_data: dict = None) -> bool:
+        from sqlalchemy.exc import SQLAlchemyError
+        import traceback
+        
+        print(f"🍏 [DEBUG] Attempting to save Apple Pass to DB. Serial: {serial_number}")
+        print(f"🍏 [DEBUG] Store Card Data received: {store_card_data is not None}")
+
+        try:
+            with self.get_session() as session:
+                # 1. إنشاء البطاقة الأساسية
+                p = ApplePassesTable(
                     serial_number=serial_number,
-                    background_color=store_card_data.get("background_color"),
-                    logo_url=store_card_data.get("logo_url"),
-                    icon_url=store_card_data.get("icon_url"),
-                    strip_url=store_card_data.get("strip_url"),
-                    organization_name=store_card_data.get("organization_name"),
-                    logo_text=store_card_data.get("logo_text"),
-                    header_fields=store_card_data.get("header_fields", []),
-                    primary_fields=store_card_data.get("primary_fields", []),
-                    secondary_fields=store_card_data.get("secondary_fields", []),
-                    auxiliary_fields=store_card_data.get("auxiliary_fields", []),
-                    back_fields=store_card_data.get("back_fields", [])
+                    class_id=class_id,
+                    pass_type_id=pass_type_id,
+                    holder_name=holder_name,
+                    holder_email=holder_email,
+                    auth_token=auth_token,
+                    status=status,  # <--- قمنا بإضافة هذا السطر لحل المشكلة!
+                    pass_data=pass_data or {}
                 )
-                session.add(visuals)
+                session.add(p)
                 
-            return True
+                # 2. حجز السيريال في قاعدة البيانات قبل إكمال البيانات المرئية
+                session.flush() 
+
+                # 3. حفظ البيانات المرئية (StoreCard Layout)
+                if store_card_data:
+                    visuals = ApplePassDataTable(
+                        serial_number=serial_number,
+                        background_color=store_card_data.get("background_color"),
+                        logo_url=store_card_data.get("logo_url"),
+                        icon_url=store_card_data.get("icon_url"),
+                        strip_url=store_card_data.get("strip_url"),
+                        organization_name=store_card_data.get("organization_name"),
+                        logo_text=store_card_data.get("logo_text"),
+                        header_fields=store_card_data.get("header_fields", []),
+                        primary_fields=store_card_data.get("primary_fields", []),
+                        secondary_fields=store_card_data.get("secondary_fields", []),
+                        auxiliary_fields=store_card_data.get("auxiliary_fields", []),
+                        back_fields=store_card_data.get("back_fields", [])
+                    )
+                    session.add(visuals)
+                    print("🍏 [DEBUG] Visual data attached successfully.")
+                else:
+                    print("⚠️ [WARNING] No store_card_data was provided to the database!")
+
+                return True
+
+        except SQLAlchemyError as e:
+            print(f"❌ [DB_ERROR] SQLAlchemy failed to save Apple Pass: {e}")
+            traceback.print_exc()
+            return False
+        except Exception as e:
+            print(f"❌ [CRITICAL_ERROR] Unexpected error in create_apple_pass: {e}")
+            traceback.print_exc()
+            return False
 
     def _apple_pass_to_dict(self, p: ApplePassesTable) -> dict:
         result = {

@@ -224,6 +224,19 @@ class PassResponse(BaseModel):
     }
 
 
+class ApplePassCreate(BaseModel):
+    """Model for creating a new Apple Wallet pass"""
+    serial_number: str = Field(..., description="Unique serial number for the pass")
+    class_id: str = Field(..., description="Reference to the class")
+    pass_type_id: str = Field(..., description="Apple Pass Type ID")
+    holder_name: str = Field(..., description="Name of the pass holder")
+    holder_email: EmailStr = Field(..., description="Email of the pass holder")
+    status: PassStatus = Field(PassStatus.ACTIVE, description="Pass status")
+    auth_token: str = Field(..., description="Authentication token for the pass")
+    pass_data: Optional[Dict[str, Any]] = Field(None, description="Pass-specific data fields")
+    store_card_data: Optional[Dict[str, Any]] = Field(None, description="Visual data for the pass")
+
+
 # ========================================================================
 # Utility Models
 # ========================================================================

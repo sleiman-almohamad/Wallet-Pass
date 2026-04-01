@@ -115,7 +115,7 @@ class AppleWalletService:
             files["pass.json"] = pass_json_bytes
 
             # images
-            self._collect_images(class_data, build_dir, files)
+            self._collect_images(class_data, pass_data, build_dir, files)
 
             # 3. Build manifest.json
             manifest = {fname: _sha256_hex(data) for fname, data in files.items()}
@@ -144,18 +144,11 @@ class AppleWalletService:
 
     def _build_pass_json(self, class_data: dict, pass_data: dict, object_id: str) -> dict:
         """Construct the Apple-format pass.json dictionary."""
-        class_type = class_data.get("class_type", "Generic")
-
         # Organisation / description
-        org_name = class_data.get("issuer_name") or "My Business"
+        org_name = pass_data.get("apple_org_name") or pass_data.get("organizationName") or "My Business"
+        description = pass_data.get("apple_org_name") or pass_data.get("organizationName") or "My Business"
 
-        card_title_obj = class_data.get("cardTitle")
-        if isinstance(card_title_obj, dict):
-            description = card_title_obj.get("defaultValue", {}).get("value", org_name)
-        else:
-            description = card_title_obj or class_data.get("description") or org_name
-
-        logo_text = pass_data.get("card_title") or class_data.get("card_title") or org_name
+        logo_text = pass_data.get("apple_logo_text") or pass_data.get("logoText") or org_name
 
         # Colours
         bg = _hex_to_rgb(
@@ -166,34 +159,47 @@ class AppleWalletService:
         fg = _hex_to_rgb(class_data.get("hexForegroundColor", "#FFFFFF"))
         label_color = _hex_to_rgb(class_data.get("hexLabelColor", "#BBBBBB"))
 
-        # Map class_type → Apple style key
-        style_key = {
-            "LoyaltyCard": "storeCard",
-            "EventTicket": "eventTicket",
-            "Generic": "storeCard",
-        }.get(class_type, "storeCard")
-
-        # Build fields from textModulesData
+        # Build fields for StoreCard
         header_fields = []
         primary_fields = []
         secondary_fields = []
         auxiliary_fields = []
+        back_fields = []
 
-        text_modules = pass_data.get("textModulesData", [])
-        for idx, module in enumerate(text_modules):
-            raw_key = module.get("id", f"field_{idx}")
-            key = raw_key.replace(" ", "")
-            field = {
-                "key": key,
-                "label": module.get("header", ""),
-                "value": module.get("body", ""),
-            }
-            if idx == 0:
-                primary_fields.append(field)
-            elif 1 <= idx <= 3:
-                secondary_fields.append(field)
-            else:
-                auxiliary_fields.append(field)
+        if pass_data.get("apple_header_label") or pass_data.get("apple_header_value"):
+            header_fields.append({
+                "key": "header_1",
+                "label": pass_data.get("apple_header_label", ""),
+                "value": pass_data.get("apple_header_value", "")
+            })
+
+        if pass_data.get("apple_primary_label") or pass_data.get("apple_primary_value"):
+            primary_fields.append({
+                "key": "primary_1",
+                "label": pass_data.get("apple_primary_label", ""),
+                "value": pass_data.get("apple_primary_value", "")
+            })
+
+        if pass_data.get("apple_sec_label") or pass_data.get("apple_sec_value"):
+            secondary_fields.append({
+                "key": "secondary_1",
+                "label": pass_data.get("apple_sec_label", ""),
+                "value": pass_data.get("apple_sec_value", "")
+            })
+
+        if pass_data.get("apple_aux_label") or pass_data.get("apple_aux_value"):
+            auxiliary_fields.append({
+                "key": "auxiliary_1",
+                "label": pass_data.get("apple_aux_label", ""),
+                "value": pass_data.get("apple_aux_value", "")
+            })
+
+        if pass_data.get("apple_back_label") or pass_data.get("apple_back_value"):
+            back_fields.append({
+                "key": "back_1",
+                "label": pass_data.get("apple_back_label", ""),
+                "value": pass_data.get("apple_back_value", "")
+            })
 
         # Barcode
         barcode = {
@@ -215,11 +221,12 @@ class AppleWalletService:
             "labelColor": label_color,
             "barcode": barcode,
             "barcodes": [barcode],
-            style_key: {
+            "storeCard": {
                 "headerFields": header_fields,
                 "primaryFields": primary_fields,
                 "secondaryFields": secondary_fields,
                 "auxiliaryFields": auxiliary_fields,
+                "backFields": back_fields,
             },
         }
 
@@ -230,14 +237,10 @@ class AppleWalletService:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _collect_images(class_data: dict, build_dir: str, files: dict):
+    def _collect_images(class_data: dict, pass_data: dict, build_dir: str, files: dict):
         """Download remote images and add their bytes to *files*."""
         # Logo / icon
-        logo_url = (
-            class_data.get("logo", {}).get("sourceUri", {}).get("uri")
-            if isinstance(class_data.get("logo"), dict)
-            else class_data.get("logo_url")
-        )
+        logo_url = pass_data.get("apple_logo_url") or class_data.get("logo_url")
         if logo_url:
             try:
                 dl = _download_image(logo_url, os.path.join(build_dir, "logo_src.png"))
@@ -250,14 +253,10 @@ class AppleWalletService:
                 print(f"Warning: Could not attach logo: {exc}")
 
         # Hero → strip
-        hero_url = (
-            class_data.get("heroImage", {}).get("sourceUri", {}).get("uri")
-            if isinstance(class_data.get("heroImage"), dict)
-            else class_data.get("hero_image_url")
-        )
-        if hero_url:
+        strip_url = pass_data.get("apple_strip_url") or class_data.get("hero_image_url")
+        if strip_url:
             try:
-                dl = _download_image(hero_url, os.path.join(build_dir, "strip_src.png"))
+                dl = _download_image(strip_url, os.path.join(build_dir, "strip_src.png"))
                 img_bytes = open(dl, "rb").read()
                 files["strip.png"] = img_bytes
                 files["strip@2x.png"] = img_bytes

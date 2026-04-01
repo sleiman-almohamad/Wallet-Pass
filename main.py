@@ -3,6 +3,10 @@ WalletPasses — Entry Point
 Thin bootstrap that initialises AppState and mounts the root view.
 """
 
+import os
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.api_core")
+os.environ["GDK_BACKEND"] = "x11"
 import flet as ft
 from services.google_wallet_service import WalletClient
 from services.api_client import APIClient
@@ -12,12 +16,16 @@ from views.root_view import build_root_view
 
 def main(page: ft.Page):
     # ── Page configuration ──
-    page.title = "Android - IOS Wallet Verifier & Preview"
-    page.window_width = 1000
-    page.window_height = 800
-    page.padding = 20
+    page.title = "Wallet Pass Management Suite"
+    page.window.width = 1440
+    page.window.height = 920
+    page.padding = 0
+    page.spacing = 0
+    page.bgcolor = "#f5f5f7"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.assets_dir = "assets"
+    page.fonts = {"Inter": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"}
+    page.theme = ft.Theme(font_family="Inter")
 
     # ── Initialise services ──
     wallet_client = None

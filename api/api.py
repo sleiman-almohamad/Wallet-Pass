@@ -18,7 +18,7 @@ import configs
 from database.db_manager import DatabaseManager
 from api.models import (
     ClassCreate, ClassUpdate, ClassResponse,
-    PassCreate, PassUpdate, PassStatusUpdate, PassResponse,
+    PassCreate, PassUpdate, PassStatusUpdate, PassResponse, ApplePassCreate,
     HealthResponse, MessageResponse, NotificationRequest
 )
 
@@ -597,6 +597,47 @@ async def create_pass(pass_data: PassCreate):
     except Exception as e:
         if "Duplicate entry" in str(e):
             raise HTTPException(status_code=409, detail=f"Pass '{pass_data.object_id}' already exists")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/passes/apple/", response_model=MessageResponse, status_code=201, tags=["Passes"])
+async def create_apple_pass(pass_data: ApplePassCreate):
+    """Create a new Apple Wallet pass"""
+    try:
+        # Verify class exists
+        class_exists = db.get_class(pass_data.class_id)
+        if not class_exists:
+            raise HTTPException(status_code=404, detail=f"Class '{pass_data.class_id}' not found")
+        
+        success = db.create_apple_pass(
+            serial_number=pass_data.serial_number,
+            class_id=pass_data.class_id,
+            pass_type_id=pass_data.pass_type_id,
+            holder_name=pass_data.holder_name,
+            holder_email=pass_data.holder_email,
+            auth_token=pass_data.auth_token,
+            status=pass_data.status.value,
+            pass_data=pass_data.pass_data,
+            store_card_data=pass_data.store_card_data
+        )
+        
+        if success:
+            return MessageResponse(
+                message=f"Apple Pass '{pass_data.serial_number}' created successfully",
+                success=True
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Failed to create Apple pass")
+            
+    except HTTPException:
+        raise
+    except DuplicateRecordError as e:
+        raise HTTPException(status_code=409, detail=f"Apple Pass '{pass_data.serial_number}' already exists")
+    except DatabaseError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        if "Duplicate entry" in str(e):
+            raise HTTPException(status_code=409, detail=f"Apple Pass '{pass_data.serial_number}' already exists")
         raise HTTPException(status_code=500, detail=str(e))
 
 

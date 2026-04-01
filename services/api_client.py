@@ -165,6 +165,40 @@ class APIClient:
         except Exception as e:
             raise APIClientError(f"Error updating class: {e}") from e
 
+    def create_apple_pass(self, serial_number: str, class_id: str, 
+                          pass_type_id: str, holder_name: str, 
+                          holder_email: str, auth_token: str,
+                          status: str = "Active",
+                          pass_data: Optional[Dict[str, Any]] = None,
+                          store_card_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Create a new Apple Wallet pass locally"""
+        data = {
+            "serial_number": serial_number,
+            "class_id": class_id,
+            "pass_type_id": pass_type_id,
+            "holder_name": holder_name,
+            "holder_email": holder_email,
+            "auth_token": auth_token,
+            "status": status,
+            "pass_data": pass_data or {},
+            "store_card_data": store_card_data or {}
+        }
+        try:
+            response = requests.post(f"{self.base_url}/passes/apple/", json=data)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(
+                f"Error creating Apple pass: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except APIClientError:
+            raise
+        except Exception as e:
+            raise APIClientError(f"Error creating Apple pass: {e}") from e
+
     
     def create_pass(self, object_id: str, class_id: str, 
                    holder_name: str, holder_email: str,

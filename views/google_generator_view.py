@@ -96,6 +96,10 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                     data["hero_image_url"] = val
                 elif field_name == "card_title":
                     data["issuer_name"] = val
+                elif field_name == "header_value":
+                    data["header"] = val
+                elif field_name == "subheader_value":
+                    data["subheader"] = val
 
         class_type = current_class_data.get("class_type", "Generic")
         if class_type == "Generic":

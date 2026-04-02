@@ -15,7 +15,7 @@ from database.models import (
     PassesTable, EventTicketFields, GenericFields,
     PassTextModules, PassMessages,
     NotificationsTable,
-    ApplePassesTable, ApplePassDataTable,
+    ApplePassesTemplate, ApplePassesData, ApplePassFields,
     AppleNotificationsTable, AppleDeviceRegistrations,
 )
 
@@ -179,42 +179,24 @@ class DatabaseBackupTool:
                 "created_at": _ts(n.created_at),
             }
             for n in session.query(NotificationsTable).all()
-        ]
+        ]        # --- Apple Passes ---
+        apple_passes = []
+        for p in session.query(ApplePassesData).all():
+            entry = self._apple_pass_to_dict(p)
+            apple_passes.append(entry)
 
-        # --- Apple Passes ---
-        apple_passes = [
+        # --- Apple Templates ---
+        apple_templates = [
             {
-                "serial_number": p.serial_number,
-                "class_id": p.class_id,
-                "pass_type_id": p.pass_type_id,
-                "holder_name": p.holder_name,
-                "holder_email": p.holder_email,
-                "status": p.status,
-                "auth_token": p.auth_token,
-                "pass_data": p.pass_data,
-                "created_at": _ts(p.created_at),
-                "updated_at": _ts(p.updated_at),
+                "template_id": t.template_id,
+                "template_name": t.template_name,
+                "pass_style": t.pass_style,
+                "pass_type_identifier": t.pass_type_identifier,
+                "team_identifier": t.team_identifier,
+                "created_at": _ts(t.created_at),
+                "updated_at": _ts(t.updated_at),
             }
-            for p in session.query(ApplePassesTable).all()
-        ]
-
-        # --- Apple Pass Data ---
-        apple_pass_data = [
-            {
-                "serial_number": p.serial_number,
-                "background_color": p.background_color,
-                "logo_url": p.logo_url,
-                "icon_url": p.icon_url,
-                "strip_url": p.strip_url,
-                "organization_name": p.organization_name,
-                "logo_text": p.logo_text,
-                "header_fields": p.header_fields,
-                "primary_fields": p.primary_fields,
-                "secondary_fields": p.secondary_fields,
-                "auxiliary_fields": p.auxiliary_fields,
-                "back_fields": p.back_fields,
-            }
-            for p in session.query(ApplePassDataTable).all()
+            for t in session.query(ApplePassesTemplate).all()
         ]
 
         # --- Apple Notifications ---
@@ -244,16 +226,46 @@ class DatabaseBackupTool:
         ]
 
         return {
-            "backup_version": 1,
+            "backup_version": 2, # Incremented for schema change
             "exported_at": datetime.now().isoformat(),
             "classes": classes,
             "passes": passes,
             "notifications": notifications,
+            "apple_templates": apple_templates,
             "apple_passes": apple_passes,
-            "apple_pass_data": apple_pass_data,
             "apple_notifications": apple_notifications,
             "apple_device_registrations": apple_device_registrations,
         }
+
+    def _apple_pass_to_dict(self, p: ApplePassesData) -> dict:
+        d = {
+            "pass_id": p.pass_id,
+            "template_id": p.template_id,
+            "holder_name": p.holder_name,
+            "holder_email": p.holder_email,
+            "status": p.status,
+            "auth_token": p.auth_token,
+            "background_color": p.background_color,
+            "foreground_color": p.foreground_color,
+            "label_color": p.label_color,
+            "organization_name": p.organization_name,
+            "logo_text": p.logo_text,
+            "logo_url": p.logo_url,
+            "icon_url": p.icon_url,
+            "strip_url": p.strip_url,
+            "created_at": _ts(p.created_at),
+            "updated_at": _ts(p.updated_at),
+            "fields": [
+                {
+                    "type": f.field_type,
+                    "key": f.field_key,
+                    "label": f.label,
+                    "value": f.value
+                }
+                for f in p.fields
+            ]
+        }
+        return d
 
     # ------------------------------------------------------------------ #
     #  IMPORT

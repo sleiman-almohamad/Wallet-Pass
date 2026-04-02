@@ -4,6 +4,7 @@ Provides CRUD operations for Classes_Table, Passes_Table, and Notifications_Tabl
 """
 
 import json
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
 
@@ -18,7 +19,7 @@ from database.models import (
     PassesTable, EventTicketFields, GenericFields,
     PassTextModules, PassMessages,
     NotificationsTable,
-    ApplePassesTable, ApplePassDataTable,
+    ApplePassesTemplate, ApplePassesData, ApplePassFields,
     AppleNotificationsTable, AppleDeviceRegistrations
 )
 
@@ -728,53 +729,49 @@ class DatabaseManager:
     # ========================================================================
     # Apple Wallet Operations
     # ========================================================================
+    # Apple Wallet Operations
+    # ========================================================================
 
-    def create_apple_pass(self, serial_number: str, class_id: str, pass_type_id: str, holder_name: str, holder_email: str, auth_token: str, status: str = "Active", pass_data: dict = None, store_card_data: dict = None) -> bool:
+    def create_apple_pass(self, serial_number: str, template_id: str, holder_name: str, holder_email: str, auth_token: str, status: str = "Active", visual_data: dict = None, fields_data: list = None) -> bool:
         from sqlalchemy.exc import SQLAlchemyError
         import traceback
         
         print(f"🍏 [DEBUG] Attempting to save Apple Pass to DB. Serial: {serial_number}")
-        print(f"🍏 [DEBUG] Store Card Data received: {store_card_data is not None}")
 
         try:
             with self.get_session() as session:
-                # 1. إنشاء البطاقة الأساسية
-                p = ApplePassesTable(
-                    serial_number=serial_number,
-                    class_id=class_id,
-                    pass_type_id=pass_type_id,
+                # 1. Core pass instance
+                p = ApplePassesData(
+                    pass_id=serial_number,
+                    template_id=template_id,
                     holder_name=holder_name,
                     holder_email=holder_email,
                     auth_token=auth_token,
-                    status=status,  # <--- قمنا بإضافة هذا السطر لحل المشكلة!
-                    pass_data=pass_data or {}
+                    status=status,
+                    background_color=visual_data.get("background_color") if visual_data else None,
+                    foreground_color=visual_data.get("foreground_color") if visual_data else None,
+                    label_color=visual_data.get("label_color") if visual_data else None,
+                    organization_name=visual_data.get("organization_name") if visual_data else None,
+                    logo_text=visual_data.get("logo_text") if visual_data else None,
+                    logo_url=visual_data.get("logo_url") if visual_data else None,
+                    icon_url=visual_data.get("icon_url") if visual_data else None,
+                    strip_url=visual_data.get("strip_url") if visual_data else None,
                 )
                 session.add(p)
-                
-                # 2. حجز السيريال في قاعدة البيانات قبل إكمال البيانات المرئية
                 session.flush() 
 
-                # 3. حفظ البيانات المرئية (StoreCard Layout)
-                if store_card_data:
-                    visuals = ApplePassDataTable(
-                        serial_number=serial_number,
-                        background_color=store_card_data.get("background_color"),
-                        logo_url=store_card_data.get("logo_url"),
-                        icon_url=store_card_data.get("icon_url"),
-                        strip_url=store_card_data.get("strip_url"),
-                        organization_name=store_card_data.get("organization_name"),
-                        logo_text=store_card_data.get("logo_text"),
-                        header_fields=store_card_data.get("header_fields", []),
-                        primary_fields=store_card_data.get("primary_fields", []),
-                        secondary_fields=store_card_data.get("secondary_fields", []),
-                        auxiliary_fields=store_card_data.get("auxiliary_fields", []),
-                        back_fields=store_card_data.get("back_fields", [])
-                    )
-                    session.add(visuals)
-                    print("🍏 [DEBUG] Visual data attached successfully.")
-                else:
-                    print("⚠️ [WARNING] No store_card_data was provided to the database!")
-
+                # 2. Dynamic fields (ApplePassFields)
+                if fields_data:
+                    for f in fields_data:
+                        field_obj = ApplePassFields(
+                            pass_id=serial_number,
+                            field_type=f.get("type"), # 'header', 'primary', etc.
+                            field_key=f.get("key"),
+                            label=f.get("label"),
+                            value=str(f.get("value", ""))
+                        )
+                        session.add(field_obj)
+                
                 return True
 
         except SQLAlchemyError as e:
@@ -786,98 +783,69 @@ class DatabaseManager:
             traceback.print_exc()
             return False
 
-    def _apple_pass_to_dict(self, p: ApplePassesTable) -> dict:
+    def _apple_pass_to_dict(self, p: ApplePassesData) -> dict:
         result = {
-            "serial_number": p.serial_number,
-            "class_id": getattr(p, 'class_id', None),
-            "pass_type_id": p.pass_type_id,
+            "serial_number": p.pass_id,
+            "template_id": p.template_id,
             "holder_name": p.holder_name,
             "holder_email": p.holder_email,
             "status": p.status,
             "auth_token": p.auth_token,
-            "pass_data": p.pass_data,
+            "background_color": p.background_color,
+            "foreground_color": p.foreground_color,
+            "label_color": p.label_color,
+            "organization_name": p.organization_name,
+            "logo_text": p.logo_text,
+            "logo_url": p.logo_url,
+            "icon_url": p.icon_url,
+            "strip_url": p.strip_url,
             "created_at": p.created_at,
             "updated_at": p.updated_at,
         }
         
-        visual_dict = {}
-        if getattr(p, 'visual_data', None):
-            visual_dict = {
-                "background_color": p.visual_data.background_color,
-                "logo_url": p.visual_data.logo_url,
-                "icon_url": p.visual_data.icon_url,
-                "strip_url": p.visual_data.strip_url,
-                "organization_name": p.visual_data.organization_name,
-                "logo_text": p.visual_data.logo_text,
-                "header_fields": p.visual_data.header_fields or [],
-                "primary_fields": p.visual_data.primary_fields or [],
-                "secondary_fields": p.visual_data.secondary_fields or [],
-                "auxiliary_fields": p.visual_data.auxiliary_fields or [],
-                "back_fields": p.visual_data.back_fields or []
-            }
+        # Add relational fields (anatomical fields)
+        if p.fields:
+            result["fields"] = [
+                {
+                    "type": f.field_type,
+                    "key": f.field_key,
+                    "label": f.label,
+                    "value": f.value
+                }
+                for f in p.fields
+            ]
+        else:
+            result["fields"] = []
             
-        result["visual_data"] = visual_dict
         return result
 
-    def get_apple_pass(self, serial_number: str) -> Optional[Dict[str, Any]]:
+    def get_apple_pass(self, serial_number: str) -> Optional[dict]:
         with self.get_session() as session:
-            p = session.get(ApplePassesTable, serial_number)
+            p = session.get(ApplePassesData, serial_number)
             if not p:
                 return None
             return self._apple_pass_to_dict(p)
 
-    def get_all_apple_passes(self) -> List[Dict[str, Any]]:
+    def get_all_apple_passes(self) -> List[dict]:
         with self.get_session() as session:
-            rows = session.query(ApplePassesTable).order_by(ApplePassesTable.created_at.desc()).all()
+            rows = session.query(ApplePassesData).order_by(ApplePassesData.created_at.desc()).all()
             return [self._apple_pass_to_dict(r) for r in rows]
 
     def update_apple_pass(self, serial_number: str, **kwargs) -> bool:
         with self.get_session() as session:
-            p = session.get(ApplePassesTable, serial_number)
+            p = session.get(ApplePassesData, serial_number)
             if not p:
                 return False
                 
-            store_card_data = kwargs.pop("store_card_data", None)
-            
             for k, v in kwargs.items():
                 if hasattr(p, k):
                     setattr(p, k, v)
-                    
-            if store_card_data:
-                if getattr(p, 'visual_data', None):
-                    p.visual_data.background_color = store_card_data.get("background_color")
-                    p.visual_data.logo_url = store_card_data.get("logo_url")
-                    p.visual_data.icon_url = store_card_data.get("icon_url")
-                    p.visual_data.strip_url = store_card_data.get("strip_url")
-                    p.visual_data.organization_name = store_card_data.get("organization_name")
-                    p.visual_data.logo_text = store_card_data.get("logo_text")
-                    p.visual_data.header_fields = store_card_data.get("header_fields", [])
-                    p.visual_data.primary_fields = store_card_data.get("primary_fields", [])
-                    p.visual_data.secondary_fields = store_card_data.get("secondary_fields", [])
-                    p.visual_data.auxiliary_fields = store_card_data.get("auxiliary_fields", [])
-                    p.visual_data.back_fields = store_card_data.get("back_fields", [])
-                else:
-                    visuals = ApplePassDataTable(
-                        serial_number=serial_number,
-                        background_color=store_card_data.get("background_color"),
-                        logo_url=store_card_data.get("logo_url"),
-                        icon_url=store_card_data.get("icon_url"),
-                        strip_url=store_card_data.get("strip_url"),
-                        organization_name=store_card_data.get("organization_name"),
-                        logo_text=store_card_data.get("logo_text"),
-                        header_fields=store_card_data.get("header_fields", []),
-                        primary_fields=store_card_data.get("primary_fields", []),
-                        secondary_fields=store_card_data.get("secondary_fields", []),
-                        auxiliary_fields=store_card_data.get("auxiliary_fields", []),
-                        back_fields=store_card_data.get("back_fields", [])
-                    )
-                    session.add(visuals)
                     
             return True
 
     def delete_apple_pass(self, serial_number: str) -> bool:
         with self.get_session() as session:
-            p = session.get(ApplePassesTable, serial_number)
+            p = session.get(ApplePassesData, serial_number)
             if not p:
                 return False
             session.delete(p)
@@ -926,22 +894,25 @@ class DatabaseManager:
             rows = session.query(AppleDeviceRegistrations.push_token).filter_by(serial_number=serial_number).all()
             return [r[0] for r in rows]
 
-    def get_serial_numbers_for_device(self, device_library_id: str, pass_type_id: str, passes_updated_since: str = None) -> List[str]:
-        """Returns list of serial numbers a device is registered for, optionally filtered by update time."""
+    def get_passes_by_device(self, device_library_id: str, pass_type_id: str) -> List[str]:
         with self.get_session() as session:
-            query = session.query(AppleDeviceRegistrations.serial_number).filter_by(
-                device_library_id=device_library_id,
-                pass_type_id=pass_type_id
+            rows = (
+                session.query(ApplePassesData.pass_id)
+                .join(AppleDeviceRegistrations, ApplePassesData.pass_id == AppleDeviceRegistrations.serial_number)
+                .filter(AppleDeviceRegistrations.device_library_id == device_library_id)
+                .filter(AppleDeviceRegistrations.pass_type_id == pass_type_id)
+                .all()
             )
-            
-            # If passes_updated_since is provided, we should join with passes table
-            if passes_updated_since:
-                query = query.join(
-                    ApplePassesTable, 
-                    AppleDeviceRegistrations.serial_number == ApplePassesTable.serial_number
-                ).filter(
-                    ApplePassesTable.updated_at >= passes_updated_since
-                )
-                
-            rows = query.all()
+            return [r[0] for r in rows]
+
+    def get_apple_passes_updated_since(self, pass_type_id: str, device_library_id: str, passes_updated_since: datetime) -> List[str]:
+        with self.get_session() as session:
+            rows = (
+                session.query(ApplePassesData.pass_id)
+                .join(AppleDeviceRegistrations, ApplePassesData.pass_id == AppleDeviceRegistrations.serial_number)
+                .filter(AppleDeviceRegistrations.device_library_id == device_library_id)
+                .filter(AppleDeviceRegistrations.pass_type_id == pass_type_id)
+                .filter(ApplePassesData.updated_at >= passes_updated_since)
+                .all()
+            )
             return [r[0] for r in rows]

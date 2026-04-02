@@ -292,55 +292,72 @@ class NotificationsTable(Base):
 
 
 # ============================================================================
-# Apple Wallet Specific Tables
+# Apple Wallet Specific Tables (Refactored)
 # ============================================================================
 
-from sqlalchemy import JSON
+class ApplePassesTemplate(Base):
+    """Stores the fixed visual blueprint and Apple Developer credentials for a pass style."""
+    __tablename__ = "Apple_Pass_Templates"
 
-class ApplePassesTable(Base):
-    """Stores individual Apple Wallet Passes."""
-    __tablename__ = "Apple_Passes_Table"
+    template_id = Column(String(255), primary_key=True)
+    template_name = Column(String(255), nullable=False)
+    pass_style = Column(String(50), nullable=False, default="storeCard")
+    pass_type_identifier = Column(String(255), nullable=False)
+    team_identifier = Column(String(255), nullable=False)
 
-    serial_number = Column(String(255), primary_key=True)
-    class_id = Column(String(255), index=True)
-    pass_type_id = Column(String(255), nullable=False)
-    
-    holder_name = Column(String(255), nullable=False)
-    holder_email = Column(String(255), nullable=False)
-    
-    status = Column(Enum("Active", "Expired", name="apple_pass_status"), nullable=False, default="Active")
-    auth_token = Column(String(255), nullable=False) # Token used by Apple devices
-    
-    # Store the varied fields as JSON
-    pass_data = Column(JSON, nullable=True)
-    
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    visual_data = relationship("ApplePassDataTable", back_populates="pass_info", uselist=False, cascade="all, delete-orphan")
+    passes = relationship("ApplePassesData", back_populates="template", cascade="all, delete-orphan", passive_deletes=True)
 
 
-class ApplePassDataTable(Base):
-    __tablename__ = "Apple_Pass_Data"
+class ApplePassesData(Base):
+    """Stores individual pass instances generated for users."""
+    __tablename__ = "Apple_Passes_Data"
 
-    serial_number = Column(String(255), ForeignKey("Apple_Passes_Table.serial_number", ondelete="CASCADE"), primary_key=True)
+    pass_id = Column(String(255), primary_key=True) # Also acts as the Apple 'serialNumber'
+    template_id = Column(String(255), ForeignKey("Apple_Pass_Templates.template_id", ondelete="CASCADE"), nullable=False, index=True)
 
+    holder_name = Column(String(255), nullable=False)
+    holder_email = Column(String(255), nullable=False)
+
+    status = Column(Enum("Active", "Expired", name="apple_pass_status"), nullable=False, default="Active")
+    auth_token = Column(String(255), nullable=False)
+
+    # Merged Visual Data (Overrides or inherits from template conceptually)
     background_color = Column(String(50))
+    foreground_color = Column(String(50))
+    label_color = Column(String(50))
+    organization_name = Column(String(255))
+    logo_text = Column(String(255))
+
     logo_url = Column(String(512))
     icon_url = Column(String(512))
     strip_url = Column(String(512))
 
-    organization_name = Column(String(255))
-    logo_text = Column(String(255))
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
-    header_fields = Column(JSON, default=list)
-    primary_fields = Column(JSON, default=list)
-    secondary_fields = Column(JSON, default=list)
-    auxiliary_fields = Column(JSON, default=list)
-    back_fields = Column(JSON, default=list)
+    # Relationships
+    template = relationship("ApplePassesTemplate", back_populates="passes")
+    fields = relationship("ApplePassFields", back_populates="pass_data", cascade="all, delete-orphan", passive_deletes=True)
 
-    pass_info = relationship("ApplePassesTable", back_populates="visual_data")
+
+class ApplePassFields(Base):
+    """Stores individual anatomical fields (header, primary, secondary, etc.) for a specific pass."""
+    __tablename__ = "Apple_Pass_Fields"
+
+    field_id = Column(Integer, primary_key=True, autoincrement=True)
+    pass_id = Column(String(255), ForeignKey("Apple_Passes_Data.pass_id", ondelete="CASCADE"), nullable=False, index=True)
+
+    field_type = Column(Enum("header", "primary", "secondary", "auxiliary", "back", name="apple_field_type"), nullable=False)
+    field_key = Column(String(100), nullable=False)
+    label = Column(String(255))
+    value = Column(Text, nullable=False)
+
+    # Relationships
+    pass_data = relationship("ApplePassesData", back_populates="fields")
 
 
 class AppleNotificationsTable(Base):

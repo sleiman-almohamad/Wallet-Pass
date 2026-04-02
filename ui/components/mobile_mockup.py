@@ -112,10 +112,10 @@ class MobileMockupPreview:
         top_subheader = d.get("subheader", d.get("subheader_text"))
         if top_header or top_subheader:
             header_col = []
-            if top_header:
-                header_col.append(ft.Text(top_header, size=13, color="white", weight=ft.FontWeight.W_500))
             if top_subheader:
-                header_col.append(ft.Text(top_subheader, size=20, color="white", weight=ft.FontWeight.W_400))
+                header_col.append(ft.Text(top_subheader, size=13, color="white", weight=ft.FontWeight.W_500))
+            if top_header:
+                header_col.append(ft.Text(top_header, size=20, color="white", weight=ft.FontWeight.W_400))
             module_rows.append(ft.Container(content=ft.Column(header_col, spacing=2), padding=ft.padding.only(bottom=16)))
 
         current_row = []

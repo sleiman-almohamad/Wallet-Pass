@@ -123,7 +123,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                 manage_passes_dropdown.options = [
                     ft.dropdown.Option(
                         key=str(p.get("object_id", "")),
-                        text=f"{str(p.get('object_id', '')).split('.')[-1]} ({p.get('holder_name', 'Unknown')})"
+                        text=p.get("holder_name", "Unknown")
                     )
                     for p in passes if p.get("object_id")
                 ]

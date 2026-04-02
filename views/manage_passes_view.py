@@ -12,7 +12,7 @@ from ui.components.color_picker import create_color_picker
 import configs
 
 
-def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
+def build_manage_passes_view(page: ft.Page, state, api_client, platform: str = "google") -> ft.Container:
     """
     Build the Manage Passes tab content.
 
@@ -33,13 +33,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
     apple_edit_refs = {} # For formatting Apple fields natively
 
     # ── UI Controls ──
-    platform_ref = ft.Ref[ft.SegmentedButton]()
     action_button_ref = ft.Ref[ft.ElevatedButton]()
-    
-    def _get_selected_platform() -> str:
-        if platform_ref.current and platform_ref.current.selected:
-            return list(platform_ref.current.selected)[0]
-        return "google"
 
     manage_passes_class_dropdown = ft.Dropdown(
         hint_text=state.t("label.select_template"),
@@ -106,7 +100,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
-        if _get_selected_platform() == "apple":
+        if platform == "apple":
             if action_button_ref.current:
                 action_button_ref.current.text = state.t("btn.open_apple_folder")
                 action_button_ref.current.icon = "folder_open"
@@ -195,7 +189,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
         _set_status("⏳ Fetching passes from local database...", "blue")
         page.update()
         try:
-            platform = _get_selected_platform()
+            platform = platform
             if platform == "google":
                 passes = api_client.get_passes_by_class(class_id) if api_client else []
             elif platform == "apple":
@@ -252,7 +246,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
 
         try:
             object_id = manage_passes_dropdown.value
-            platform = _get_selected_platform()
+            platform = platform
             
             if platform == "apple":
                 p_data = api_client.get_apple_pass(object_id) if hasattr(api_client, "get_apple_pass") else None
@@ -676,7 +670,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
         if not passes_object_id_field.value:
             _set_status(state.t("msg.no_template_loaded"), "red"); page.update(); return
 
-        platform = _get_selected_platform()
+        platform = platform
         
         if platform == "apple":
             _set_status("⏳ Updating and regenerating Apple pass...", "blue"); page.update()
@@ -843,7 +837,7 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             _set_status("❌ Please select a pass first", "red"); page.update()
             return
 
-        platform = _get_selected_platform()
+        platform = platform
         if platform == "apple":
             try:
                 import os, platform as platform_mod, subprocess
@@ -923,26 +917,13 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
 
     # Build UI Left Panel
     left_panel = ft.Container(
-        width=420,
+        expand=True,
         content=ft.Column([
-            ft.Text(state.t("header.manage_passes"), size=22, weight=ft.FontWeight.BOLD),
+            ft.Text(f"Manage {platform.capitalize()} Passes", size=22, weight=ft.FontWeight.BOLD),
             ft.Text(state.t("subtitle.manage_passes"), size=11, color="grey"),
             ft.Divider(),
 
-            ft.Container(
-                content=ft.SegmentedButton(
-                    ref=platform_ref,
-                    segments=[
-                        ft.Segment(value="google", label=ft.Text("Google Wallet", weight=ft.FontWeight.BOLD)),
-                        ft.Segment(value="apple", label=ft.Text("Apple Wallet", weight=ft.FontWeight.BOLD)),
-                    ],
-                    selected={"google"},
-                    on_change=lambda e: update_ui_on_platform_change(e),
-                ),
-                alignment=ft.alignment.center,
-                padding=ft.padding.only(top=10, bottom=5),
-            ),
-            ft.Container(height=5),
+
 
             ft.Text("1. " + state.t("label.select_template"), size=13, weight=ft.FontWeight.W_500, color="blue700"),
             manage_passes_class_dropdown,
@@ -966,7 +947,8 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
             ft.Container(height=10),
             ft.ElevatedButton(
                 ref=action_button_ref,
-                text="Generate Save Link", icon="qr_code",
+                text="Open Apple Folder" if platform == "apple" else "Generate Save Link",
+                icon="folder_open" if platform == "apple" else "qr_code",
                 on_click=generate_save_link_handler, width=380,
                 style=ft.ButtonStyle(bgcolor="green", color="white"),
             ),
@@ -976,48 +958,12 @@ def build_manage_passes_view(page: ft.Page, state, api_client) -> ft.Container:
         padding=15, bgcolor="white",
     )
 
-    # Splitter logic
-    def on_pan_update(e: ft.DragUpdateEvent):
-        new_width = left_panel.width + e.delta_x
-        # Constrain width between 300 and 800 pixels
-        left_panel.width = max(300, min(800, new_width))
-        left_panel.update()
 
-    splitter = ft.GestureDetector(
-        mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
-        drag_interval=10,
-        on_pan_update=on_pan_update,
-        content=ft.Container(width=5, bgcolor="transparent")
-    )
 
-    # ── 3-panel layout ──
+    # ── Single Panel Layout ──
     return ft.Container(
-        content=ft.Row([
-            # Left Panel
-            left_panel,
-            splitter,
-            # Middle Panel: JSON Data
-            ft.Container(
-                width=320,
-                content=ft.Column([
-                    ft.Text(state.t("label.json_data"), size=18, weight=ft.FontWeight.BOLD),
-                    ft.Text(state.t("subtitle.live_json"), size=10, color="grey"),
-                    ft.Container(height=10),
-                    passes_json_container,
-                ], scroll="auto"),
-                padding=15, bgcolor="grey50",
-            ),
-            # Right Panel: Visual Preview
-            ft.Container(
-                expand=True,
-                content=ft.Column([
-                    ft.Text(state.t("label.visual_preview"), size=18, weight=ft.FontWeight.BOLD),
-                    ft.Text(state.t("subtitle.pass_look"), size=10, color="grey"),
-                    ft.Container(height=20),
-                    passes_preview_container,
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                padding=15, bgcolor="grey100",
-            ),
-        ], expand=True, spacing=0),
+        content=left_panel,
         expand=True,
+        padding=15,
+        bgcolor="white"
     )

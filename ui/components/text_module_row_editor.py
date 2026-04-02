@@ -149,12 +149,18 @@ class TextModuleRowEditor(ft.Container):
             return ft.TextField(
                 label=label,
                 value=row_data.get(field_name, ""),
-                width=120,
+                width=160 if self.mode == "class" else 120,
                 text_size=12,
                 height=45,
                 content_padding=5,
                 on_change=lambda e: self.update_field(index, field_name, e.control.value)
             )
+
+        def build_col(prefix):
+            if self.mode == "class":
+                return ft.Column([make_field(prefix, "Header")], spacing=5)
+            else:
+                return ft.Column([make_field(prefix, "Header"), make_field(prefix, "Body")], spacing=5)
 
         return ft.Container(
             border=ft.border.all(1, "grey300"),
@@ -173,9 +179,9 @@ class TextModuleRowEditor(ft.Container):
                     )
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Row([
-                    ft.Column([make_field("left", "Header"), make_field("left", "Body")], spacing=5),
-                    ft.Column([make_field("middle", "Header"), make_field("middle", "Body")], spacing=5),
-                    ft.Column([make_field("right", "Header"), make_field("right", "Body")], spacing=5),
+                    build_col("left"),
+                    build_col("middle"),
+                    build_col("right"),
                 ], spacing=10)
             ])
         )

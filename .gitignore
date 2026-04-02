@@ -31,3 +31,4 @@ test_sync_improved.py
 plan.txt
 certs/
 debug_class_MensaParty.json
+test_view_flet.py

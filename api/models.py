@@ -110,6 +110,40 @@ class ClassResponse(BaseModel):
 
 
 # ========================================================================
+# Apple Template Models
+# ========================================================================
+
+class AppleTemplateCreate(BaseModel):
+    """Model for creating a new Apple Wallet template"""
+    template_id: str = Field(..., description="Unique identifier for the template")
+    template_name: str = Field(..., description="Human-readable name for the template")
+    pass_style: str = Field(..., description="Apple Pass style (e.g., 'storeCard', 'boardingPass')")
+    pass_type_identifier: str = Field(..., description="Apple Pass Type Identifier (e.g., 'pass.com.example')")
+    team_identifier: str = Field(..., description="Apple Team Identifier")
+
+class AppleTemplateUpdate(BaseModel):
+    """Model for updating an Apple Wallet template"""
+    template_name: Optional[str] = None
+    pass_style: Optional[str] = None
+    pass_type_identifier: Optional[str] = None
+    team_identifier: Optional[str] = None
+
+class AppleTemplateResponse(BaseModel):
+    """Model for Apple Template response"""
+    template_id: str
+    template_name: str
+    pass_style: str
+    pass_type_identifier: str
+    team_identifier: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+# ========================================================================
 # Sub-Models for Passes
 # ========================================================================
 

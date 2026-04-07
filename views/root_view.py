@@ -8,9 +8,11 @@ from ui.theme import BG_COLOR, PRIMARY, TEXT_PRIMARY, TEXT_MUTED, BORDER_COLOR, 
 from ui.components.sidebar import build_sidebar, PREVIEW_VIEWS
 from ui.components.mobile_mockup import MobileMockupPreview
 from ui.class_builder import create_template_builder
+from ui.apple_template_builder_view import create_apple_template_builder
 from views.google_generator_view import build_google_generator_view
 from views.apple_generator_view import build_apple_generator_view
 from views.manage_templates_view import build_manage_templates_view
+from views.apple_manage_templates_view import build_apple_manage_templates_view
 from views.google_manage_passes_view import build_google_manage_passes_view
 from views.apple_manage_passes_view import build_apple_manage_passes_view
 from views.send_notification_view import build_send_notification_view
@@ -52,6 +54,10 @@ def build_root_view(page: ft.Page, state) -> list:
             v = build_google_generator_view(page, state, api_client, wallet_client, preview)
         elif key == "g_manage_passes":
             v = build_google_manage_passes_view(page, state, api_client, preview)
+        elif key == "a_template_builder":
+            v = create_apple_template_builder(page, state, api_client=api_client)
+        elif key == "a_manage_templates":
+            v = build_apple_manage_templates_view(page, state, api_client)
         elif key == "a_pass_generator":
             v = build_apple_generator_view(page, state, api_client, preview)
         elif key == "a_manage_passes":

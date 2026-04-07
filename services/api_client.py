@@ -431,6 +431,7 @@ class APIClient:
         except Exception as e:
             raise APIClientError(f"Error sending pass notification: {e}") from e
 
+
     def send_class_notification(self, class_id: str, message: str) -> Dict[str, Any]:
         """Send a push notification to all holders of a template/class"""
         try:
@@ -449,4 +450,73 @@ class APIClient:
             ) from e
         except Exception as e:
             raise APIClientError(f"Error sending bulk notification: {e}") from e
+
+    # ========================================================================
+    # Apple Template Endpoints
+    # ========================================================================
+
+    def get_apple_templates(self) -> List[Dict[str, Any]]:
+        """Fetch all available Apple Wallet templates"""
+        try:
+            response = requests.get(f"{self.base_url}/templates/apple/")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching apple templates: {e}")
+            return []
+
+    def get_apple_template(self, template_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch a specific Apple template by ID"""
+        try:
+            response = requests.get(f"{self.base_url}/templates/apple/{template_id}")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching apple template '{template_id}': {e}")
+            return None
+
+    def create_apple_template(self, template_id: str, template_name: str, 
+                             pass_style: str, pass_type_identifier: str, 
+                             team_identifier: str) -> Dict[str, Any]:
+        """Create a new Apple Wallet template"""
+        data = {
+            "template_id": template_id,
+            "template_name": template_name,
+            "pass_style": pass_style,
+            "pass_type_identifier": pass_type_identifier,
+            "team_identifier": team_identifier
+        }
+        try:
+            response = requests.post(f"{self.base_url}/templates/apple/", json=data)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(f"Error creating Apple template: {error_detail}") from e
+        except Exception as e:
+            raise APIClientError(f"Error creating Apple template: {e}") from e
+
+    def update_apple_template(self, template_id: str, **kwargs) -> Dict[str, Any]:
+        """Update an existing Apple Wallet template"""
+        try:
+            response = requests.put(f"{self.base_url}/templates/apple/{template_id}", json=kwargs)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(f"Error updating Apple template: {error_detail}") from e
+        except Exception as e:
+            raise APIClientError(f"Error updating Apple template: {e}") from e
+
+    def delete_apple_template(self, template_id: str) -> Dict[str, Any]:
+        """Delete an Apple Wallet template"""
+        try:
+            response = requests.delete(f"{self.base_url}/templates/apple/{template_id}")
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(f"Error deleting Apple template: {error_detail}") from e
+        except Exception as e:
+            raise APIClientError(f"Error deleting Apple template: {e}") from e
 

@@ -17,8 +17,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import configs
 from database.db_manager import DatabaseManager
 from api.models import (
-    ClassCreate, ClassUpdate, ClassResponse,
-    PassCreate, PassUpdate, PassStatusUpdate, PassResponse, ApplePassCreate,
+    PassCreate, PassUpdate, ClassCreate, ClassUpdate, ClassResponse,
+    PassStatusUpdate, PassResponse, ApplePassCreate,
+    AppleTemplateCreate, AppleTemplateUpdate, AppleTemplateResponse,
     HealthResponse, MessageResponse, NotificationRequest
 )
 
@@ -550,6 +551,93 @@ async def delete_class(class_id: str):
         else:
             raise HTTPException(status_code=400, detail="Failed to delete class")
             
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ========================================================================
+# Apple Template Endpoints
+# ========================================================================
+
+@app.post("/templates/apple/", response_model=MessageResponse, status_code=201, tags=["Apple Templates"])
+async def create_apple_template(template_data: AppleTemplateCreate):
+    """Create a new Apple Wallet template"""
+    try:
+        success = db.create_apple_template(
+            template_id=template_data.template_id,
+            template_name=template_data.template_name,
+            pass_style=template_data.pass_style,
+            pass_type_identifier=template_data.pass_type_identifier,
+            team_identifier=template_data.team_identifier
+        )
+        if success:
+            return MessageResponse(
+                message=f"Apple Template '{template_data.template_id}' created successfully",
+                success=True
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Failed to create Apple template")
+    except Exception as e:
+        if "Duplicate entry" in str(e):
+            raise HTTPException(status_code=409, detail=f"Template '{template_data.template_id}' already exists")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/templates/apple/", response_model=List[AppleTemplateResponse], tags=["Apple Templates"])
+async def get_all_apple_templates():
+    """Retrieve all Apple Wallet templates"""
+    try:
+        templates = db.get_all_apple_templates()
+        return templates
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/templates/apple/{template_id}", response_model=AppleTemplateResponse, tags=["Apple Templates"])
+async def get_apple_template(template_id: str):
+    """Retrieve a specific Apple Wallet template by ID"""
+    try:
+        template = db.get_apple_template(template_id)
+        if not template:
+            raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found")
+        return template
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/templates/apple/{template_id}", response_model=MessageResponse, tags=["Apple Templates"])
+async def update_apple_template(template_id: str, template_data: AppleTemplateUpdate):
+    """Update an Apple Wallet template"""
+    try:
+        update_data = template_data.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        
+        success = db.update_apple_template(template_id, **update_data)
+        if success:
+            return MessageResponse(
+                message=f"Apple Template '{template_id}' updated successfully",
+                success=True
+            )
+        else:
+            raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/templates/apple/{template_id}", response_model=MessageResponse, tags=["Apple Templates"])
+async def delete_apple_template(template_id: str):
+    """Delete an Apple Wallet template"""
+    try:
+        success = db.delete_apple_template(template_id)
+        if success:
+            return MessageResponse(
+                message=f"Apple Template '{template_id}' deleted successfully",
+                success=True
+            )
+        else:
+            raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found")
     except HTTPException:
         raise
     except Exception as e:

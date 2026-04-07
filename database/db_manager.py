@@ -916,3 +916,68 @@ class DatabaseManager:
                 .all()
             )
             return [r[0] for r in rows]
+
+    # ========================================================================
+    # Apple Template Operations
+    # ========================================================================
+
+    def create_apple_template(self, template_id: str, template_name: str, pass_style: str, pass_type_identifier: str, team_identifier: str) -> bool:
+        with self.get_session() as session:
+            template = ApplePassesTemplate(
+                template_id=template_id,
+                template_name=template_name,
+                pass_style=pass_style,
+                pass_type_identifier=pass_type_identifier,
+                team_identifier=team_identifier
+            )
+            session.add(template)
+            return True
+
+    def get_apple_template(self, template_id: str) -> Optional[Dict[str, Any]]:
+        with self.get_session() as session:
+            t = session.get(ApplePassesTemplate, template_id)
+            if not t:
+                return None
+            return {
+                "template_id": t.template_id,
+                "template_name": t.template_name,
+                "pass_style": t.pass_style,
+                "pass_type_identifier": t.pass_type_identifier,
+                "team_identifier": t.team_identifier,
+                "created_at": t.created_at,
+                "updated_at": t.updated_at
+            }
+
+    def get_all_apple_templates(self) -> List[Dict[str, Any]]:
+        with self.get_session() as session:
+            rows = session.query(ApplePassesTemplate).order_by(ApplePassesTemplate.created_at.desc()).all()
+            return [
+                {
+                    "template_id": t.template_id,
+                    "template_name": t.template_name,
+                    "pass_style": t.pass_style,
+                    "pass_type_identifier": t.pass_type_identifier,
+                    "team_identifier": t.team_identifier,
+                    "created_at": t.created_at,
+                    "updated_at": t.updated_at
+                }
+                for t in rows
+            ]
+
+    def update_apple_template(self, template_id: str, **kwargs) -> bool:
+        with self.get_session() as session:
+            t = session.get(ApplePassesTemplate, template_id)
+            if not t:
+                return False
+            for k, v in kwargs.items():
+                if hasattr(t, k):
+                    setattr(t, k, v)
+            return True
+
+    def delete_apple_template(self, template_id: str) -> bool:
+        with self.get_session() as session:
+            t = session.get(ApplePassesTemplate, template_id)
+            if not t:
+                return False
+            session.delete(t)
+            return True

@@ -28,8 +28,10 @@ NAV_STRUCTURE = [
         "category": "APPLE WALLET",
         "icon": ft.Icons.PHONE_IPHONE,
         "items": [
-            {"key": "a_pass_generator", "label": "Pass Generator", "icon": ft.Icons.DYNAMIC_FORM},
-            {"key": "a_manage_passes",  "label": "Manage Passes",  "icon": ft.Icons.CREDIT_CARD},
+            {"key": "a_template_builder", "label": "Template Builder", "icon": ft.Icons.EDIT_DOCUMENT},
+            {"key": "a_manage_templates", "label": "Manage Templates", "icon": ft.Icons.STYLE},
+            {"key": "a_pass_generator",    "label": "Pass Generator",    "icon": ft.Icons.DYNAMIC_FORM},
+            {"key": "a_manage_passes",     "label": "Manage Passes",     "icon": ft.Icons.CREDIT_CARD},
         ],
     },
     {

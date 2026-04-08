@@ -210,6 +210,9 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                 print(f"Warning: Could not save Apple pass to local database: {db_error}")
 
             # --- Success Dialog ---
+            def dialog_dismissed(e):
+                reset_form()
+
             def close_dlg(e):
                 page.close(success_dlg)
 
@@ -234,6 +237,7 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                         size=10, color="green" if db_saved else "orange",
                     ),
                 ], tight=True, width=350, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                on_dismiss=dialog_dismissed,
                 actions=[
                     ft.TextButton("Close", on_click=close_dlg),
                 ],
@@ -248,6 +252,29 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             status_ref.current.value = f"❌ Error: {str(ex)}"
             status_ref.current.color = "red"
             result_container_ref.current.content = None
+        page.update()
+
+    def reset_form(e=None):
+        """Reset the generation form to its initial state."""
+        if title_ref.current: title_ref.current.value = ""
+        if holder_name_ref.current: holder_name_ref.current.value = ""
+        if holder_email_ref.current: holder_email_ref.current.value = ""
+        if status_ref.current: status_ref.current.value = ""
+        
+        # Clear dynamic fields
+        for ref in dynamic_field_refs.values():
+            if ref.current:
+                ref.current.value = ""
+        
+        # Reset color state
+        custom_color_state["background_color"] = "#1a1a2e"
+        custom_color_state["foreground_color"] = "#ffffff"
+        custom_color_state["label_color"] = "#bbbbbb"
+        
+        # Hide the form controls until next template selection
+        form_controls_column.visible = False
+        template_dropdown.value = None
+        _sync_preview()
         page.update()
 
     # ── Apple-specific dynamic field refs ──

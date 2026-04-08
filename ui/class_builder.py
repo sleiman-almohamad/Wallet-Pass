@@ -168,6 +168,9 @@ def create_template_builder(page, state, api_client=None):
                     msg = state.t("msg.template_created", id=class_id)
                 
                 # --- Success Dialog ---
+                def dialog_dismissed(e):
+                    reset_form(None)
+
                 def close_dlg(e):
                     page.close(succ_dlg)
 
@@ -175,6 +178,7 @@ def create_template_builder(page, state, api_client=None):
                     modal=False,
                     title=ft.Text("✅ Success", weight=ft.FontWeight.BOLD),
                     content=ft.Text(msg, size=13),
+                    on_dismiss=dialog_dismissed,
                     actions=[
                         ft.TextButton("Close", on_click=close_dlg),
                     ],

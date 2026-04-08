@@ -198,6 +198,16 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
             status_text.color = "red"
         page.update()
 
+    def reset_form(e=None):
+        """Reset selections and hide the edit form."""
+        class_dropdown.value = None
+        pass_dropdown.value = None
+        pass_dropdown.visible = False
+        edit_form.visible = False
+        status_text.value = ""
+        preview.update_data({"bg_color": "#4285f4"}, "google")
+        page.update()
+
     def _build_pass_edit_form(pass_obj, class_info):
         class_type = class_info.get("class_type", "Generic")
         dynamic_field_refs.clear()
@@ -376,6 +386,9 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                 sync_to_google=True
             )
             # --- Success Dialog ---
+            def dialog_dismissed(e):
+                reset_form()
+
             def close_dlg(e):
                 page.close(upd_dlg)
 
@@ -383,6 +396,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                 modal=False,
                 title=ft.Text("✅ Pass Updated Successfully!", weight=ft.FontWeight.BOLD),
                 content=ft.Text(response.get("message", "The pass has been updated and synced to Google Wallet."), size=13),
+                on_dismiss=dialog_dismissed,
                 actions=[
                     ft.TextButton("Close", on_click=close_dlg),
                 ],
@@ -409,6 +423,9 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
             qr_image_path = generate_qr_code(save_link, qr_filename)
         
             # --- Success Dialog ---
+            def dialog_dismissed(e):
+                reset_form()
+
             def close_dlg(e):
                 page.close(qr_dlg)
 
@@ -428,6 +445,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                     ft.ElevatedButton("Open Google Wallet", icon=ft.Icons.OPEN_IN_NEW, on_click=lambda ev: page.launch_url(save_link),
                                       bgcolor="#4285F4", color="white", width=380, height=45)
                 ], spacing=12, tight=True, width=400, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                on_dismiss=dialog_dismissed,
                 actions=[
                     ft.TextButton("Close", on_click=close_dlg),
                 ],

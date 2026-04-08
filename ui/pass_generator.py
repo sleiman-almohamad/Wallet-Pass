@@ -819,6 +819,9 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 qr_image_path = generate_qr_code(save_link, qr_filename)
                 
                 # --- Success Dialog ---
+                def dialog_dismissed(e):
+                    reset_form()
+
                 def close_dlg(e):
                     page.close(qr_dlg)
 
@@ -854,6 +857,7 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                         ),
                         ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
                     ], spacing=5, tight=True, width=400, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    on_dismiss=dialog_dismissed,
                     actions=[
                         ft.TextButton("Close", on_click=close_dlg),
                     ],
@@ -936,6 +940,9 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                     print(f"Warning: Could not save Apple pass to local database: {db_error}")
 
                 # --- Success Dialog ---
+                def dialog_dismissed(e):
+                    reset_form()
+
                 def close_dlg(e):
                     page.close(succ_dlg)
 
@@ -958,6 +965,7 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                             width=380, height=45
                         ),
                     ], spacing=5, tight=True, width=400, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    on_dismiss=dialog_dismissed,
                     actions=[
                         ft.TextButton("Close", on_click=close_dlg),
                     ],
@@ -974,6 +982,21 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             status_ref.current.color = "red"
             result_container_ref.current.content = None
         
+        page.update()
+
+    def reset_form(e=None):
+        """Reset the generation form to its initial state."""
+        template_dropdown_ref.current.value = None
+        holder_name_ref.current.value = ""
+        holder_email_ref.current.value = ""
+        status_ref.current.value = ""
+        
+        # Clear dynamic fields
+        for ref in dynamic_field_refs.values():
+            if ref.current:
+                ref.current.value = ""
+        
+        update_preview()
         page.update()
     
     # Build UI

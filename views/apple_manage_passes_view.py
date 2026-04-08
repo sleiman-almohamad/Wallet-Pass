@@ -222,6 +222,15 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                 print(f"Error loading Apple pass data: {exc}")
         page.update()
 
+    def reset_form(e=None):
+        """Reset selections and hide the edit form."""
+        template_dropdown.value = None
+        pass_dropdown.value = None
+        pass_dropdown.visible = False
+        edit_form.visible = False
+        preview.update_data({"bg_color": "#1a1a2e"}, "apple")
+        page.update()
+
     template_dropdown.on_change = on_template_change
     pass_dropdown.on_change = on_pass_change
 
@@ -260,6 +269,9 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                 api_client.update_apple_pass(serial_number, **update_payload)
                 
                 # --- Success Dialog ---
+                def dialog_dismissed(e):
+                    reset_form()
+
                 def close_dlg(e):
                     page.close(upd_dlg)
 
@@ -267,6 +279,7 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                     modal=False,
                     title=ft.Text("✅ Pass Updated Successfully!", weight=ft.FontWeight.BOLD),
                     content=ft.Text(f"Pass {serial_number} has been updated successfully.", size=13),
+                    on_dismiss=dialog_dismissed,
                     actions=[
                         ft.TextButton("Close", on_click=close_dlg),
                     ],

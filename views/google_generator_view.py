@@ -360,6 +360,24 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                 status_ref.current.color = "red"
         page.update()
 
+    def reset_form(e=None):
+        """Reset the generation form to its initial state."""
+        template_dropdown_ref.current.value = None
+        holder_name_ref.current.value = ""
+        holder_email_ref.current.value = ""
+        message_type_ref.current.value = "TEXT_AND_NOTIFY"
+        status_ref.current.value = ""
+        
+        # Clear dynamic fields
+        for ref in dynamic_field_refs.values():
+            if ref.current:
+                ref.current.value = ""
+        
+        # Hide the form controls until next template selection
+        form_controls_column.visible = False
+        _sync_preview()
+        page.update()
+
     # ── Load templates ──
     def load_templates():
         try:
@@ -485,6 +503,9 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             qr_image_path = generate_qr_code(save_link, qr_filename)
 
             # --- Success Dialog ---
+            def dialog_dismissed(e):
+                reset_form()
+
             def close_dlg(e):
                 page.close(success_dlg)
 
@@ -509,6 +530,7 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                     ft.Container(height=5),
                     ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
                 ], tight=True, width=300, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                on_dismiss=dialog_dismissed,
                 actions=[
                     ft.TextButton("Close", on_click=close_dlg),
                 ],

@@ -178,6 +178,14 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             manage_status.update()
         page.update()
 
+    def reset_view(e=None):
+        """Reset the view by reloading classes and clearing selection."""
+        manage_templates_dropdown.value = None
+        manage_form_container.controls = [ft.Text("Select a Class ID above to load text modules.", color=TEXT_SECONDARY, size=11)]
+        _set_status("")
+        load_template_classes()
+        page.update()
+
     def update_and_sync_handler(e):
         """Save template changes to local database AND sync to Google Wallet."""
         nonlocal manage_current_json, manage_dynamic_form, manage_row_editor
@@ -202,6 +210,9 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 **extras
             )
             # --- Success Dialog ---
+            def dialog_dismissed(e):
+                reset_view()
+
             def close_dlg(e):
                 page.close(save_dlg)
 
@@ -209,6 +220,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 modal=False,
                 title=ft.Text("✅ Template Saved Successfully!", weight=ft.FontWeight.BOLD),
                 content=ft.Text("The template has been updated locally and synced to Google Wallet.", size=13),
+                on_dismiss=dialog_dismissed,
                 actions=[
                     ft.TextButton("Close", on_click=close_dlg),
                 ],

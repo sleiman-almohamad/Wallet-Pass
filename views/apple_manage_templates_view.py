@@ -48,6 +48,9 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             api_client.delete_apple_template(template_id)
             
             # --- Success Dialog ---
+            def dialog_dismissed(e):
+                load_templates()
+
             def close_dlg(e):
                 page.close(del_dlg)
 
@@ -55,13 +58,12 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                 modal=False,
                 title=ft.Text("✅ Template Deleted", weight=ft.FontWeight.BOLD),
                 content=ft.Text(f"Template {template_id} has been permanently deleted.", size=13),
+                on_dismiss=dialog_dismissed,
                 actions=[
                     ft.TextButton("Close", on_click=close_dlg),
                 ],
             )
             page.open(del_dlg)
-            
-            load_templates()
         except Exception as e:
             status_text.value = f"❌ Delete error: {str(e)}"
             status_text.color = "red"

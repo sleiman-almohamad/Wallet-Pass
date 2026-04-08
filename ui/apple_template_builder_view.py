@@ -50,6 +50,10 @@ def create_apple_template_builder(page: ft.Page, state, api_client=None):
                 db_session.commit()
             
             # --- Success Dialog ---
+            def dialog_dismissed(e):
+                on_reset_click(None)
+                page.update()
+
             def close_dlg(e):
                 page.close(succ_dlg)
 
@@ -57,6 +61,7 @@ def create_apple_template_builder(page: ft.Page, state, api_client=None):
                 modal=False,
                 title=ft.Text("✅ Template Created", weight=ft.FontWeight.BOLD),
                 content=ft.Text(f"Apple Pass template '{tname}' has been created successfully.", size=13),
+                on_dismiss=dialog_dismissed,
                 actions=[
                     ft.TextButton("Close", on_click=close_dlg),
                 ],

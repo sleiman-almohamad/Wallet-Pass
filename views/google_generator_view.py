@@ -69,12 +69,12 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
     status_ref            = ft.Ref[ft.Text]()
     result_container_ref  = ft.Ref[ft.Container]()
 
-    dynamic_fields_container = ft.Column(spacing=15)
     dynamic_field_refs: dict = {}
-
     current_class_data = None
+    
     custom_color_state = {"background_color": "#4285f4"}
-    color_picker_container = ft.Container(content=None)
+    
+    bg_color_picker_container = ft.Container(content=None)
     class_metadata: dict = {}
     json_editor = None
 
@@ -90,6 +90,7 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             if field_ref.current:
                 val = field_ref.current.value or ""
                 data[field_name] = val
+                # Map to mockup keys
                 if field_name == "logo_url":
                     data["logo_url"] = val
                 elif field_name == "hero_image_url":
@@ -134,54 +135,52 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
         if not current_class_data:
             return
         class_type = current_class_data.get("class_type", "Generic")
-        dynamic_fields_container.controls.clear()
         dynamic_field_refs.clear()
-
+        
         # Holder info section
-        dynamic_fields_container.controls.extend([
-            section_title(state.t("label.pass_holder_info") if state.t("label.pass_holder_info") != "label.pass_holder_info" else "Pass Holder Information", ft.Icons.PERSON),
+        holder_info_section = card(ft.Column([
+            section_title("Pass Holder Information", ft.Icons.PERSON),
             ft.Row([
                 ft.TextField(
                     ref=holder_name_ref,
-                    label=state.t("label.name_req") if state.t("label.name_req") != "label.name_req" else "Holder Name",
+                    label="Holder Name",
                     hint_text="e.g., John Doe", expand=1, border_radius=8, text_size=13,
                     on_change=lambda e: _sync_preview(),
                 ),
                 ft.TextField(
                     ref=holder_email_ref,
-                    label=state.t("label.email_req") if state.t("label.email_req") != "label.email_req" else "Holder Email",
+                    label="Holder Email",
                     hint_text="e.g., john@example.com", expand=1, border_radius=8, text_size=13,
                 ),
             ], spacing=12),
             ft.Dropdown(
                 ref=message_type_ref,
-                label=state.t("label.notification_type") if state.t("label.notification_type") != "label.notification_type" else "Notification Type",
+                label="Notification Type",
                 width=380, value="TEXT_AND_NOTIFY", border_radius=8, text_size=13,
                 options=[
-                    ft.dropdown.Option(key="TEXT", text=state.t("option.notification_none") if state.t("option.notification_none") != "option.notification_none" else "No Notification"),
-                    ft.dropdown.Option(key="TEXT_AND_NOTIFY", text=state.t("option.notification_push") if state.t("option.notification_push") != "option.notification_push" else "Send Push Notification"),
+                    ft.dropdown.Option(key="TEXT", text="No Notification"),
+                    ft.dropdown.Option(key="TEXT_AND_NOTIFY", text="Send Push Notification"),
                 ],
             ),
-        ])
+        ], spacing=8))
 
         # Color picker section
-        dynamic_fields_container.controls.extend([
-            section_title(state.t("label.customize_color") if state.t("label.customize_color") != "label.customize_color" else "Customize Color", ft.Icons.PALETTE),
-            color_picker_container,
-        ])
+        colors_section = card(ft.Column([
+            section_title("Customize Color", ft.Icons.PALETTE),
+            bg_color_picker_container,
+        ], spacing=8))
 
         # Pass details section
-        dynamic_fields_container.controls.append(
-            section_title(state.t("label.pass_details") if state.t("label.pass_details") != "label.pass_details" else "Pass Details", ft.Icons.DESCRIPTION),
-        )
+        details_controls = [
+            section_title("Pass Details", ft.Icons.DESCRIPTION),
+        ]
 
-        # Common fields
         fields_config = PASS_TYPE_FIELDS.get(class_type, [])
         current_section = None
         for field_config in fields_config:
             if "section" in field_config and field_config["section"] != current_section:
                 current_section = field_config["section"]
-                dynamic_fields_container.controls.append(
+                details_controls.append(
                     ft.Container(
                         content=ft.Text(current_section, size=14, weight=ft.FontWeight.W_600, color=PRIMARY),
                         padding=ft.padding.only(top=8, bottom=4),
@@ -211,36 +210,33 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                 if "T" in start_dt:
                     t_date, t_time = start_dt.split("T")
                     t_time = t_time[:5]
-                else:
-                    t_date = t_time = ""
-                if field_config["name"] == "event_date" and t_date:
-                    initial_value = t_date
-                elif field_config["name"] == "event_time" and t_time:
-                    initial_value = t_time
+                else: t_date = t_time = ""
+                if field_config["name"] == "event_date" and t_date: initial_value = t_date
+                elif field_config["name"] == "event_time" and t_time: initial_value = t_time
 
-            field = ft.TextField(
+            details_controls.append(ft.TextField(
                 ref=field_ref,
                 label=state.t(field_config["label"]) if state.t(field_config["label"]) != field_config["label"] else field_config["label"].replace("label.", "").replace("_", " ").title(),
                 hint_text=field_config["hint"],
                 value=initial_value, read_only=is_readonly,
                 border_radius=8, text_size=13, expand=True,
                 on_change=lambda e: _sync_preview(),
-            )
-            dynamic_fields_container.controls.append(field)
+            ))
 
-        # Generic text module rows
+        details_section = card(ft.Column(details_controls, spacing=8))
+
+        # Information Fields section
+        info_section = None
         if class_type == "Generic":
             template_rows = current_class_data.get("text_module_rows", [])
             if template_rows:
-                dynamic_fields_container.controls.append(
-                    section_title("Information Fields", ft.Icons.TABLE_ROWS),
-                )
+                info_controls = [section_title("Information Fields", ft.Icons.TABLE_ROWS)]
                 for row in template_rows:
                     row_idx = row.get("row_index", 0)
                     fields_row = ft.Row(spacing=8, alignment=ft.MainAxisAlignment.START)
 
-                    def _add_field(col_name, header_key, parent_row, _row_idx=row_idx):
-                        header_text = row.get(header_key)
+                    def _add_field(col_name, header_key, parent_row, _row=row, _row_idx=row_idx):
+                        header_text = _row.get(header_key)
                         if header_text:
                             fid = f"row_{_row_idx}_{col_name}"
                             fref = ft.Ref[ft.TextField]()
@@ -259,9 +255,31 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                     _add_field("right",  "right_header",  fields_row)
 
                     if fields_row.controls:
-                        dynamic_fields_container.controls.append(
-                            ft.Container(content=fields_row, padding=ft.padding.only(bottom=5))
-                        )
+                        info_controls.append(ft.Container(content=fields_row, padding=ft.padding.only(bottom=5)))
+                
+                info_section = card(ft.Column(info_controls, spacing=8))
+
+        # Assemble final column
+        final_controls = [holder_info_section, colors_section, details_section]
+        if info_section:
+            final_controls.append(info_section)
+        
+        # Add generate button and status at the end
+        final_controls.extend([
+            ft.Container(height=8),
+            ft.ElevatedButton(
+                state.t("btn.generate_pass"), icon=ft.Icons.ROCKET_LAUNCH,
+                on_click=generate_pass,
+                bgcolor=PRIMARY, color="white", height=48, width=240,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+            ),
+            ft.Text(ref=status_ref, value="", size=12),
+            ft.Container(ref=result_container_ref, content=None),
+        ])
+
+        form_controls_column.controls = final_controls
+        form_controls_column.visible = True
+        page.update()
 
     # ── Template selection ──
     def on_template_selected(e):
@@ -276,8 +294,9 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             else:
                 class_data = api_client.get_class(class_id) if api_client else None
                 if not class_data:
-                    status_ref.current.value = state.t("msg.template_not_found", id=class_id)
-                    status_ref.current.color = "red"
+                    if status_ref.current:
+                        status_ref.current.value = state.t("msg.template_not_found", id=class_id)
+                        status_ref.current.color = "red"
                     page.update()
                     return
                 class_metadata[class_id] = class_data
@@ -318,29 +337,29 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             custom_color_state["background_color"] = base_color
 
             class SimpleColorState:
-                def __init__(self, initial_color, on_change_callback):
-                    self.color = initial_color
+                def __init__(self, initial_state, on_change_callback):
+                    self.state = initial_state
                     self.on_change = on_change_callback
                 def get(self, key, default=None):
-                    return self.color if key == "background_color" else default
+                    return self.state.get(key, default)
                 def update(self, key, value):
-                    if key == "background_color":
-                        self.color = value
-                        custom_color_state["background_color"] = value
-                        if self.on_change:
-                            self.on_change()
+                    self.state[key] = value
+                    if self.on_change:
+                        self.on_change()
 
-            color_state = SimpleColorState(base_color, _on_color)
-            color_picker_container.content = create_color_picker(page, color_state, _on_color)
+            color_state_obj = SimpleColorState(custom_color_state, _on_color)
+            bg_color_picker_container.content = create_color_picker(page, color_state_obj, _on_color, "background_color", "Background Color")
 
             build_form_fields()
-            status_ref.current.value = state.t("msg.loaded_template_type", type=class_type)
-            status_ref.current.color = "green"
+            if status_ref.current:
+                status_ref.current.value = state.t("msg.loaded_template_type", type=class_type)
+                status_ref.current.color = "green"
             _sync_preview()
         except Exception as ex:
             import traceback; traceback.print_exc()
-            status_ref.current.value = f"❌ Error: {str(ex)}"
-            status_ref.current.color = "red"
+            if status_ref.current:
+                status_ref.current.value = f"❌ Error: {str(ex)}"
+                status_ref.current.color = "red"
         page.update()
 
     # ── Load templates ──
@@ -358,16 +377,18 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                     )
                     for cls in classes
                 ]
-                status_ref.current.value = state.t("msg.loaded_classes", count=len(classes))
-                status_ref.current.color = "green"
+                if status_ref.current:
+                    status_ref.current.value = ""
             else:
                 template_dropdown_ref.current.options = []
-                status_ref.current.value = state.t("msg.no_templates")
-                status_ref.current.color = "blue"
+                if status_ref.current:
+                    status_ref.current.value = state.t("msg.no_templates")
+                    status_ref.current.color = "blue"
             page.update()
         except Exception as e:
-            status_ref.current.value = f"❌ Error loading templates: {e}"
-            status_ref.current.color = "red"
+            if status_ref.current:
+                status_ref.current.value = f"❌ Error loading templates: {e}"
+                status_ref.current.color = "red"
 
     state.register_refresh_callback("pass_generator_templates", load_templates)
 
@@ -383,8 +404,10 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             status_ref.current.value = state.t("msg.pls_enter_email")
             status_ref.current.color = "red"; page.update(); return
 
-        status_ref.current.value = "⏳ Generating pass..."
-        status_ref.current.color = "blue"; page.update()
+        if status_ref.current:
+            status_ref.current.value = "⏳ Generating pass..."
+            status_ref.current.color = "blue"
+        page.update()
 
         try:
             pass_data = {}
@@ -419,8 +442,10 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                     "body": "Your pass has been created", "messageType": message_type,
                 }]
 
-            status_ref.current.value = state.t("msg.creating_in_google")
-            status_ref.current.color = "blue"; page.update()
+            if status_ref.current:
+                status_ref.current.value = state.t("msg.creating_in_google")
+                status_ref.current.color = "blue"
+            page.update()
 
             if class_type == "EventTicket":
                 google_pass_object = wallet_client.build_event_ticket_object(
@@ -491,16 +516,21 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                 ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
             ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
-            status_ref.current.value = state.t("status.pass_generated_google")
-            status_ref.current.color = "green"
+            if status_ref.current:
+                status_ref.current.value = state.t("status.pass_generated_google")
+                status_ref.current.color = "green"
         except Exception as ex:
             import traceback; traceback.print_exc()
-            status_ref.current.value = f"❌ Error: {str(ex)}"
-            status_ref.current.color = "red"
-            result_container_ref.current.content = None
+            if status_ref.current:
+                status_ref.current.value = f"❌ Error: {str(ex)}"
+                status_ref.current.color = "red"
+            if result_container_ref.current:
+                result_container_ref.current.content = None
         page.update()
 
     # ── Build form layout ──
+    form_controls_column = ft.Column(visible=False, spacing=12)
+
     form_panel = ft.Container(
         expand=True,
         padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
@@ -509,28 +539,15 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             ft.Text("Fill in the fields below to generate a Google Wallet pass.", color=TEXT_SECONDARY, size=13),
             ft.Container(height=8),
 
-            card(ft.Column([
-                section_title("Template Selection", ft.Icons.DASHBOARD),
-                ft.Dropdown(
-                    ref=template_dropdown_ref,
-                    label=state.t("label.class_id"),
-                    hint_text=state.t("label.select_class_err"),
-                    width=380, border_radius=8, text_size=13,
-                    on_change=on_template_selected,
-                ),
-            ], spacing=8)),
-
-            card(ft.Column([dynamic_fields_container], spacing=8)),
-
-            ft.Container(height=8),
-            ft.ElevatedButton(
-                state.t("btn.generate_pass"), icon=ft.Icons.ROCKET_LAUNCH,
-                on_click=generate_pass,
-                bgcolor=PRIMARY, color="white", height=48, width=240,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+            ft.Dropdown(
+                ref=template_dropdown_ref,
+                label=state.t("label.class_id"),
+                hint_text=state.t("label.select_class_err"),
+                width=380, border_radius=8, text_size=13,
+                on_change=on_template_selected,
             ),
-            ft.Text(ref=status_ref, value="", size=12),
-            ft.Container(ref=result_container_ref, content=None),
+            
+            form_controls_column,
         ], spacing=12, scroll=ft.ScrollMode.AUTO, expand=True),
     )
 

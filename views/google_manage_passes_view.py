@@ -1,600 +1,441 @@
-"""
-Google Manage Passes View
-Extracted from monolithic manage_passes_view.py — 3-panel layout for managing individual Google Wallet pass objects.
-"""
-
 import flet as ft
-from ui.components.json_editor import JSONEditor
-from ui.components.json_form_mapper import DynamicForm
-from ui.components.text_module_row_editor import TextModuleRowEditor
+from ui.theme import PRIMARY, TEXT_PRIMARY, TEXT_MUTED, CARD_BG, card, section_title
 from ui.components.color_picker import create_color_picker
 from ui.components.mobile_mockup import MobileMockupPreview
 import configs
+import time
 
 def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: MobileMockupPreview) -> ft.Container:
     """
     Build the Manage Passes tab content for Google Wallet.
     """
-    ps = state.pass_state  # shorthand
-
-    # ── Local mutable refs (UI-only) ──
-    passes_current_json = {}
-    passes_current_class_type = None
-    passes_dynamic_form = None
-    passes_row_editor_ref = [None]
-    passes_dynamic_text_modules = {}
+    # ── State ──
+    current_pass_json = {}
     current_class_info = None
+    dynamic_field_refs: dict = {}
+    dynamic_text_modules: dict = {}
+    result_container_ref = ft.Ref[ft.Container]()
 
-    # ── UI Controls ──
-    manage_passes_class_dropdown = ft.Dropdown(
-        hint_text=state.t("label.select_template"),
-        width=400,
+    # ── Refs for core fields ──
+    holder_name_ref = ft.Ref[ft.TextField]()
+    holder_email_ref = ft.Ref[ft.TextField]()
+    status_ref = ft.Ref[ft.Dropdown]()
+    message_type_ref = ft.Ref[ft.Dropdown]()
+
+    class SimpleColorState:
+        def __init__(self, initial_state, on_change_callback):
+            self.state = initial_state
+            self.on_change = on_change_callback
+        def get(self, key, default=None):
+            return self.state.get(key, default)
+        def update(self, key, value):
+            self.state[key] = value
+            if self.on_change:
+                self.on_change()
+
+    custom_color_state = {"background_color": "#4285f4"}
+    bg_color_picker_container = ft.Container(content=None)
+
+    def _sync_preview():
+        if not current_pass_json:
+            return
+        
+        # Prepare data for mockup
+        preview_data = current_pass_json.copy()
+        
+        # Sync from refs
+        if holder_name_ref.current:
+            preview_data["holder_name"] = holder_name_ref.current.value
+        if holder_email_ref.current:
+            preview_data["holder_email"] = holder_email_ref.current.value
+            
+        # Sync from dynamic refs
+        for fid, fref in dynamic_field_refs.items():
+            if fref.current:
+                val = fref.current.value
+                preview_data[fid] = val
+                # Mockup specific mapping
+                if fid == "logo_url":   preview_data["logo_url"] = val
+                if fid == "hero_image": preview_data["hero_image"] = val
+                if fid == "card_title": preview_data["card_title"] = val
+                if fid == "header":     preview_data["header"] = val
+                if fid == "subheader":  preview_data["subheader"] = val
+
+        # Sync text modules
+        if dynamic_text_modules:
+            preview_data["textModulesData"] = [
+                {"id": mid, "header": tf.current.label if tf.current.label else tf.current.hint_text, "body": tf.current.value}
+                for mid, tf in dynamic_text_modules.items()
+                if tf.current and tf.current.value
+            ]
+
+        preview_data["bg_color"] = custom_color_state.get("background_color", "#4285f4")
+        preview.update_data(preview_data, "google")
+
+    def _on_color_change():
+        _sync_preview()
+
+    color_state_obj = SimpleColorState(custom_color_state, _on_color_change)
+    bg_color_picker_container.content = create_color_picker(page, color_state_obj, _on_color_change, "background_color", "Background Color")
+
+    # ── UI Selection Controls ──
+    class_dropdown = ft.Dropdown(
+        label="Select Template (Class ID)",
+        hint_text="Choose a template...",
+        width=400, border_radius=8, text_size=13,
         options=[],
-        label=None
     )
 
-    manage_passes_dropdown = ft.Dropdown(
-        hint_text=state.t("label.select_pass"),
-        width=400,
+    pass_dropdown = ft.Dropdown(
+        label="Select Pass",
+        hint_text="Choose a pass...",
+        width=400, border_radius=8, text_size=13,
         options=[],
-        label=None
+        visible=False
     )
 
-    passes_status = ft.Text("", size=12)
+    status_text = ft.Text("", size=12)
+    edit_form = ft.Column(visible=False, spacing=15)
 
-    passes_object_id_field = ft.TextField(
-        hint_text=state.t("label.object_id"), width=400, read_only=True, bgcolor="grey100", label=None
-    )
-    passes_class_id_field = ft.TextField(
-        hint_text=state.t("label.class_id"), width=400, read_only=True, bgcolor="grey100", label=None
-    )
-
-    passes_form_container = ft.Column(
-        controls=[ft.Text(state.t("msg.load_template_hint"), color="grey", size=11)],
-        spacing=8,
-        scroll="auto",
-    )
-    passes_result_container = ft.Container(content=None)
-
-    # ── Helpers ──
-
-    def _set_status(msg, color="green"):
-        passes_status.value = msg
-        passes_status.color = color
-
-    # ── Business-logic handlers ──
-
-    def load_passes_classes():
-        """Load classes into the Manage Passes class dropdown."""
+    # ── Data Loading ──
+    def load_classes():
         try:
             classes = api_client.get_classes() if api_client else []
-            current_val = manage_passes_class_dropdown.value
-            
-            if classes and len(classes) > 0:
-                manage_passes_class_dropdown.options = [
+            if classes:
+                class_dropdown.options = [
                     ft.dropdown.Option(
-                        key=str(cls.get("class_id", "")), 
+                        key=str(cls.get("class_id", "")),
                         text=f"{str(cls.get('class_id', '')).split('.')[-1]} ({cls.get('class_type', 'Unknown')})"
                     )
                     for cls in classes if cls.get("class_id")
                 ]
-                
-                # Preserve selection if still valid
-                if current_val and any(str(c.get("class_id", "")) == current_val for c in classes):
-                    manage_passes_class_dropdown.value = current_val
-                else:
-                    manage_passes_class_dropdown.value = None
-                    manage_passes_class_dropdown.hint_text = state.t("label.select_template")
-                
-                _set_status(state.t("msg.loaded_classes", count=len(classes)))
+                class_dropdown.hint_text = "Choose a template..."
             else:
-                manage_passes_class_dropdown.options = []
-                manage_passes_class_dropdown.value = None
-                manage_passes_class_dropdown.hint_text = state.t("msg.no_templates")
-                _set_status(state.t("msg.no_templates"), "blue")
-            
-            # Reset pass dropdown if no class selected
-            if not manage_passes_class_dropdown.value:
-                manage_passes_dropdown.options = []
-                manage_passes_dropdown.value = None
-                manage_passes_dropdown.hint_text = "Select a class first"
-            
-            page.update()
+                class_dropdown.options = []
+                class_dropdown.hint_text = "No templates found."
         except Exception as e:
-            _set_status(f"❌ Error loading classes: {e}", "red")
-            page.update()
-
-    def refresh_manage_passes():
-        """Refresh logic for remote trigger."""
-        load_passes_classes()
-        if manage_passes_class_dropdown.value:
-            load_passes_for_class(manage_passes_class_dropdown.value)
-
-    state.register_refresh_callback("manage_passes_list", refresh_manage_passes)
+            status_text.value = f"❌ Error loading classes: {e}"
+            status_text.color = "red"
+        if class_dropdown.page:
+            class_dropdown.update()
 
     def load_passes_for_class(class_id: str):
-        """Load passes for a specific class from local database."""
-        _set_status("⏳ Fetching passes from local database...", "blue")
-        page.update()
         try:
+            status_text.value = "⏳ Loading passes..."
+            status_text.color = "blue"
+            if status_text.page: status_text.update()
+            
             passes = api_client.get_passes_by_class(class_id) if api_client else []
-
-            if passes and len(passes) > 0:
-                manage_passes_dropdown.options = [
+            if passes:
+                pass_dropdown.options = [
                     ft.dropdown.Option(
                         key=str(p.get("object_id", "")),
                         text=p.get("holder_name", "Unknown")
                     )
                     for p in passes if p.get("object_id")
                 ]
-                manage_passes_dropdown.value = None
-                manage_passes_dropdown.hint_text = state.t("label.select_pass")
-                _set_status(state.t("msg.found_passes", count=len(passes)))
+                pass_dropdown.hint_text = f"Found {len(passes)} passes. Select one."
+                status_text.value = ""
             else:
-                manage_passes_dropdown.options = []
-                manage_passes_dropdown.value = None
-                manage_passes_dropdown.hint_text = state.t("msg.no_passes_found")
-                _set_status(state.t("msg.no_passes_found"), "blue")
-            page.update()
+                pass_dropdown.options = []
+                pass_dropdown.hint_text = "No passes found for this template."
+                status_text.value = "No passes found locally."
         except Exception as e:
-            _set_status(f"❌ Error loading passes: {e}", "red")
-            page.update()
+            status_text.value = f"❌ Error loading passes: {e}"
+            status_text.color = "red"
+        
+        pass_dropdown.value = None
+        if pass_dropdown.page: pass_dropdown.update()
+        if status_text.page: status_text.update()
 
-    def on_passes_class_change(e):
-        selected_class = manage_passes_class_dropdown.value
-        if selected_class:
-            load_passes_for_class(selected_class)
+    # ── Event Handlers ──
+    def on_class_change(e):
+        if class_dropdown.value:
+            pass_dropdown.visible = True
+            edit_form.visible = False
+            load_passes_for_class(class_dropdown.value)
         else:
-            manage_passes_dropdown.options = []
-            manage_passes_dropdown.value = None
-            manage_passes_dropdown.hint_text = "Select a class first"
+            pass_dropdown.visible = False
+            edit_form.visible = False
+        page.update()
+
+    def on_pass_change(e):
+        nonlocal current_pass_json, current_class_info
+        if not pass_dropdown.value:
+            edit_form.visible = False
             page.update()
-
-    manage_passes_class_dropdown.on_change = on_passes_class_change
-
-    def show_pass(e):
-        nonlocal passes_current_json, passes_current_class_type, passes_dynamic_form, current_class_info
-
-        if not manage_passes_dropdown.value:
-            _set_status(state.t("msg.select_pass_err"), "red"); page.update(); return
-
-        _set_status(state.t("msg.saving_local"), "blue"); page.update()
+            return
 
         try:
-            object_id = manage_passes_dropdown.value
-
-            p_data = api_client.get_pass(object_id) if api_client else None
+            object_id = pass_dropdown.value
+            p_data = api_client.get_pass(object_id)
             if not p_data:
-                _set_status(state.t("msg.template_not_found", id=object_id), "red"); page.update(); return
+                return
 
-            passes_object_id_field.value = str(object_id).split('.')[-1]
-            passes_object_id_field.data = object_id 
-            class_id_raw = str(p_data.get("class_id",""))
-            passes_class_id_field.value = class_id_raw.split('.')[-1]
-            passes_class_id_field.data = class_id_raw
-
-            class_info = api_client.get_class(p_data["class_id"])
-            current_class_info = class_info
-            class_type = (
-                (class_info.get("class_type") if class_info else None)
-                or p_data.get("class_type", "Generic")
-            )
-            passes_current_class_type = class_type
-
-            class_id_local = p_data.get("class_id", "")
-            json_data = {
+            current_class_info = api_client.get_class(p_data["class_id"])
+            
+            current_pass_json = {
                 "id": object_id,
-                "classId": f"{configs.ISSUER_ID}.{class_id_local}",
+                "classId": p_data.get("class_id"),
                 "holder_name": p_data.get("holder_name"),
                 "holder_email": p_data.get("holder_email"),
-                "status": p_data.get("status"),
+                "status": p_data.get("status", "Active"),
             }
-
             if p_data.get("pass_data"):
-                json_data.update(p_data["pass_data"])
+                current_pass_json.update(p_data["pass_data"])
 
-            passes_current_json = json_data.copy()
+            # Setup Color
+            hex_bg = current_pass_json.get("hexBackgroundColor", current_pass_json.get("hex_background_color", "#4285f4"))
+            custom_color_state["background_color"] = hex_bg
 
-            # Editable fields
-            field_mappings = {
-                "holder_name": {"label": state.t("label.holder_name"), "type": "text", "section": "Pass details", "hide_label": True},
-                "holder_email": {"label": state.t("label.email_req"), "type": "text", "section": "Pass details", "hide_label": True},
-                "status": {"label": state.t("label.status"), "type": "select", "options": ["Active", "Completed", "Expired"], "section": "Status & notification", "hide_label": True},
-                "messageType": {"label": state.t("label.notification_type"), "type": "select", "options": ["TEXT", "TEXT_AND_NOTIFY"], "section": "Status & notification", "hide_label": True},
-            }
+            _build_pass_edit_form(p_data, current_class_info)
+            edit_form.visible = True
+            
+            # Initial sync
+            _sync_preview()
+        except Exception as ex:
+            import traceback; traceback.print_exc()
+            status_text.value = f"❌ Error loading pass: {ex}"
+            status_text.color = "red"
+        page.update()
 
-            if "messageType" not in json_data:
-                json_data["messageType"] = "TEXT_AND_NOTIFY"
-                passes_current_json["messageType"] = "TEXT_AND_NOTIFY"
+    def _build_pass_edit_form(pass_obj, class_info):
+        class_type = class_info.get("class_type", "Generic")
+        dynamic_field_refs.clear()
+        dynamic_text_modules.clear()
 
-            if p_data.get("textModulesData") and "textModulesData" not in passes_current_json:
-                passes_current_json["textModulesData"] = p_data.get("textModulesData", [])
-
-            template_event_date = None
-            template_event_time = None
-            if class_type == "EventTicket" and class_info and class_info.get("class_json"):
-                class_json = class_info["class_json"]
-                if "dateTime" in class_json:
-                    date_time_obj = class_json.get("dateTime", {})
-                    if "start" in date_time_obj:
-                        start_datetime = date_time_obj.get("start", "")
-                        if "T" in start_datetime:
-                            template_event_date, template_event_time = start_datetime.split("T")
-                            template_event_time = template_event_time.split(":")[0] + ":" + template_event_time.split(":")[1]
-
-            if class_type == "EventTicket":
-                if template_event_date:
-                    json_data["event_date"] = template_event_date
-                    passes_current_json["event_date"] = template_event_date
-                if template_event_time:
-                    json_data["event_time"] = template_event_time
-                    passes_current_json["event_time"] = template_event_time
-
-                field_mappings["event_date"] = {"label": state.t("label.event_date"), "type": "text", "read_only": True, "hide_label": True}
-                field_mappings["event_time"] = {"label": state.t("label.event_time"), "type": "text", "read_only": True, "hide_label": True}
-
-                pd = p_data.get("pass_data", {})
-                passes_current_json["ticket_holder_name"] = str(pd.get("ticketHolderName", ""))
-                field_mappings["ticket_holder_name"] = {"label": state.t("label.ticket_holder_name"), "type": "text", "hide_label": True}
-                passes_current_json["confirmation_code"] = str(pd.get("confirmationCode", ""))
-                field_mappings["confirmation_code"] = {"label": state.t("label.confirmation_code"), "type": "text", "hide_label": True}
-                passes_current_json["seat"] = str(pd.get("seatNumber", ""))
-                passes_current_json["section"] = str(pd.get("section", ""))
-                passes_current_json["gate"] = str(pd.get("gate", ""))
-                field_mappings["seat"] = {"label": state.t("label.seat"), "type": "text", "hide_label": True}
-                field_mappings["section"] = {"label": state.t("label.section"), "type": "text", "hide_label": True}
-                field_mappings["gate"] = {"label": state.t("label.gate"), "type": "text", "hide_label": True}
-
-            elif class_type == "Generic":
-                pd = p_data.get("pass_data", {})
-                passes_current_json["issuer_name"] = str(pd.get("card_title", pd.get("issuer_name", "")))
-                passes_current_json["header_value"] = str(pd.get("header_value", ""))
-                passes_current_json["subheader_value"] = str(pd.get("subheader_value", ""))
-                passes_current_json["logo_url"] = str(pd.get("logo_url", ""))
-                passes_current_json["hero_image_url"] = str(pd.get("hero_image_url", ""))
-                passes_current_json["hexBackgroundColor"] = str(pd.get("hexBackgroundColor", pd.get("hex_background_color", "")))
-                
-                existing_messages = pd.get("messages", []) if isinstance(pd.get("messages"), list) else []
-                if existing_messages:
-                    first = existing_messages[0] or {}
-                    inferred_message_type = first.get("messageType") or first.get("message_type")
-                    if inferred_message_type:
-                        passes_current_json["messageType"] = inferred_message_type
-                        json_data["messageType"] = inferred_message_type
-                
-                field_mappings["logo_url"] = {"label": state.t("label.logo_url"), "type": "url", "hint": "https://example.com/logo.png", "section": "Header", "hide_label": True}
-                field_mappings["hero_image_url"] = {"label": "Hero Image URL", "type": "url", "hint": "https://example.com/hero.png", "section": "Header", "hide_label": True}
-                field_mappings["issuer_name"] = {"label": state.t("label.issuer_name"), "type": "text", "hint": "e.g., Your Business Name", "section": "Header", "hide_label": True}
-                field_mappings["subheader_value"] = {"label": state.t("label.subheader"), "type": "text", "section": "Top Row", "hide_label": True}
-                field_mappings["header_value"] = {"label": state.t("label.header_value"), "type": "text", "section": "Top Row", "hide_label": True}
-
-
-            if p_data.get("pass_data"):
-                ignored_keys = {
-                    "holder_name", "holder_email", "status", "id", "classId",
-                    "event_date", "event_time", "messageType", "kind", "classReference",
-                    "version", "hasUsers", "hasLinkedDevice", "smartTapRedemptionValue",
-                    "state", "barcode", "messages", "locations", "reservationInfo",
-                    "seatInfo", "ticketHolderName", "textModulesData", "linksModuleData",
-                    "imageModulesData", "groupingInfo", "issuerId", "reviewStatus",
-                    "confirmationCode", "seatNumber", "section", "gate",
-                    "header_value", "subheader_value", "header", "subheader",
-                    "issuer_name", "logo_url", "hero_image_url", "hexBackgroundColor",
-                    "hex_background_color", "logo", "heroImage",
-                    "barcode_type", "barcode_value", "card_title",
-                }
-                for key in p_data["pass_data"].keys():
-                    if key not in ignored_keys:
-                        field_mappings[key] = {"label": key.replace("_", " ").title(), "type": "text", "hide_label": True}
-
-            def on_passes_form_change(updated_json):
-                nonlocal passes_current_json
-                passes_current_json = updated_json
-                
-                # Reactive sync to shared MobileMockupPreview
-                preview_data = updated_json.copy()
-                preview_data["bg_color"] = preview_data.get("hexBackgroundColor", "#4285f4")
-                
-                if "hero_image_url" in preview_data:
-                    preview_data["hero_image"] = preview_data["hero_image_url"]
-                if "issuer_name" in preview_data:
-                    preview_data["card_title"] = preview_data["issuer_name"]
-                if "header_value" in preview_data:
-                    preview_data["header"] = preview_data["header_value"]
-                if "subheader_value" in preview_data:
-                    preview_data["subheader"] = preview_data["subheader_value"]
-
-                # Ensure textModulesData is synced from current state
-                if passes_current_class_type == "Generic" and passes_dynamic_text_modules:
-                    preview_data["textModulesData"] = [
-                        {"id": mid, "header": tf.label if tf.label else tf.hint_text, "body": tf.value}
-                        for mid, tf in passes_dynamic_text_modules.items()
-                        if tf.value
+        # Holder Info Section
+        holder_controls = [
+            section_title("Pass Holder Info", ft.Icons.PERSON),
+            ft.Row([
+                ft.TextField(ref=holder_name_ref, label="Holder Name", value=pass_obj.get("holder_name", ""),
+                             expand=1, border_radius=8, text_size=13, on_change=lambda e: _sync_preview()),
+                ft.TextField(ref=holder_email_ref, label="Holder Email", value=pass_obj.get("holder_email", ""),
+                             expand=1, border_radius=8, text_size=13, on_change=lambda e: _sync_preview()),
+            ], spacing=12),
+            ft.Row([
+                ft.Dropdown(
+                    ref=status_ref, label="Status", value=pass_obj.get("status", "Active"),
+                    expand=1, border_radius=8, text_size=13,
+                    options=[
+                        ft.dropdown.Option("Active"),
+                        ft.dropdown.Option("Completed"),
+                        ft.dropdown.Option("Expired"),
                     ]
+                ),
+                ft.Dropdown(
+                    ref=message_type_ref, label="Notification Type", 
+                    value=pass_obj.get("pass_data", {}).get("messageType", "TEXT_AND_NOTIFY"),
+                    expand=1, border_radius=8, text_size=13,
+                    options=[
+                        ft.dropdown.Option("TEXT", "No Notification"),
+                        ft.dropdown.Option("TEXT_AND_NOTIFY", "Send Push Notification"),
+                    ]
+                ),
+            ], spacing=12),
+        ]
 
-                preview.update_data(preview_data, "google")
-                page.update()
+        # Colors Section
+        colors_controls = [
+            section_title("Customize Color", ft.Icons.PALETTE),
+            bg_color_picker_container,
+        ]
 
-            custom_section_controls = {}
-            if class_type == "Generic":
-                class_rows = class_info.get("text_module_rows", []) if class_info else []
-                pass_modules_list = passes_current_json.get("textModulesData", [])
-                if not isinstance(pass_modules_list, list): pass_modules_list = []
-                pass_modules = {m.get("id"): m for m in pass_modules_list}
-                
-                module_controls = []
-                passes_dynamic_text_modules.clear()
-                
-                def create_on_mod_change(mid, h):
-                    def on_mod_change(e):
-                        nonlocal passes_current_json
-                        if "textModulesData" not in passes_current_json:
-                            passes_current_json["textModulesData"] = []
-                        
-                        found = False
-                        for m in passes_current_json["textModulesData"]:
-                            if m.get("id") == mid:
-                                m["body"] = e.control.value
-                                found = True
-                                break
-                        if not found:
-                            passes_current_json["textModulesData"].append({"id": mid, "header": h, "body": e.control.value})
-                        
-                        on_passes_form_change(passes_current_json)
-                    return on_mod_change
+        # Pass Details Section
+        details_controls = [section_title("Pass Details", ft.Icons.DESCRIPTION)]
+        pd = pass_obj.get("pass_data", {})
 
+        def _add_detail_field(label, key, value, hint="", read_only=False):
+            fref = ft.Ref[ft.TextField]()
+            dynamic_field_refs[key] = fref
+            details_controls.append(ft.TextField(
+                ref=fref, label=label, value=str(value or ""), hint_text=hint,
+                read_only=read_only, border_radius=8, text_size=13,
+                on_change=lambda e: _sync_preview()
+            ))
+
+        if class_type == "Generic":
+             _add_detail_field("Issuer Name", "card_title", pd.get("card_title", pd.get("issuer_name", "")), "e.g., My Studio")
+             _add_detail_field("Header", "header", pd.get("header_value", ""), "e.g., Welcome")
+             _add_detail_field("Subheader", "subheader", pd.get("subheader_value", ""), "e.g., Special Guest")
+             _add_detail_field("Logo URL", "logo_url", pd.get("logo_url", ""), "https://...")
+             _add_detail_field("Hero Image URL", "hero_image", pd.get("hero_image_url",pd.get("heroImage", "")), "https://...")
+        elif class_type == "EventTicket":
+             _add_detail_field("Ticket Holder", "ticketHolderName", pd.get("ticketHolderName", ""), "Name on ticket")
+             _add_detail_field("Confirmation Code", "confirmationCode", pd.get("confirmationCode", ""), "ABC-123")
+             _add_detail_field("Seat", "seatNumber", pd.get("seatNumber", ""), "A-12")
+             _add_detail_field("Section", "section", pd.get("section", ""), "Lower Bowl")
+             _add_detail_field("Gate", "gate", pd.get("gate", ""), "Gate 5")
+
+        # Info Fields (Text Modules)
+        info_section = None
+        if class_type == "Generic":
+            class_rows = class_info.get("text_module_rows", [])
+            pass_modules_list = pd.get("textModulesData", [])
+            pass_modules = {m.get("id"): m for m in pass_modules_list} if isinstance(pass_modules_list, list) else {}
+
+            if class_rows:
+                info_controls = [section_title("Information Fields", ft.Icons.TABLE_ROWS)]
                 for i, row in enumerate(class_rows):
                     row_controls = []
                     for pos in ["left", "middle", "right"]:
-                        header = row.get(f"{pos}_header")
-                        if header:
-                            mod_id = f"row_{i}_{pos}"
-                            existing_body = pass_modules.get(mod_id, {}).get("body", "")
-                            
-                            tf = ft.TextField(
-                                hint_text=header, 
-                                value=existing_body, 
-                                on_change=create_on_mod_change(mod_id, header),
-                                expand=True,
-                                label=None
-                            )
-                            passes_dynamic_text_modules[mod_id] = tf
-                            row_controls.append(tf)
-                    
+                        hdr = row.get(f"{pos}_header")
+                        if hdr:
+                            mid = f"row_{i}_{pos}"
+                            existing_body = pass_modules.get(mid, {}).get("body", "")
+                            fref = ft.Ref[ft.TextField]()
+                            dynamic_text_modules[mid] = fref
+                            row_controls.append(ft.TextField(
+                                ref=fref, label=hdr, value=existing_body,
+                                expand=True, border_radius=8, text_size=13,
+                                on_change=lambda e: _sync_preview()
+                            ))
                     if row_controls:
-                        module_controls.append(ft.Row(row_controls, spacing=10))
+                        info_controls.append(ft.Row(row_controls, spacing=8))
+                info_section = card(ft.Column(info_controls, spacing=8))
 
-                class PassColorState:
-                    def __init__(self, initial_color, json_ref):
-                        self.color = initial_color
-                        self.json_ref = json_ref
-                    def get(self, key, default=None):
-                        if key == "background_color":
-                            return self.color
-                        return default
-                    def update(self, key, value):
-                        if key == "background_color":
-                            self.color = value
-                            self.json_ref["hexBackgroundColor"] = value
-                            self.json_ref["hex_background_color"] = value
+        # Bottom Buttons
+        action_controls = [
+            ft.Container(height=10),
+            ft.ElevatedButton(
+                "Update & Sync to Google", icon=ft.Icons.CLOUD_SYNC, height=48,
+                on_click=save_updates_handler, width=380,
+                style=ft.ButtonStyle(bgcolor=PRIMARY, color="white", 
+                                     shape=ft.RoundedRectangleBorder(radius=10)),
+            ),
+            ft.Container(height=5),
+            ft.ElevatedButton(
+                "Generate Save Link", icon=ft.Icons.QR_CODE, height=48,
+                on_click=generate_save_link_handler, width=380,
+                style=ft.ButtonStyle(bgcolor="green", color="white",
+                                     shape=ft.RoundedRectangleBorder(radius=10)),
+            ),
+            ft.Container(height=10),
+            status_text,
+            ft.Container(ref=result_container_ref, content=None),
+        ]
 
-                color_state_obj = PassColorState(
-                    passes_current_json.get("hexBackgroundColor", "#4285f4"),
-                    passes_current_json,
-                )
+        edit_form.controls = [
+            card(ft.Column(holder_controls, spacing=8)),
+            card(ft.Column(colors_controls, spacing=8)),
+            card(ft.Column(details_controls, spacing=8)),
+        ]
+        if info_section:
+            edit_form.controls.append(info_section)
+        
+        edit_form.controls.extend(action_controls)
 
-                def on_pass_color_change():
-                    on_passes_form_change(passes_current_json)
-
-                color_picker_widget = create_color_picker(page, color_state_obj, on_pass_color_change)
-                
-                custom_section_controls["Pass details"] = [
-                    ft.Container(
-                        content=ft.Text(state.t("label.section_modify_customized_card_color"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
-                        padding=ft.padding.only(top=10, bottom=5)
-                    ),
-                    color_picker_widget,
-                    ft.Divider(height=10)
-                ]
-                
-                custom_section_controls["Top Row"] = [
-                    ft.Container(
-                        content=ft.Text(state.t("label.section_information_rows"), size=16, weight=ft.FontWeight.W_500, color="blue700"),
-                        padding=ft.padding.only(top=10, bottom=5)
-                    ),
-                    *module_controls,
-                    ft.Divider(height=10)
-                ]
-                passes_row_editor_ref[0] = None
-            else:
-                passes_row_editor_ref[0] = None
-
-            passes_dynamic_form = DynamicForm(field_mappings, passes_current_json, state=state, on_change_callback=on_passes_form_change, custom_section_controls=custom_section_controls)
-
-            passes_form_container.controls = passes_dynamic_form.build()
-            
-            # Trigger initial preview sync
-            on_passes_form_change(passes_current_json)
-            
-            _set_status(state.t("msg.template_loaded"))
-        except Exception as ex:
-            import traceback; traceback.print_exc()
-            _set_status(f"❌ Error: {ex}", "red")
+    def save_updates_handler(e):
+        if not pass_dropdown.value: return
+        
+        status_text.value = "⏳ Updating..."
+        status_text.color = "blue"
         page.update()
 
-    def update_and_sync_pass_handler(e):
-        nonlocal passes_current_json, passes_dynamic_form
-
-        if not passes_object_id_field.value:
-            _set_status(state.t("msg.no_template_loaded"), "red"); page.update(); return
-
-        _set_status("⏳ Updating and syncing to Google...", "blue"); page.update()
-
         try:
-            object_id = passes_object_id_field.data
-            form_data = passes_current_json.copy() if passes_current_json else {}
+            object_id = pass_dropdown.value
+            
+            # Prepare pass_data
+            form_pd = {}
+            for fid, fref in dynamic_field_refs.items():
+                if fref.current:
+                    # Map back to Google field names
+                    if fid == "logo_url":   form_pd["logo_url"] = fref.current.value
+                    elif fid == "hero_image": form_pd["hero_image_url"] = fref.current.value
+                    elif fid == "card_title": form_pd["card_title"] = fref.current.value
+                    elif fid == "header":     form_pd["header_value"] = fref.current.value
+                    elif fid == "subheader":  form_pd["subheader_value"] = fref.current.value
+                    else: form_pd[fid] = fref.current.value
 
-            holder_name = form_data.pop("holder_name", None)
-            holder_email = form_data.pop("holder_email", None)
-            status = form_data.pop("status", None)
-
-            form_data.pop("id", None)
-            form_data.pop("classId", None)
-            form_data.pop("event_date", None)
-            form_data.pop("event_time", None)
-
-            if passes_current_class_type == "Generic" and passes_dynamic_text_modules:
-                form_data["textModulesData"] = [
-                    {"id": mid, "header": tf.label if tf.label else tf.hint_text, "body": tf.value}
-                    for mid, tf in passes_dynamic_text_modules.items()
+            form_pd["hexBackgroundColor"] = custom_color_state["background_color"]
+            form_pd["hex_background_color"] = custom_color_state["background_color"]
+            
+            if dynamic_text_modules:
+                form_pd["textModulesData"] = [
+                    {"id": mid, "header": tf.current.label if tf.current.label else tf.current.hint_text, "body": tf.current.value}
+                    for mid, tf in dynamic_text_modules.items()
+                    if tf.current and tf.current.value
                 ]
-            elif passes_row_editor_ref[0]:
-                form_data["textModulesData"] = passes_row_editor_ref[0].get_rows() if hasattr(passes_row_editor_ref[0], 'get_rows') else form_data.get("textModulesData", [])
 
-            if passes_current_class_type == "Generic":
-                msg_type = form_data.get("messageType") or "TEXT_AND_NOTIFY"
-                msg_id = f"managed_{object_id}_0"
-                form_data["messages"] = [{
-                    "id": msg_id,
-                    "header": "Update",
+            # Sync push message if Generic
+            status_val = status_ref.current.value
+            msg_type = message_type_ref.current.value
+            if current_class_info.get("class_type") == "Generic":
+                form_pd["messages"] = [{
+                    "id": f"upd_{int(time.time())}",
+                    "header": "Pass Update",
                     "body": "Your pass information has been updated.",
-                    "messageType": msg_type,
+                    "messageType": msg_type or "TEXT_AND_NOTIFY",
                 }]
-                
-                if "issuer_name" in form_data:
-                    form_data["card_title"] = form_data.pop("issuer_name")
-
-                if "hexBackgroundColor" in form_data:
-                    form_data["hex_background_color"] = form_data["hexBackgroundColor"]
-                        
-            pass_data = form_data
 
             response = api_client.update_pass(
                 object_id=object_id,
-                holder_name=holder_name,
-                holder_email=holder_email,
-                status=status,
-                pass_data=pass_data,
-                sync_to_google=True,
+                holder_name=holder_name_ref.current.value,
+                holder_email=holder_email_ref.current.value,
+                status=status_val,
+                pass_data=form_pd,
+                sync_to_google=True
             )
-            _set_status("✅ " + response.get("message", "Pass updated and synced successfully!"))
+            status_text.value = "✅ " + response.get("message", "Pass updated!")
+            status_text.color = "green"
         except Exception as ex:
-            import traceback; traceback.print_exc()
-            _set_status(f"❌ Error: {ex}", "red")
-        page.update()
-
-    def sync_passes_manual(e):
-        _set_status(state.t("msg.syncing_google"), "blue"); page.update()
-        try:
-            result = api_client.sync_passes()
-            load_passes_classes()
-            _set_status(f"✅ {result.get('message', 'Sync complete')}")
-        except Exception as ex:
-            _set_status(f"❌ Sync failed: {ex}", "red")
+            status_text.value = f"❌ Error: {ex}"
+            status_text.color = "red"
         page.update()
 
     def generate_save_link_handler(e):
-        object_id = passes_object_id_field.data
-        if not object_id:
-            _set_status("❌ Please select a pass first", "red"); page.update()
-            return
-
-        _set_status("⏳ Generating link...", "blue"); page.update()
-
+        if not pass_dropdown.value: return
+        status_text.value = "⏳ Generating link..."
+        status_text.color = "blue"
+        page.update()
         try:
             from core.qr_generator import generate_qr_code
-            import time
-            
+            object_id = pass_dropdown.value
             save_link = api_client.generate_save_link(object_id=object_id)
-            if not save_link:
-                raise Exception("Empty link retrieved from backend")
-                
             qr_filename = f"pass_qr_{int(time.time())}"
             qr_image_path = generate_qr_code(save_link, qr_filename)
         
-            passes_result_container.content = ft.Column([
-                ft.Text("✅ Link generated successfully", color="green", size=16, weight=ft.FontWeight.BOLD),
-                ft.Container(height=15),
-                
-                ft.Text(state.t("msg.pass_qr_scan") if hasattr(state, "t") else "Scan this QR code with your phone:", size=14, weight=ft.FontWeight.BOLD),
-                ft.Container(height=5),
+            result_container_ref.current.content = card(ft.Column([
+                ft.Text("Scan to Save", weight=ft.FontWeight.BOLD, size=16),
                 ft.Container(
-                    content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
-                    alignment=ft.alignment.center,
-                    bgcolor="white",
-                    border_radius=10,
-                    padding=10
+                    content=ft.Image(src=qr_image_path, width=220, height=220),
+                    bgcolor="white", padding=10, border_radius=10, alignment=ft.alignment.center
                 ),
-                ft.Text(state.t("msg.pass_qr_hint") if hasattr(state, "t") else "Scan with your camera app", size=10, color="grey", text_align=ft.TextAlign.CENTER),
-                
-                ft.Container(height=15),
-                
-                ft.Text(state.t("label.or_use_link") if hasattr(state, "t") else "Or use this link directly:", size=14, weight=ft.FontWeight.BOLD),
                 ft.Row([
-                    ft.TextField(value=save_link, read_only=True, expand=True, text_size=10),
-                    ft.IconButton(icon="content_copy", tooltip=state.t("tooltip.copy_link") if hasattr(state, "t") else "Copy Link", on_click=lambda ev: page.set_clipboard(save_link))
+                    ft.TextField(value=save_link, read_only=True, expand=True, text_size=10, border_radius=8),
+                    ft.IconButton(icon=ft.Icons.COPY, on_click=lambda ev: page.set_clipboard(save_link))
                 ]),
-                ft.Container(height=5),
-                ft.ElevatedButton(
-                    state.t("btn.open_google_wallet") if hasattr(state, "t") else "Open Google Wallet",
-                    icon="open_in_new",
-                    on_click=lambda ev: page.launch_url(save_link),
-                    style=ft.ButtonStyle(bgcolor="blue", color="white")
-                ),
-                ft.Container(height=10),
-                ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
-            ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-            
-            _set_status("✅ Link generated successfully", "green"); page.update()
-            
+                ft.ElevatedButton("Open Google Wallet", icon=ft.Icons.OPEN_IN_NEW, on_click=lambda ev: page.launch_url(save_link),
+                                  bgcolor="#4285F4", color="white", width=380, height=45)
+            ], spacing=12, horizontal_alignment=ft.CrossAxisAlignment.CENTER))
+            status_text.value = "✅ Link generated"
+            status_text.color = "green"
         except Exception as ex:
-            import traceback; traceback.print_exc()
-            _set_status(f"❌ Error generating link: {ex}", "red"); page.update()
+            status_text.value = f"❌ Error: {ex}"
+            status_text.color = "red"
+        page.update()
 
-    # ── Startup ──
-    load_passes_classes()
+    # ── Startup Logic ──
+    class_dropdown.on_change = on_class_change
+    pass_dropdown.on_change = on_pass_change
+    
+    load_classes()
+    state.register_refresh_callback("g_manage_passes_refresh", load_classes)
 
-    left_panel = ft.Container(
-        expand=True,
-        content=ft.Column([
-            ft.Text("Manage Google Passes", size=22, weight=ft.FontWeight.BOLD),
-            ft.Text(state.t("subtitle.manage_passes"), size=11, color="grey"),
-            ft.Divider(),
-
-            ft.Text("1. " + state.t("label.select_template"), size=13, weight=ft.FontWeight.W_500, color="blue700"),
-            manage_passes_class_dropdown,
-            ft.Container(height=5),
-            ft.Text("2. " + state.t("label.select_pass"), size=13, weight=ft.FontWeight.W_500, color="blue700"),
-            manage_passes_dropdown,
-            ft.ElevatedButton(
-                state.t("btn.load_pass"), icon="download", on_click=show_pass, width=380,
-                style=ft.ButtonStyle(bgcolor="green", color="white"),
-            ),
-            passes_status,
-            ft.Divider(height=20),
-            ft.Container(height=5),
-            passes_form_container,
-            ft.Divider(height=20),
-            ft.ElevatedButton(
-                "Update & Sync to Google", icon="cloud_sync",
-                on_click=update_and_sync_pass_handler, width=380,
-                style=ft.ButtonStyle(bgcolor="blue", color="white"),
-            ),
-            ft.Container(height=10),
-            ft.ElevatedButton(
-                text="Generate Save Link", icon="qr_code",
-                on_click=generate_save_link_handler, width=380,
-                style=ft.ButtonStyle(bgcolor="green", color="white"),
-            ),
-            ft.Container(height=10),
-            passes_result_container,
-        ], spacing=8, scroll="auto"),
-        padding=15, bgcolor="white",
-    )
-
+    # ── Final Layout ──
     return ft.Container(
-        content=left_panel,
         expand=True,
-        padding=15,
-        bgcolor="white"
+        padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
+        content=ft.Column([
+            ft.Text("Manage Google Passes", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+            ft.Text("Select a template then a pass to view and edit details.", color=TEXT_MUTED, size=13),
+            ft.Container(height=10),
+            
+            class_dropdown,
+            ft.Container(height=5),
+            pass_dropdown,
+            ft.Container(height=10),
+            
+            edit_form,
+        ], scroll=ft.ScrollMode.AUTO, expand=True)
     )

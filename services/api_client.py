@@ -520,3 +520,39 @@ class APIClient:
         except Exception as e:
             raise APIClientError(f"Error deleting Apple template: {e}") from e
 
+    # ========================================================================
+    # Apple Pass Endpoints
+    # ========================================================================
+
+    def get_all_apple_passes(self) -> List[Dict[str, Any]]:
+        """Fetch all Apple Wallet passes"""
+        try:
+            response = requests.get(f"{self.base_url}/passes/apple/")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching apple passes: {e}")
+            return []
+
+    def get_apple_pass(self, serial_number: str) -> Optional[Dict[str, Any]]:
+        """Fetch a specific Apple pass by serial number"""
+        try:
+            response = requests.get(f"{self.base_url}/passes/apple/{serial_number}")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching apple pass '{serial_number}': {e}")
+            return None
+
+    def update_apple_pass(self, serial_number: str, **kwargs) -> Dict[str, Any]:
+        """Update an existing Apple Wallet pass"""
+        try:
+            response = requests.put(f"{self.base_url}/passes/apple/{serial_number}", json=kwargs)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(f"Error updating Apple pass: {error_detail}") from e
+        except Exception as e:
+            raise APIClientError(f"Error updating Apple pass: {e}") from e
+

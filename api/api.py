@@ -20,6 +20,7 @@ from api.models import (
     PassCreate, PassUpdate, ClassCreate, ClassUpdate, ClassResponse,
     PassStatusUpdate, PassResponse, ApplePassCreate,
     AppleTemplateCreate, AppleTemplateUpdate, AppleTemplateResponse,
+    ApplePassResponse, ApplePassUpdate,
     HealthResponse, MessageResponse, NotificationRequest
 )
 
@@ -638,6 +639,54 @@ async def delete_apple_template(template_id: str):
             )
         else:
             raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================================================================
+# Apple Pass Endpoints
+# ========================================================================
+
+@app.get("/passes/apple/", response_model=List[ApplePassResponse], tags=["Passes"])
+async def get_all_apple_passes():
+    """Retrieve all Apple Wallet passes"""
+    try:
+        passes = db.get_all_apple_passes()
+        return passes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/passes/apple/{serial_number}", response_model=ApplePassResponse, tags=["Passes"])
+async def get_apple_pass(serial_number: str):
+    """Retrieve a specific Apple Wallet pass by serial number"""
+    try:
+        pass_data = db.get_apple_pass(serial_number)
+        if not pass_data:
+            raise HTTPException(status_code=404, detail=f"Apple Pass '{serial_number}' not found")
+        return pass_data
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/passes/apple/{serial_number}", response_model=MessageResponse, tags=["Passes"])
+async def update_apple_pass(serial_number: str, pass_data: ApplePassUpdate):
+    """Update an Apple Wallet pass"""
+    try:
+        update_dict = pass_data.model_dump(exclude_unset=True)
+        if not update_dict:
+            raise HTTPException(status_code=400, detail="No fields to update")
+            
+        success = db.update_apple_pass(serial_number, **update_dict)
+        if success:
+            return MessageResponse(
+                message=f"Apple Pass '{serial_number}' updated successfully",
+                success=True
+            )
+        else:
+            raise HTTPException(status_code=404, detail=f"Apple Pass '{serial_number}' not found")
     except HTTPException:
         raise
     except Exception as e:

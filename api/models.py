@@ -271,6 +271,55 @@ class ApplePassCreate(BaseModel):
     store_card_data: Optional[Dict[str, Any]] = Field(None, description="Visual data for the pass")
 
 
+class ApplePassFieldResponse(BaseModel):
+    """Model for relational fields inside an Apple Pass"""
+    type: str
+    key: str
+    label: Optional[str] = None
+    value: str
+
+
+class ApplePassResponse(BaseModel):
+    """Model for Apple Pass response"""
+    serial_number: str
+    template_id: str
+    holder_name: str
+    holder_email: str
+    status: str
+    auth_token: Optional[str] = None
+    background_color: Optional[str] = None
+    foreground_color: Optional[str] = None
+    label_color: Optional[str] = None
+    organization_name: Optional[str] = None
+    logo_text: Optional[str] = None
+    logo_url: Optional[str] = None
+    icon_url: Optional[str] = None
+    strip_url: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    fields: list[ApplePassFieldResponse] = Field(default_factory=list)
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+class ApplePassUpdate(BaseModel):
+    """Model for updating an Apple Pass"""
+    holder_name: Optional[str] = None
+    holder_email: Optional[str] = None
+    status: Optional[PassStatus] = None
+    background_color: Optional[str] = None
+    foreground_color: Optional[str] = None
+    label_color: Optional[str] = None
+    organization_name: Optional[str] = None
+    logo_text: Optional[str] = None
+    logo_url: Optional[str] = None
+    icon_url: Optional[str] = None
+    strip_url: Optional[str] = None
+    fields: Optional[list[ApplePassFieldResponse]] = None
+
+
 # ========================================================================
 # Utility Models
 # ========================================================================

@@ -30,7 +30,6 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
     holder_name_ref  = ft.Ref[ft.TextField]()
     holder_email_ref = ft.Ref[ft.TextField]()
     status_ref       = ft.Ref[ft.Text]()
-    result_container_ref = ft.Ref[ft.Container]()
 
     dynamic_field_refs: dict = {}
     custom_color_state = {
@@ -210,22 +209,37 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             except Exception as db_error:
                 print(f"Warning: Could not save Apple pass to local database: {db_error}")
 
-            result_container_ref.current.content = ft.Column([
-                ft.Text("✅ Apple Pass Generated Successfully!", color="green", size=16, weight=ft.FontWeight.BOLD),
-                ft.Container(height=5),
-                ft.Text(f"Saved at: {apple_pass_path}", size=10, color="grey", selectable=True),
-                ft.Text(
-                    f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
-                    size=10, color="green" if db_saved else "orange",
-                ),
-                ft.Container(height=10),
-                ft.ElevatedButton(
-                    text=state.t("btn.open_apple_folder"),
-                    icon=ft.Icons.FOLDER_OPEN,
-                    on_click=lambda e, folder=apple_folder: _open_folder(folder),
-                    style=ft.ButtonStyle(bgcolor="black", color="white"),
-                ),
-            ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+            # --- Success Dialog ---
+            def close_dlg(e):
+                page.close(success_dlg)
+
+            success_dlg = ft.AlertDialog(
+                modal=False,
+                title=ft.Text("✅ Apple Pass Generated Successfully!", weight=ft.FontWeight.BOLD),
+                content=ft.Column([
+                    ft.Text("Your Apple Wallet pass has been created and saved locally.", size=13),
+                    ft.Container(height=10),
+                    ft.Text(f"Saved at: {apple_pass_path}", size=11, color="grey", selectable=True),
+                    ft.Container(height=10),
+                    ft.ElevatedButton(
+                        text=state.t("btn.open_apple_folder"),
+                        icon=ft.Icons.FOLDER_OPEN,
+                        on_click=lambda e, folder=apple_folder: _open_folder(folder),
+                        style=ft.ButtonStyle(bgcolor="black", color="white"),
+                        width=250,
+                    ),
+                    ft.Container(height=5),
+                    ft.Text(
+                        f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
+                        size=10, color="green" if db_saved else "orange",
+                    ),
+                ], tight=True, width=350, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                actions=[
+                    ft.TextButton("Close", on_click=close_dlg),
+                ],
+            )
+            
+            page.open(success_dlg)
 
             status_ref.current.value = "✅ Apple Wallet pass generated!"
             status_ref.current.color = "green"
@@ -355,7 +369,6 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
             ),
             ft.Text(ref=status_ref, value="", size=12),
-            ft.Container(ref=result_container_ref, content=None),
         ]
     )
 

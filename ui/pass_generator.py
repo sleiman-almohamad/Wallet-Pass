@@ -818,42 +818,47 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 qr_filename = f"pass_qr_{int(time.time())}"
                 qr_image_path = generate_qr_code(save_link, qr_filename)
                 
-                # Show Google result
-                result_container_ref.current.content = ft.Column([
-                    ft.Text(state.t("status.pass_generated_google"), color="green", size=16, weight=ft.FontWeight.BOLD),
-                    ft.Container(height=5),
-                    ft.Text(
-                        f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
-                        size=10,
-                        color="green" if db_saved else "orange"
-                    ),
-                    ft.Container(height=15),
-                    ft.Text(state.t("msg.pass_qr_scan"), size=14, weight=ft.FontWeight.BOLD),
-                    ft.Container(height=5),
-                    ft.Container(
-                        content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
-                        alignment=ft.alignment.center,
-                        bgcolor="white",
-                        border_radius=10,
-                        padding=10
-                    ),
-                    ft.Text(state.t("msg.pass_qr_hint"), size=10, color="grey", text_align=ft.TextAlign.CENTER),
-                    ft.Container(height=15),
-                    ft.Text(state.t("label.or_use_link"), size=14, weight=ft.FontWeight.BOLD),
-                    ft.Row([
-                        ft.TextField(value=save_link, read_only=True, expand=True, text_size=10),
-                        ft.IconButton(icon="content_copy", tooltip=state.t("tooltip.copy_link"), on_click=lambda e: page.set_clipboard(save_link))
-                    ]),
-                    ft.Container(height=5),
-                    ft.ElevatedButton(
-                        state.t("btn.open_google_wallet"),
-                        icon="open_in_new",
-                        on_click=lambda e: page.launch_url(save_link),
-                        style=ft.ButtonStyle(bgcolor="blue", color="white")
-                    ),
-                    ft.Container(height=10),
-                    ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
-                ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                # --- Success Dialog ---
+                def close_dlg(e):
+                    page.close(qr_dlg)
+
+                qr_dlg = ft.AlertDialog(
+                    modal=False,
+                    title=ft.Text(state.t("status.pass_generated_google"), weight=ft.FontWeight.BOLD),
+                    content=ft.Column([
+                        ft.Text(
+                            f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
+                            size=10,
+                            color="green" if db_saved else "orange"
+                        ),
+                        ft.Container(height=10),
+                        ft.Text(state.t("msg.pass_qr_scan"), size=14, weight=ft.FontWeight.BOLD),
+                        ft.Container(
+                            content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
+                            alignment=ft.alignment.center,
+                            bgcolor="white", border_radius=10, padding=10
+                        ),
+                        ft.Text(state.t("msg.pass_qr_hint"), size=10, color="grey", text_align=ft.TextAlign.CENTER),
+                        ft.Container(height=10),
+                        ft.Row([
+                            ft.TextField(value=save_link, read_only=True, expand=True, text_size=10),
+                            ft.IconButton(icon="content_copy", tooltip=state.t("tooltip.copy_link"), 
+                                          on_click=lambda e: page.set_clipboard(save_link))
+                        ]),
+                        ft.ElevatedButton(
+                            state.t("btn.open_google_wallet"),
+                            icon="open_in_new",
+                            on_click=lambda e: page.launch_url(save_link),
+                            style=ft.ButtonStyle(bgcolor="blue", color="white"),
+                            width=380, height=45
+                        ),
+                        ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
+                    ], spacing=5, tight=True, width=400, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    actions=[
+                        ft.TextButton("Close", on_click=close_dlg),
+                    ],
+                )
+                page.open(qr_dlg)
                 
                 status_ref.current.value = state.t("status.pass_generated_google")
                 status_ref.current.color = "green"
@@ -930,23 +935,34 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 except Exception as db_error:
                     print(f"Warning: Could not save Apple pass to local database: {db_error}")
 
-                result_container_ref.current.content = ft.Column([
-                    ft.Text("✅ Apple Pass Generated Successfully!", color="green", size=16, weight=ft.FontWeight.BOLD),
-                    ft.Container(height=5),
-                    ft.Text(f"Saved at: {apple_pass_path}", size=10, color="grey", selectable=True),
-                    ft.Text(
-                        f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
-                        size=10,
-                        color="green" if db_saved else "orange"
-                    ),
-                    ft.Container(height=10),
-                    ft.ElevatedButton(
-                        text=state.t("btn.open_apple_folder"),
-                        icon=ft.Icons.FOLDER_OPEN,
-                        on_click=lambda e, folder=apple_folder: _open_folder(folder),
-                        style=ft.ButtonStyle(bgcolor="black", color="white")
-                    ),
-                ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                # --- Success Dialog ---
+                def close_dlg(e):
+                    page.close(succ_dlg)
+
+                succ_dlg = ft.AlertDialog(
+                    modal=False,
+                    title=ft.Text("✅ Apple Pass Generated", weight=ft.FontWeight.BOLD),
+                    content=ft.Column([
+                        ft.Text(f"Saved at: {apple_pass_path}", size=10, color="grey"),
+                        ft.Text(
+                            f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
+                            size=10,
+                            color="green" if db_saved else "orange"
+                        ),
+                        ft.Container(height=10),
+                        ft.ElevatedButton(
+                            text=state.t("btn.open_apple_folder"),
+                            icon=ft.Icons.FOLDER_OPEN,
+                            on_click=lambda e, folder=apple_folder: _open_folder(folder),
+                            style=ft.ButtonStyle(bgcolor="black", color="white"),
+                            width=380, height=45
+                        ),
+                    ], spacing=5, tight=True, width=400, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    actions=[
+                        ft.TextButton("Close", on_click=close_dlg),
+                    ],
+                )
+                page.open(succ_dlg)
                 
                 status_ref.current.value = "✅ Apple Wallet pass generated!"
                 status_ref.current.color = "green"
@@ -1011,11 +1027,6 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
             ft.Container(height=10),
 
             ft.Text(ref=status_ref, value="", size=12),
-
-            ft.Container(height=10),
-
-            ft.Container(ref=result_container_ref, content=None)
-
         ], spacing=10, scroll="auto"),
         padding=15,
         bgcolor="white"

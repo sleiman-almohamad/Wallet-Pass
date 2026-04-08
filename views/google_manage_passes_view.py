@@ -14,7 +14,6 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
     current_class_info = None
     dynamic_field_refs: dict = {}
     dynamic_text_modules: dict = {}
-    result_container_ref = ft.Ref[ft.Container]()
 
     # ── Refs for core fields ──
     holder_name_ref = ft.Ref[ft.TextField]()
@@ -311,8 +310,8 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                                      shape=ft.RoundedRectangleBorder(radius=10)),
             ),
             ft.Container(height=10),
+            ft.Container(height=10),
             status_text,
-            ft.Container(ref=result_container_ref, content=None),
         ]
 
         edit_form.controls = [
@@ -376,7 +375,21 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                 pass_data=form_pd,
                 sync_to_google=True
             )
-            status_text.value = "✅ " + response.get("message", "Pass updated!")
+            # --- Success Dialog ---
+            def close_dlg(e):
+                page.close(upd_dlg)
+
+            upd_dlg = ft.AlertDialog(
+                modal=False,
+                title=ft.Text("✅ Pass Updated Successfully!", weight=ft.FontWeight.BOLD),
+                content=ft.Text(response.get("message", "The pass has been updated and synced to Google Wallet."), size=13),
+                actions=[
+                    ft.TextButton("Close", on_click=close_dlg),
+                ],
+            )
+            page.open(upd_dlg)
+
+            status_text.value = "✅ Pass updated"
             status_text.color = "green"
         except Exception as ex:
             status_text.value = f"❌ Error: {ex}"
@@ -395,19 +408,32 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
             qr_filename = f"pass_qr_{int(time.time())}"
             qr_image_path = generate_qr_code(save_link, qr_filename)
         
-            result_container_ref.current.content = card(ft.Column([
-                ft.Text("Scan to Save", weight=ft.FontWeight.BOLD, size=16),
-                ft.Container(
-                    content=ft.Image(src=qr_image_path, width=220, height=220),
-                    bgcolor="white", padding=10, border_radius=10, alignment=ft.alignment.center
-                ),
-                ft.Row([
-                    ft.TextField(value=save_link, read_only=True, expand=True, text_size=10, border_radius=8),
-                    ft.IconButton(icon=ft.Icons.COPY, on_click=lambda ev: page.set_clipboard(save_link))
-                ]),
-                ft.ElevatedButton("Open Google Wallet", icon=ft.Icons.OPEN_IN_NEW, on_click=lambda ev: page.launch_url(save_link),
-                                  bgcolor="#4285F4", color="white", width=380, height=45)
-            ], spacing=12, horizontal_alignment=ft.CrossAxisAlignment.CENTER))
+            # --- Success Dialog ---
+            def close_dlg(e):
+                page.close(qr_dlg)
+
+            qr_dlg = ft.AlertDialog(
+                modal=False,
+                title=ft.Text("✅ Save Link Generated", weight=ft.FontWeight.BOLD),
+                content=ft.Column([
+                    ft.Text("Scan to Save", weight=ft.FontWeight.BOLD, size=16),
+                    ft.Container(
+                        content=ft.Image(src=qr_image_path, width=220, height=220),
+                        bgcolor="white", padding=10, border_radius=10, alignment=ft.alignment.center
+                    ),
+                    ft.Row([
+                        ft.TextField(value=save_link, read_only=True, expand=True, text_size=10, border_radius=8),
+                        ft.IconButton(icon=ft.Icons.COPY, on_click=lambda ev: page.set_clipboard(save_link))
+                    ]),
+                    ft.ElevatedButton("Open Google Wallet", icon=ft.Icons.OPEN_IN_NEW, on_click=lambda ev: page.launch_url(save_link),
+                                      bgcolor="#4285F4", color="white", width=380, height=45)
+                ], spacing=12, tight=True, width=400, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                actions=[
+                    ft.TextButton("Close", on_click=close_dlg),
+                ],
+            )
+            page.open(qr_dlg)
+
             status_text.value = "✅ Link generated"
             status_text.color = "green"
         except Exception as ex:

@@ -258,15 +258,29 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
             
             if hasattr(api_client, "update_apple_pass"):
                 api_client.update_apple_pass(serial_number, **update_payload)
-                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Pass {serial_number} updated successfully!"))
+                
+                # --- Success Dialog ---
+                def close_dlg(e):
+                    page.close(upd_dlg)
+
+                upd_dlg = ft.AlertDialog(
+                    modal=False,
+                    title=ft.Text("✅ Pass Updated Successfully!", weight=ft.FontWeight.BOLD),
+                    content=ft.Text(f"Pass {serial_number} has been updated successfully.", size=13),
+                    actions=[
+                        ft.TextButton("Close", on_click=close_dlg),
+                    ],
+                )
+                page.open(upd_dlg)
             else:
                 page.snack_bar = ft.SnackBar(ft.Text("⚠️ update_apple_pass not implemented in client"))
+                page.snack_bar.open = True
                 
         except Exception as exc:
             print(f"Error saving Apple pass: {exc}")
             page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {exc}"))
+            page.snack_bar.open = True
         
-        page.snack_bar.open = True
         page.update()
 
     save_btn = ft.ElevatedButton(

@@ -153,7 +153,8 @@ def create_template_builder(page, state, api_client=None):
                         class_json=current_json,
                         **extras
                     )
-                    status_text_ref.current.value = state.t("msg.template_updated", id=class_id)
+                    status_text_ref.current.value = "✅ Template updated"
+                    msg = state.t("msg.template_updated", id=class_id)
                 else:
                     # Create new class
                     print(f"Creating new class '{class_id}'...")
@@ -163,9 +164,22 @@ def create_template_builder(page, state, api_client=None):
                         class_json=current_json,
                         **extras
                     )
-                    status_text_ref.current.value = state.t("msg.template_created", id=class_id)
+                    status_text_ref.current.value = "✅ Template created"
+                    msg = state.t("msg.template_created", id=class_id)
                 
-                status_text_ref.current.color = "green"
+                # --- Success Dialog ---
+                def close_dlg(e):
+                    page.close(succ_dlg)
+
+                succ_dlg = ft.AlertDialog(
+                    modal=False,
+                    title=ft.Text("✅ Success", weight=ft.FontWeight.BOLD),
+                    content=ft.Text(msg, size=13),
+                    actions=[
+                        ft.TextButton("Close", on_click=close_dlg),
+                    ],
+                )
+                page.open(succ_dlg)
                 
                 # Refresh other views that depend on the template list
                 if state:

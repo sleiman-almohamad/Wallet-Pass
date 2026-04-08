@@ -67,7 +67,6 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
     holder_email_ref      = ft.Ref[ft.TextField]()
     message_type_ref      = ft.Ref[ft.Dropdown]()
     status_ref            = ft.Ref[ft.Text]()
-    result_container_ref  = ft.Ref[ft.Container]()
 
     dynamic_field_refs: dict = {}
     current_class_data = None
@@ -274,7 +273,6 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
             ),
             ft.Text(ref=status_ref, value="", size=12),
-            ft.Container(ref=result_container_ref, content=None),
         ])
 
         form_controls_column.controls = final_controls
@@ -486,35 +484,37 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             qr_filename = f"pass_qr_{int(time.time())}"
             qr_image_path = generate_qr_code(save_link, qr_filename)
 
-            result_container_ref.current.content = ft.Column([
-                ft.Text(state.t("status.pass_generated_google"), color="green", size=16, weight=ft.FontWeight.BOLD),
-                ft.Container(height=5),
-                ft.Text(
-                    f"{state.t('msg.saved_local_db') if db_saved else state.t('msg.not_saved_local_db')}",
-                    size=10, color="green" if db_saved else "orange",
-                ),
-                ft.Container(height=15),
-                ft.Text(state.t("msg.pass_qr_scan"), size=14, weight=ft.FontWeight.BOLD),
-                ft.Container(
-                    content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
-                    alignment=ft.alignment.center, bgcolor="white", border_radius=10, padding=10,
-                ),
-                ft.Text(state.t("msg.pass_qr_hint"), size=10, color="grey", text_align=ft.TextAlign.CENTER),
-                ft.Container(height=15),
-                ft.Text(state.t("label.or_use_link"), size=14, weight=ft.FontWeight.BOLD),
-                ft.Row([
-                    ft.TextField(value=save_link, read_only=True, expand=True, text_size=10),
-                    ft.IconButton(icon="content_copy", tooltip=state.t("tooltip.copy_link"),
-                                  on_click=lambda e: page.set_clipboard(save_link)),
-                ]),
-                ft.ElevatedButton(
-                    state.t("btn.open_google_wallet"), icon="open_in_new",
-                    on_click=lambda e: page.launch_url(save_link),
-                    style=ft.ButtonStyle(bgcolor="blue", color="white"),
-                ),
-                ft.Container(height=10),
-                ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
-            ], spacing=5, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+            # --- Success Dialog ---
+            def close_dlg(e):
+                page.close(success_dlg)
+
+            success_dlg = ft.AlertDialog(
+                modal=False,
+                title=ft.Text("✅ Pass Generated Successfully!", weight=ft.FontWeight.BOLD),
+                content=ft.Column([
+                    ft.Text("Scan the QR code or click the link below to add the pass to Google Wallet.", size=13),
+                    ft.Container(height=10),
+                    ft.Container(
+                        content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
+                        alignment=ft.alignment.center, bgcolor="white", border_radius=10, padding=10,
+                    ),
+                    ft.Container(height=10),
+                    ft.ElevatedButton(
+                        "Add to Google Wallet",
+                        icon=ft.Icons.ADD_CARD,
+                        on_click=lambda e: page.launch_url(save_link),
+                        bgcolor="blue", color="white",
+                        width=250,
+                    ),
+                    ft.Container(height=5),
+                    ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
+                ], tight=True, width=300, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                actions=[
+                    ft.TextButton("Close", on_click=close_dlg),
+                ],
+            )
+            
+            page.open(success_dlg)
 
             if status_ref.current:
                 status_ref.current.value = state.t("status.pass_generated_google")
@@ -524,8 +524,6 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             if status_ref.current:
                 status_ref.current.value = f"❌ Error: {str(ex)}"
                 status_ref.current.color = "red"
-            if result_container_ref.current:
-                result_container_ref.current.content = None
         page.update()
 
     # ── Build form layout ──

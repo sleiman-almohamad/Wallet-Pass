@@ -201,8 +201,20 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 sync_to_google=True,
                 **extras
             )
-            _set_status("✅ " + response.get("message", state.t("msg.synced_google")))
-            
+            # --- Success Dialog ---
+            def close_dlg(e):
+                page.close(save_dlg)
+
+            save_dlg = ft.AlertDialog(
+                modal=False,
+                title=ft.Text("✅ Template Saved Successfully!", weight=ft.FontWeight.BOLD),
+                content=ft.Text("The template has been updated locally and synced to Google Wallet.", size=13),
+                actions=[
+                    ft.TextButton("Close", on_click=close_dlg),
+                ],
+            )
+            page.open(save_dlg)
+
             # Refresh other views
             if state:
                 state.refresh_ui("pass_generator_templates")

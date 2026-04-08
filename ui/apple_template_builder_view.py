@@ -49,9 +49,19 @@ def create_apple_template_builder(page: ft.Page, state, api_client=None):
                 db_session.add(template)
                 db_session.commit()
             
-            # Show Flet SnackBar confirming "Template created successfully"
-            page.snack_bar = ft.SnackBar(content=ft.Text("Template created successfully"), bgcolor="green")
-            page.snack_bar.open = True
+            # --- Success Dialog ---
+            def close_dlg(e):
+                page.close(succ_dlg)
+
+            succ_dlg = ft.AlertDialog(
+                modal=False,
+                title=ft.Text("✅ Template Created", weight=ft.FontWeight.BOLD),
+                content=ft.Text(f"Apple Pass template '{tname}' has been created successfully.", size=13),
+                actions=[
+                    ft.TextButton("Close", on_click=close_dlg),
+                ],
+            )
+            page.open(succ_dlg)
             
             status_text_ref.current.value = ""
             

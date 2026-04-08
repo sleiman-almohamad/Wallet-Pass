@@ -229,9 +229,27 @@ class MobileMockupPreview:
                 ft.Text(value or "—", size=16, color=fg, weight=ft.FontWeight.BOLD),
             ], spacing=2, tight=True)
 
-        primary   = _field_row(d.get("primary_label"), d.get("primary_value"))
-        secondary = _field_row(d.get("secondary_label"), d.get("secondary_value"))
-        auxiliary  = _field_row(d.get("auxiliary_label"), d.get("auxiliary_value"))
+        dynamic_fields = d.get("dynamic_fields", [])
+        
+        primary_controls = []
+        secondary_controls = []
+        auxiliary_controls = []
+        
+        for f in dynamic_fields:
+            ftype = f.get("field_type")
+            f_widget = _field_row(f.get("label"), f.get("value"))
+            if ftype == "primary":
+                primary_controls.append(f_widget)
+            elif ftype == "secondary":
+                secondary_controls.append(f_widget)
+            elif ftype == "auxiliary":
+                auxiliary_controls.append(f_widget)
+
+        # Apple cards show primary on its own row, then secondary/auxiliary usually in row formatting depending on space.
+        # We will wrap them in rows to match the typical Apple pass layout: secondary fields on one line, auxiliary on another line below.
+        primary_row = ft.Row(primary_controls, spacing=14) if primary_controls else ft.Container()
+        secondary_row = ft.Row(secondary_controls, spacing=14, wrap=True) if secondary_controls else ft.Container()
+        auxiliary_row = ft.Row(auxiliary_controls, spacing=14, wrap=True) if auxiliary_controls else ft.Container()
 
         strip_widget = (
             ft.Image(src=strip_url, fit=ft.ImageFit.COVER, height=130, width=float("inf"))
@@ -264,7 +282,11 @@ class MobileMockupPreview:
                 # Fields
                 ft.Container(
                     padding=ft.padding.symmetric(horizontal=20, vertical=16),
-                    content=ft.Column([primary, secondary, auxiliary], spacing=14),
+                    content=ft.Column([
+                        primary_row,
+                        secondary_row,
+                        auxiliary_row
+                    ], spacing=14),
                 ),
                 # Barcode
                 ft.Container(

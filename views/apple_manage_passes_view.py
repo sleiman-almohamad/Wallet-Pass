@@ -1,6 +1,7 @@
 import flet as ft
 from ui.components.color_picker import create_color_picker
 from ui.components.mobile_mockup import MobileMockupPreview
+from ui.components.apple_field_editor import AppleFieldEditor
 
 def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: MobileMockupPreview):
     """
@@ -16,13 +17,8 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
     logo_text_ref = ft.Ref[ft.TextField]()
     logo_url_ref = ft.Ref[ft.TextField]()
     strip_url_ref = ft.Ref[ft.TextField]()
-    
-    primary_label_ref = ft.Ref[ft.TextField]()
-    primary_value_ref = ft.Ref[ft.TextField]()
-    secondary_label_ref = ft.Ref[ft.TextField]()
-    secondary_value_ref = ft.Ref[ft.TextField]()
-    auxiliary_label_ref = ft.Ref[ft.TextField]()
-    auxiliary_value_ref = ft.Ref[ft.TextField]()
+    # ── Apple Field Editor ──
+    # Added later, so we initialize below where on_form_change is defined
 
     class SimpleColorState:
         def __init__(self, initial_state, on_change_callback):
@@ -59,19 +55,7 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         if strip_url_ref.current:
             pass_data["strip_url"] = strip_url_ref.current.value
             
-        if primary_label_ref.current:
-            pass_data["primary_label"] = primary_label_ref.current.value
-        if primary_value_ref.current:
-            pass_data["primary_value"] = primary_value_ref.current.value
-        if secondary_label_ref.current:
-            pass_data["secondary_label"] = secondary_label_ref.current.value
-        if secondary_value_ref.current:
-            pass_data["secondary_value"] = secondary_value_ref.current.value
-        if auxiliary_label_ref.current:
-            pass_data["auxiliary_label"] = auxiliary_label_ref.current.value
-        if auxiliary_value_ref.current:
-            pass_data["auxiliary_value"] = auxiliary_value_ref.current.value
-            
+        pass_data["dynamic_fields"] = apple_field_editor.get_fields_data()
             
         pass_data["bg_color"] = custom_color_state.get("background_color")
         pass_data["fg_color"] = custom_color_state.get("foreground_color")
@@ -79,6 +63,7 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         
         preview.update_data(pass_data, "apple")
 
+    apple_field_editor = AppleFieldEditor(on_change=on_form_change)
     color_state_obj = SimpleColorState(custom_color_state, on_form_change)
     bg_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "background_color", "Background Color")
     fg_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "foreground_color", "Foreground Color")
@@ -190,23 +175,47 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                 logo_url_ref.current.value = p_data.get("logo_url", "")
                 strip_url_ref.current.value = p_data.get("strip_url", "")
                 
-                # Setup defaults
-                primary_label_ref.current.value = ""
-                primary_value_ref.current.value = ""
-                secondary_label_ref.current.value = ""
-                secondary_value_ref.current.value = ""
-                auxiliary_label_ref.current.value = ""
-                auxiliary_value_ref.current.value = ""
                 
-                def extract_field_by_type(f_type, lbl_ref, val_ref):
-                    field = next((f for f in p_data.get("fields", []) if f.get("type") == f_type), None)
-                    if field:
-                        lbl_ref.current.value = field.get("label", "")
-                        val_ref.current.value = field.get("value", "")
-                        
-                extract_field_by_type("primary", primary_label_ref, primary_value_ref)
-                extract_field_by_type("secondary", secondary_label_ref, secondary_value_ref)
-                extract_field_by_type("auxiliary", auxiliary_label_ref, auxiliary_value_ref)
+                def _get_fields(src_list, t_name):
+                    res = []
+                    for f in src_list:
+                        res.append({
+                            "field_type": t_name,
+                            "label": f.get("label", ""),
+                            "value": f.get("value", "")
+                        })
+                    return res
+
+                # Check where backend returns the fields list today. Often in pass_data.
+                # If they are separate arrays (primary_fields, etc.) we combine them:
+                loaded_fields = []
+                loaded_fields.extend(_get_fields(p_data.get("primary_fields", []), "primary"))
+                loaded_fields.extend(_get_fields(p_data.get("secondary_fields", []), "secondary"))
+                loaded_fields.extend(_get_fields(p_data.get("auxiliary_fields", []), "auxiliary"))
+                loaded_fields.extend(_get_fields(p_data.get("back_fields", []), "back"))
+                
+                # Check pass_data wrapper just in case
+                if not loaded_fields and "pass_data" in p_data:
+                    c_pd = p_data["pass_data"]
+                    loaded_fields.extend(_get_fields(c_pd.get("primary_fields", []), "primary"))
+                    loaded_fields.extend(_get_fields(c_pd.get("secondary_fields", []), "secondary"))
+                    loaded_fields.extend(_get_fields(c_pd.get("auxiliary_fields", []), "auxiliary"))
+                    loaded_fields.extend(_get_fields(c_pd.get("back_fields", []), "back"))
+                    
+                    # Alternatively, if dynamic_fields list was stored directly:
+                    if "dynamic_fields" in c_pd:
+                        loaded_fields.extend(c_pd["dynamic_fields"])
+
+                # Remove duplicates just in case
+                unique_fields = []
+                _seen = set()
+                for lf in loaded_fields:
+                    sig = (lf["field_type"], lf["label"], lf["value"])
+                    if sig not in _seen:
+                        _seen.add(sig)
+                        unique_fields.append(lf)
+
+                apple_field_editor.set_fields_data(unique_fields)
                 
                 on_form_change()
             except Exception as exc:
@@ -232,6 +241,18 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                 "foreground_color": custom_color_state.get("foreground_color"),
                 "label_color": custom_color_state.get("label_color"),
             }
+            
+            dynamic_fields = apple_field_editor.get_fields_data()
+            def _extract_fields(ftype):
+                return [{"key": f"{ftype}_{i}", "label": f["label"], "value": f["value"]}
+                        for i, f in enumerate(dynamic_fields) if f["field_type"] == ftype]
+
+            update_payload["primary_fields"] = _extract_fields("primary")
+            update_payload["secondary_fields"] = _extract_fields("secondary")
+            update_payload["auxiliary_fields"] = _extract_fields("auxiliary")
+            update_payload["back_fields"] = _extract_fields("back")
+            update_payload["dynamic_fields"] = dynamic_fields
+
             # Clean payload
             update_payload = {k: v for k, v in update_payload.items() if v is not None}
             
@@ -275,18 +296,7 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         ft.Divider(),
         
         ft.Text("Card Fields", size=18, weight=ft.FontWeight.BOLD),
-        ft.Row([
-            ft.TextField(ref=primary_label_ref, label="Primary Label", expand=True, on_change=on_form_change),
-            ft.TextField(ref=primary_value_ref, label="Primary Value", expand=True, on_change=on_form_change)
-        ]),
-        ft.Row([
-            ft.TextField(ref=secondary_label_ref, label="Secondary Label", expand=True, on_change=on_form_change),
-            ft.TextField(ref=secondary_value_ref, label="Secondary Value", expand=True, on_change=on_form_change)
-        ]),
-        ft.Row([
-            ft.TextField(ref=auxiliary_label_ref, label="Auxiliary Label", expand=True, on_change=on_form_change),
-            ft.TextField(ref=auxiliary_value_ref, label="Auxiliary Value", expand=True, on_change=on_form_change)
-        ]),
+        apple_field_editor.build(),
         
         ft.Container(height=10),
         save_btn,

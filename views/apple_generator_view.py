@@ -15,6 +15,7 @@ from typing import Dict
 from ui.theme import card, section_title, PRIMARY, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, BORDER_COLOR, SECTION_HEADER
 from ui.components.mobile_mockup import MobileMockupPreview
 from ui.components.color_picker import create_color_picker
+from ui.components.apple_field_editor import AppleFieldEditor
 import configs
 
 
@@ -45,6 +46,9 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
     # For now we use a simple text field for pass title / ID
     current_class_data = None
 
+    # ── AppleFieldEditor ──
+    apple_field_editor = AppleFieldEditor(on_change=None)  # We will set on_change after _sync_preview is defined
+
     # ── Preview sync ──
     def _sync_preview(_=None):
         data = {
@@ -63,56 +67,14 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             data["logo_text"] = data["apple_logo_text"]
         if "apple_strip_url" in data:
             data["strip_url"] = data["apple_strip_url"]
-        for slot in ["primary", "secondary", "auxiliary", "back"]:
-            lk = f"apple_{slot[:3] if slot not in ('primary', 'back') else slot}_label"
-            vk = f"apple_{slot[:3] if slot not in ('primary', 'back') else slot}_value"
-            # Normalize keys used in _apple_field_pair
-            if slot == "secondary":
-                lk, vk = "apple_sec_label", "apple_sec_value"
-            elif slot == "auxiliary":
-                lk, vk = "apple_aux_label", "apple_aux_value"
-            if lk in data:
-                data[f"{slot}_label"] = data[lk]
-            if vk in data:
-                data[f"{slot}_value"] = data[vk]
+            
+        data["dynamic_fields"] = apple_field_editor.get_fields_data()
         preview.update_data(data, "apple")
+
+    apple_field_editor.on_change = _sync_preview
 
     def _on_color():
         _sync_preview()
-
-    # ── StoreCard field pair builder ──
-    def _store_card_pair(prefix: str, section_name: str):
-        lr = ft.Ref[ft.TextField]()
-        vr = ft.Ref[ft.TextField]()
-        dynamic_field_refs[f"{prefix}_label"] = lr
-        dynamic_field_refs[f"{prefix}_value"] = vr
-        return ft.Row([
-            ft.TextField(
-                ref=lr, label=state.t("label.field_label"),
-                hint_text=state.t("hint.dynamic_label", header=section_name),
-                expand=1, border_radius=8, text_size=13,
-                on_change=_sync_preview,
-            ),
-            ft.TextField(
-                ref=vr, label=state.t("label.field_value"),
-                hint_text=state.t("hint.dynamic_value", header=section_name),
-                expand=1, border_radius=8, text_size=13,
-                on_change=_sync_preview,
-            ),
-        ], spacing=12)
-
-    # ── Collect text modules for DB ──
-    def _collect_apple_text_modules() -> list:
-        modules = []
-        for slot in ["apple_primary", "apple_sec", "apple_aux", "apple_back"]:
-            lk = f"{slot}_label"
-            vk = f"{slot}_value"
-            if lk in dynamic_field_refs and vk in dynamic_field_refs:
-                lbl = dynamic_field_refs[lk].current.value if dynamic_field_refs[lk].current else ""
-                val = dynamic_field_refs[vk].current.value if dynamic_field_refs[vk].current else ""
-                if lbl or val:
-                    modules.append({"id": slot, "header": lbl or "", "body": val or ""})
-        return modules
 
     # ── Open folder helper ──
     def _open_folder(folder_path):
@@ -156,14 +118,7 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             return val if val else None
         return None
 
-    def _safe_field(label_ref_key, value_ref_key, key_name):
-        if label_ref_key in dynamic_field_refs and value_ref_key in dynamic_field_refs:
-            if dynamic_field_refs[label_ref_key].current and dynamic_field_refs[value_ref_key].current:
-                l = dynamic_field_refs[label_ref_key].current.value
-                v = dynamic_field_refs[value_ref_key].current.value
-                if l and v:
-                    return [{"key": key_name, "label": l, "value": v}]
-        return []
+
 
     # ── Generate pass ──
     def generate_pass(e):
@@ -187,9 +142,7 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             if custom_color:
                 pass_data["hexBackgroundColor"] = custom_color
 
-            text_modules_data = _collect_apple_text_modules()
-            if text_modules_data:
-                pass_data["textModulesData"] = text_modules_data
+            pass_data["dynamic_fields"] = apple_field_editor.get_fields_data()
 
             timestamp = int(time.time())
             clean_name = holder_name_ref.current.value.replace(' ', '_').lower()
@@ -220,6 +173,11 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             apple_folder = os.path.dirname(apple_pass_path)
             auth_token = secrets.token_hex(16)
 
+            dynamic_fields = apple_field_editor.get_fields_data()
+            def _extract_fields(ftype):
+                return [{"key": f"{ftype}_{i}", "label": f["label"], "value": f["value"]}
+                        for i, f in enumerate(dynamic_fields) if f["field_type"] == ftype]
+
             store_card_data = {
                 "background_color": custom_color_state.get("background_color"),
                 "foreground_color": custom_color_state.get("foreground_color"),
@@ -229,11 +187,10 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                 "strip_url": _get_val("apple_strip_url"),
                 "organization_name": _get_val("apple_org_name"),
                 "logo_text": _get_val("apple_logo_text"),
-                "header_fields": _safe_field("apple_header_label", "apple_header_value", "header"),
-                "primary_fields": _safe_field("apple_primary_label", "apple_primary_value", "primary"),
-                "secondary_fields": _safe_field("apple_sec_label", "apple_sec_value", "secondary1"),
-                "auxiliary_fields": _safe_field("apple_aux_label", "apple_aux_value", "aux1"),
-                "back_fields": _safe_field("apple_back_label", "apple_back_value", "back1"),
+                "primary_fields": _extract_fields("primary"),
+                "secondary_fields": _extract_fields("secondary"),
+                "auxiliary_fields": _extract_fields("auxiliary"),
+                "back_fields": _extract_fields("back"),
             }
 
             db_saved = False
@@ -386,24 +343,8 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
 
             # StoreCard sections
             card(ft.Column([
-                section_title(state.t("label.step_top_row"), ft.Icons.VIEW_AGENDA),
-                _store_card_pair("apple_header", state.t("label.step_top_row")),
-                ft.Divider(height=1, color=BORDER_COLOR),
-
-                ft.Text(state.t("label.primary_field"), size=12, weight=ft.FontWeight.W_600, color=SECTION_HEADER),
-                _store_card_pair("apple_primary", state.t("label.primary_field")),
-                ft.Divider(height=1, color=BORDER_COLOR),
-
-                ft.Text(state.t("label.secondary_field"), size=12, weight=ft.FontWeight.W_600, color=SECTION_HEADER),
-                _store_card_pair("apple_sec", state.t("label.secondary_field")),
-                ft.Divider(height=1, color=BORDER_COLOR),
-
-                ft.Text(state.t("label.auxiliary_field"), size=12, weight=ft.FontWeight.W_600, color=SECTION_HEADER),
-                _store_card_pair("apple_aux", state.t("label.auxiliary_field")),
-                ft.Divider(height=1, color=BORDER_COLOR),
-
-                ft.Text(state.t("label.back_field"), size=12, weight=ft.FontWeight.W_600, color=SECTION_HEADER),
-                _store_card_pair("apple_back", state.t("label.back_field")),
+                section_title("Card Fields", ft.Icons.VIEW_AGENDA),
+                apple_field_editor.build(),
             ], spacing=8)),
 
             ft.Container(height=8),

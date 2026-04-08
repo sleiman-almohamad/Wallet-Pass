@@ -32,8 +32,14 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
     result_container_ref = ft.Ref[ft.Container]()
 
     dynamic_field_refs: dict = {}
-    custom_color_state = {"background_color": "#1a1a2e"}
-    color_picker_container = ft.Container(content=None)
+    custom_color_state = {
+        "background_color": "#1a1a2e",
+        "foreground_color": "#ffffff",
+        "label_color": "#bbbbbb"
+    }
+    bg_color_picker_container = ft.Container(content=None)
+    fg_color_picker_container = ft.Container(content=None)
+    lbl_color_picker_container = ft.Container(content=None)
 
     # We still need a class_id for DB storage — Apple reuses Google class dropdown
     # For now we use a simple text field for pass title / ID
@@ -43,6 +49,8 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
     def _sync_preview(_=None):
         data = {
             "bg_color":     custom_color_state.get("background_color", "#1a1a2e"),
+            "fg_color":     custom_color_state.get("foreground_color", "#ffffff"),
+            "label_color":  custom_color_state.get("label_color", "#bbbbbb"),
             "holder_name":  holder_name_ref.current.value  if holder_name_ref.current  else "",
         }
         for key, ref in dynamic_field_refs.items():
@@ -120,20 +128,26 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
 
     # ── Color picker initialization ──
     class SimpleColorState:
-        def __init__(self, initial_color, on_change_callback):
-            self.color = initial_color
+        def __init__(self, initial_state, on_change_callback):
+            self.state = initial_state
             self.on_change = on_change_callback
         def get(self, key, default=None):
-            return self.color if key == "background_color" else default
+            return self.state.get(key, default)
         def update(self, key, value):
-            if key == "background_color":
-                self.color = value
-                custom_color_state["background_color"] = value
-                if self.on_change:
-                    self.on_change()
+            self.state[key] = value
+            if self.on_change:
+                self.on_change()
 
-    color_state = SimpleColorState("#1a1a2e", _on_color)
-    color_picker_container.content = create_color_picker(page, color_state, _on_color)
+    color_state_obj = SimpleColorState(custom_color_state, _on_color)
+    bg_color_picker_container.content = create_color_picker(
+        page, color_state_obj, _on_color, "background_color", "Background Color"
+    )
+    fg_color_picker_container.content = create_color_picker(
+        page, color_state_obj, _on_color, "foreground_color", "Foreground Color"
+    )
+    lbl_color_picker_container.content = create_color_picker(
+        page, color_state_obj, _on_color, "label_color", "Label Color"
+    )
 
     # ── Helper: get field values ──
     def _get_val(key):
@@ -179,20 +193,21 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
 
             timestamp = int(time.time())
             clean_name = holder_name_ref.current.value.replace(' ', '_').lower()
-            object_suffix = f"pass_{timestamp}_{clean_name}"
-            object_id = f"{configs.ISSUER_ID}.{object_suffix}"
+            object_id = f"pass_{timestamp}_{clean_name}"
 
-            # Use title field as "class_id" for Apple passes
-            title_val = title_ref.current.value if title_ref.current and title_ref.current.value else "apple_store_card"
-            class_id = f"{configs.ISSUER_ID}.{title_val}"
+            # Use selected template_id from dropdown
+            template_id = template_dropdown.value
+            if not template_id:
+                status_ref.current.value = "⚠️ Please select a template first."
+                status_ref.current.color = "orange"; page.update(); return
 
             from services.apple_wallet_service import AppleWalletService
             apple_service = AppleWalletService()
 
-            # Build class_data from form fields for the service
+            # Build dummy class_data for the service (mostly for compatibility with existing create_pass)
             class_data_for_service = {
                 "class_type": "Generic",
-                "class_id": class_id,
+                "template_id": template_id,
                 "base_color": custom_color,
             }
 
@@ -206,7 +221,9 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             auth_token = secrets.token_hex(16)
 
             store_card_data = {
-                "background_color": custom_color,
+                "background_color": custom_color_state.get("background_color"),
+                "foreground_color": custom_color_state.get("foreground_color"),
+                "label_color":      custom_color_state.get("label_color"),
                 "logo_url": _get_val("apple_logo_url"),
                 "icon_url": _get_val("apple_logo_url"),
                 "strip_url": _get_val("apple_strip_url"),
@@ -221,10 +238,9 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
 
             db_saved = False
             try:
-                db_class_id = class_id.split('.')[-1] if '.' in class_id else class_id
                 api_client.create_apple_pass(
                     serial_number=object_id,
-                    class_id=db_class_id,
+                    template_id=template_id,
                     pass_type_id=configs.APPLE_PASS_TYPE_ID,
                     holder_name=holder_name_ref.current.value,
                     holder_email=holder_email_ref.current.value,
@@ -268,14 +284,39 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
         dynamic_field_refs[name] = ft.Ref[ft.TextField]()
 
     # ── Build UI ──
-    form_panel = ft.Container(
-        expand=True,
-        padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
-        content=ft.Column([
-            ft.Text("Apple Pass Generator", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-            ft.Text("Create a StoreCard pass for Apple Wallet.", color=TEXT_SECONDARY, size=13),
-            ft.Container(height=8),
+    template_dropdown = ft.Dropdown(
+        label="Select Template",
+        hint_text="Choose a template...",
+        width=380, border_radius=8, text_size=13,
+        options=[]
+    )
 
+    def load_templates():
+        try:
+            templates = api_client.get_apple_templates() if api_client else []
+            if templates:
+                template_dropdown.options = [
+                    ft.dropdown.Option(t["template_id"], f"{t['template_name']} ({t['pass_style']})")
+                    for t in templates
+                ]
+            else:
+                template_dropdown.options = []
+                template_dropdown.hint_text = "No Apple templates found."
+        except Exception as e:
+            print(f"Error loading Apple templates: {e}")
+            template_dropdown.options = []
+            template_dropdown.hint_text = "Error loading templates."
+        if template_dropdown.page:
+            template_dropdown.update()
+
+    load_templates()
+    if state:
+        state.register_refresh_callback("apple_generator_templates", load_templates)
+
+    form_controls_column = ft.Column(
+        visible=False,
+        spacing=12,
+        controls=[
             # Pass Title
             card(ft.Column([
                 section_title("Pass Identifier"),
@@ -304,10 +345,14 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                 ], spacing=12),
             ], spacing=8)),
 
-            # Color
+            # Colors
             card(ft.Column([
                 section_title(state.t("label.step_customize_color"), ft.Icons.PALETTE),
-                color_picker_container,
+                ft.Row([
+                    bg_color_picker_container,
+                    fg_color_picker_container,
+                    lbl_color_picker_container,
+                ], spacing=15, scroll=ft.ScrollMode.AUTO),
             ], spacing=8)),
 
             # Brand assets
@@ -370,6 +415,27 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             ),
             ft.Text(ref=status_ref, value="", size=12),
             ft.Container(ref=result_container_ref, content=None),
+        ]
+    )
+
+    def on_template_change(e):
+        if template_dropdown.value:
+            form_controls_column.visible = True
+        else:
+            form_controls_column.visible = False
+        page.update()
+
+    template_dropdown.on_change = on_template_change
+
+    form_panel = ft.Container(
+        expand=True,
+        padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
+        content=ft.Column([
+            ft.Text("Apple Pass Generator", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+            ft.Text("Create a StoreCard pass for Apple Wallet.", color=TEXT_SECONDARY, size=13),
+            ft.Container(height=8),
+            template_dropdown,
+            form_controls_column
         ], spacing=12, scroll=ft.ScrollMode.AUTO, expand=True),
     )
 

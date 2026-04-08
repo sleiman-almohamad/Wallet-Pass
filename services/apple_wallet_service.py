@@ -152,12 +152,24 @@ class AppleWalletService:
 
         # Colours
         bg = _hex_to_rgb(
-            class_data.get("hexBackgroundColor")
+            class_data.get("background_color")
+            or class_data.get("hexBackgroundColor")
             or class_data.get("base_color")
+            or pass_data.get("background_color")
             or pass_data.get("hexBackgroundColor")
         )
-        fg = _hex_to_rgb(class_data.get("hexForegroundColor", "#FFFFFF"))
-        label_color = _hex_to_rgb(class_data.get("hexLabelColor", "#BBBBBB"))
+        fg = _hex_to_rgb(
+            class_data.get("foreground_color")
+            or class_data.get("hexForegroundColor")
+            or pass_data.get("foreground_color")
+            or "#FFFFFF"
+        )
+        label_color = _hex_to_rgb(
+            class_data.get("label_color")
+            or class_data.get("hexLabelColor")
+            or pass_data.get("label_color")
+            or "#BBBBBB"
+        )
 
         # Build fields for StoreCard
         header_fields = []

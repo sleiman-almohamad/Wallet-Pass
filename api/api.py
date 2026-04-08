@@ -692,21 +692,42 @@ async def create_pass(pass_data: PassCreate):
 async def create_apple_pass(pass_data: ApplePassCreate):
     """Create a new Apple Wallet pass"""
     try:
-        # Verify class exists
-        class_exists = db.get_class(pass_data.class_id)
-        if not class_exists:
-            raise HTTPException(status_code=404, detail=f"Class '{pass_data.class_id}' not found")
+        # Verify template exists
+        template_exists = db.get_apple_template(pass_data.template_id)
+        if not template_exists:
+            raise HTTPException(status_code=404, detail=f"Template '{pass_data.template_id}' not found")
         
+        # Map fields from store_card_data if present (older structure) or pass_data
+        # For our new relational 3-table structure, we expect fields_data as a list of dicts
+        fields = []
+        if pass_data.pass_data and "textModulesData" in pass_data.pass_data:
+            # Map generator format to DB format
+            for m in pass_data.pass_data["textModulesData"]:
+                # generator: {"id": "apple_sec", "header": "...", "body": "..."}
+                # db expects: {"type": "secondary", "key": "...", "label": "...", "value": "..."}
+                slot = m.get("id", "")
+                f_type = "primary"
+                if "header" in slot: f_type = "header"
+                elif "sec" in slot: f_type = "secondary"
+                elif "aux" in slot: f_type = "auxiliary"
+                elif "back" in slot: f_type = "back"
+                
+                fields.append({
+                    "type": f_type,
+                    "key": slot,
+                    "label": m.get("header", ""),
+                    "value": m.get("body", "")
+                })
+
         success = db.create_apple_pass(
             serial_number=pass_data.serial_number,
-            class_id=pass_data.class_id,
-            pass_type_id=pass_data.pass_type_id,
+            template_id=pass_data.template_id,
             holder_name=pass_data.holder_name,
             holder_email=pass_data.holder_email,
             auth_token=pass_data.auth_token,
             status=pass_data.status.value,
-            pass_data=pass_data.pass_data,
-            store_card_data=pass_data.store_card_data
+            visual_data=pass_data.store_card_data,
+            fields_data=fields
         )
         
         if success:

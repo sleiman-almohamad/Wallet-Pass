@@ -23,7 +23,7 @@ PRESET_COLORS = [
 ]
 
 
-def create_color_picker(page, color_state, on_change_callback):
+def create_color_picker(page, color_state, on_change_callback, color_key="background_color", label_text="Background Color"):
     """
     Create a color picker component
     
@@ -31,11 +31,13 @@ def create_color_picker(page, color_state, on_change_callback):
         page: Flet page instance
         color_state: State object with get/update methods
         on_change_callback: Function to call when color changes
+        color_key: The key in color_state to update
+        label_text: Text label for the picker
         
     Returns:
         ft.Container with color picker UI
     """
-    current_color = color_state.get("background_color", "#4285f4")
+    current_color = color_state.get(color_key, "#4285f4")
     
     # Create refs for controls that need updating
     hex_input_ref = ft.Ref[ft.TextField]()
@@ -56,7 +58,7 @@ def create_color_picker(page, color_state, on_change_callback):
                 # Validate it's a valid hex color
                 int(hex_value, 16)
                 color_hex = f"#{hex_value}"
-                color_state.update("background_color", color_hex)
+                color_state.update(color_key, color_hex)
                 
                 # Update preview
                 if current_preview_ref.current:
@@ -74,7 +76,7 @@ def create_color_picker(page, color_state, on_change_callback):
     
     def on_color_select(color_hex):
         """Handle color swatch selection"""
-        color_state.update("background_color", color_hex)
+        color_state.update(color_key, color_hex)
         hex_input_ref.current.value = color_hex.replace("#", "")
         
         # Update preview
@@ -91,7 +93,7 @@ def create_color_picker(page, color_state, on_change_callback):
     
     def create_color_swatch(color_hex, color_name):
         """Create a clickable color swatch"""
-        current = color_state.get("background_color", "#4285f4")
+        current = color_state.get(color_key, "#4285f4")
         is_selected = color_hex == current
         
         return ft.Container(
@@ -179,7 +181,7 @@ def create_color_picker(page, color_state, on_change_callback):
     
     return ft.Container(
         content=ft.Column([
-            ft.Text("Background Color", size=14, weight=ft.FontWeight.BOLD),
+            ft.Text(label_text, size=14, weight=ft.FontWeight.BOLD),
             ft.Container(height=5),
             
             # Color swatches grid

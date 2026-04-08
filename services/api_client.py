@@ -165,7 +165,7 @@ class APIClient:
         except Exception as e:
             raise APIClientError(f"Error updating class: {e}") from e
 
-    def create_apple_pass(self, serial_number: str, class_id: str, 
+    def create_apple_pass(self, serial_number: str, template_id: str, 
                           pass_type_id: str, holder_name: str, 
                           holder_email: str, auth_token: str,
                           status: str = "Active",
@@ -174,7 +174,7 @@ class APIClient:
         """Create a new Apple Wallet pass locally"""
         data = {
             "serial_number": serial_number,
-            "class_id": class_id,
+            "template_id": template_id,
             "pass_type_id": pass_type_id,
             "holder_name": holder_name,
             "holder_email": holder_email,

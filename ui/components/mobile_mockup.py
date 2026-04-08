@@ -212,6 +212,8 @@ class MobileMockupPreview:
     def _apple_card(self) -> ft.Control:
         d = self._data
         bg = d.get("bg_color", "#1a1a2e")
+        fg = d.get("fg_color", "#ffffff")
+        lbl_clr = d.get("label_color", "#bbbbbb")
         org = d.get("org_name") or d.get("organization_name") or "Organization"
         logo_text = d.get("logo_text") or "PASS"
         strip_url = d.get("strip_url")
@@ -222,9 +224,9 @@ class MobileMockupPreview:
             if not label and not value:
                 return ft.Container()
             return ft.Column([
-                ft.Text((label or "LABEL").upper(), size=10, color="white70",
+                ft.Text((label or "LABEL").upper(), size=10, color=lbl_clr,
                         weight=ft.FontWeight.W_600, style=ft.TextStyle(letter_spacing=1)),
-                ft.Text(value or "—", size=16, color="white", weight=ft.FontWeight.BOLD),
+                ft.Text(value or "—", size=16, color=fg, weight=ft.FontWeight.BOLD),
             ], spacing=2, tight=True)
 
         primary   = _field_row(d.get("primary_label"), d.get("primary_value"))
@@ -251,10 +253,10 @@ class MobileMockupPreview:
                 ft.Container(
                     padding=ft.padding.only(left=20, right=20, top=16, bottom=12),
                     content=ft.Row([
-                        ft.Text(logo_text, size=18, weight=ft.FontWeight.BOLD, color="white",
+                        ft.Text(logo_text, size=18, weight=ft.FontWeight.BOLD, color=fg,
                                 max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                         ft.Container(expand=True),
-                        ft.Text(org, size=12, color="white70"),
+                        ft.Text(org, size=12, color=lbl_clr),
                     ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
                 ),
                 # Strip

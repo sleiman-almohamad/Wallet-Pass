@@ -26,7 +26,7 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
     Returns an ft.Container (form panel). The preview panel is managed by root_view.
     """
     # ── Refs ──
-    title_ref     = ft.Ref[ft.TextField]()
+    title_ref        = ft.Ref[ft.TextField]()
     holder_name_ref  = ft.Ref[ft.TextField]()
     holder_email_ref = ft.Ref[ft.TextField]()
     status_ref       = ft.Ref[ft.Text]()
@@ -66,11 +66,51 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             data["logo_text"] = data["apple_logo_text"]
         if "apple_strip_url" in data:
             data["strip_url"] = data["apple_strip_url"]
+        if "apple_background_image_url" in data:
+            data["background_image_url"] = data["apple_background_image_url"]
+        if "apple_thumbnail_url" in data:
+            data["thumbnail_url"] = data["apple_thumbnail_url"]
+            
+        # Optional: let mobile_mockup infer it, but we can pass it explicitly
+        # Though the prompt asks to infer in mockup, we can still set it just in case, or drop it.
+        # But we'll drop ticket_layout_ref entirely.
             
         data["dynamic_fields"] = apple_field_editor.get_fields_data()
         preview.update_data(data, "apple")
 
     apple_field_editor.on_change = _sync_preview
+
+    def check_image_fields_logic(e=None):
+        strip_f = dynamic_field_refs.get("apple_strip_url")
+        bg_f = dynamic_field_refs.get("apple_background_image_url")
+        thumb_f = dynamic_field_refs.get("apple_thumbnail_url")
+        
+        if not strip_f or not strip_f.current: return
+        if not bg_f or not bg_f.current: return
+        if not thumb_f or not thumb_f.current: return
+
+        strip_val = strip_f.current.value
+        bg_val = bg_f.current.value
+        thumb_val = thumb_f.current.value
+
+        if strip_val:
+            bg_f.current.disabled = True
+            thumb_f.current.disabled = True
+            strip_f.current.disabled = False
+        elif bg_val or thumb_val:
+            strip_f.current.disabled = True
+            bg_f.current.disabled = False
+            thumb_f.current.disabled = False
+        else:
+            strip_f.current.disabled = False
+            bg_f.current.disabled = False
+            thumb_f.current.disabled = False
+            
+        _sync_preview()
+        if e and e.control and e.control.page:
+            e.control.page.update()
+        else:
+            page.update()
 
     def _on_color():
         _sync_preview()
@@ -184,8 +224,12 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                 "logo_url": _get_val("apple_logo_url"),
                 "icon_url": _get_val("apple_logo_url"),
                 "strip_url": _get_val("apple_strip_url"),
+                "background_image_url": _get_val("apple_background_image_url"),
+                "thumbnail_url": _get_val("apple_thumbnail_url"),
+                "ticket_layout": "strip" if _get_val("apple_strip_url") else "background",
                 "organization_name": _get_val("apple_org_name"),
                 "logo_text": _get_val("apple_logo_text"),
+                "header_fields": _extract_fields("header"),
                 "primary_fields": _extract_fields("primary"),
                 "secondary_fields": _extract_fields("secondary"),
                 "auxiliary_fields": _extract_fields("auxiliary"),
@@ -251,7 +295,6 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             import traceback; traceback.print_exc()
             status_ref.current.value = f"❌ Error: {str(ex)}"
             status_ref.current.color = "red"
-            result_container_ref.current.content = None
         page.update()
 
     def reset_form(e=None):
@@ -265,6 +308,7 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
         for ref in dynamic_field_refs.values():
             if ref.current:
                 ref.current.value = ""
+                ref.current.disabled = False
         
         # Reset color state
         custom_color_state["background_color"] = "#1a1a2e"
@@ -278,7 +322,7 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
         page.update()
 
     # ── Apple-specific dynamic field refs ──
-    for name in ["apple_org_name", "apple_logo_text", "apple_logo_url", "apple_strip_url"]:
+    for name in ["apple_org_name", "apple_logo_text", "apple_logo_url", "apple_strip_url", "apple_background_image_url", "apple_thumbnail_url"]:
         dynamic_field_refs[name] = ft.Ref[ft.TextField]()
 
     # ── Build UI ──
@@ -374,12 +418,29 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                         label=state.t("label.logo_icon_url"), hint_text=state.t("hint.logo_url"),
                         expand=1, border_radius=8, text_size=13, on_change=_sync_preview,
                     ),
+                ], spacing=12),
+                
+                ft.Divider(height=1, color=BORDER_COLOR),
+                section_title("Event Ticket Layout", ft.Icons.LAYERS),
+                ft.Row([
                     ft.TextField(
                         ref=dynamic_field_refs["apple_strip_url"],
                         label=state.t("label.strip_hero_image_url"), hint_text=state.t("hint.strip_url"),
-                        expand=1, border_radius=8, text_size=13, on_change=_sync_preview,
+                        expand=1, border_radius=8, text_size=13, on_change=check_image_fields_logic,
                     ),
-                ], spacing=12),
+                ]),
+                ft.Row([
+                    ft.TextField(
+                        ref=dynamic_field_refs["apple_background_image_url"],
+                        label="Background Image URL", hint_text="URL for background",
+                        expand=1, border_radius=8, text_size=13, on_change=check_image_fields_logic,
+                    ),
+                    ft.TextField(
+                        ref=dynamic_field_refs["apple_thumbnail_url"],
+                        label="Thumbnail URL", hint_text="URL for thumbnail",
+                        expand=1, border_radius=8, text_size=13, on_change=check_image_fields_logic,
+                    ),
+                ], spacing=12)
             ], spacing=8)),
 
             # StoreCard sections

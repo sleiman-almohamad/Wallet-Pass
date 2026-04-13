@@ -160,7 +160,21 @@ def build_sidebar(active_key: str, on_navigate, state=None):
                     ft.Text("admin@walletpass.io", size=10, color=TEXT_MUTED),
                 ], spacing=0),
             ], spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER),
-            padding=ft.padding.only(left=22, right=22, top=12, bottom=16),
+            padding=ft.padding.only(left=22, right=22, top=12, bottom=4),
+        )
+    )
+
+    # Company Logo at the very bottom
+    controls.append(
+        ft.Container(
+            content=ft.Image(
+                src="B2F.png",
+                width=SIDEBAR_WIDTH,
+                fit=ft.ImageFit.FIT_WIDTH,
+                filter_quality=ft.FilterQuality.HIGH,
+            ),
+            padding=ft.padding.only(bottom=0, top=10),
+            alignment=ft.alignment.bottom_center,
         )
     )
 

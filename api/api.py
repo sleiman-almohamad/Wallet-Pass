@@ -749,7 +749,16 @@ async def create_apple_pass(pass_data: ApplePassCreate):
         # Map fields from store_card_data if present (older structure) or pass_data
         # For our new relational 3-table structure, we expect fields_data as a list of dicts
         fields = []
-        if pass_data.pass_data and "textModulesData" in pass_data.pass_data:
+        if pass_data.pass_data and "dynamic_fields" in pass_data.pass_data:
+            # Map new dynamic fields format to DB format
+            for i, f in enumerate(pass_data.pass_data["dynamic_fields"]):
+                fields.append({
+                    "type": f.get("field_type"),
+                    "key": f.get("key", f"{f.get('field_type')}_{i}"),
+                    "label": f.get("label", ""),
+                    "value": f.get("value", "")
+                })
+        elif pass_data.pass_data and "textModulesData" in pass_data.pass_data:
             # Map generator format to DB format
             for m in pass_data.pass_data["textModulesData"]:
                 # generator: {"id": "apple_sec", "header": "...", "body": "..."}

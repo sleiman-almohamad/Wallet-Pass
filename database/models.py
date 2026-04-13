@@ -335,6 +335,9 @@ class ApplePassesData(Base):
     logo_url = Column(String(512))
     icon_url = Column(String(512))
     strip_url = Column(String(512))
+    background_image_url = Column(String(512))
+    thumbnail_url = Column(String(512))
+    ticket_layout = Column(String(50), default="strip")
 
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())

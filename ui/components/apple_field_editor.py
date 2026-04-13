@@ -9,6 +9,7 @@ class AppleFieldEditor:
     """
 
     LIMITS = {
+        "header": 2,
         "primary": 1,
         "secondary": 4,
         "auxiliary": 4,
@@ -16,6 +17,7 @@ class AppleFieldEditor:
     }
 
     TITLES = {
+        "header": "Header Fields",
         "primary": "Primary Field",
         "secondary": "Secondary Fields",
         "auxiliary": "Auxiliary Fields",
@@ -27,6 +29,7 @@ class AppleFieldEditor:
         
         # Structure: dict of category -> list of Dicts {"label": TextField, "value": TextField, "row": ft.Row}
         self.fields = {
+            "header": [],
             "primary": [],
             "secondary": [],
             "auxiliary": [],
@@ -35,6 +38,7 @@ class AppleFieldEditor:
 
         # UI Containers for each section
         self.sections_ui = {
+            "header": ft.Column(spacing=8),
             "primary": ft.Column(spacing=8),
             "secondary": ft.Column(spacing=8),
             "auxiliary": ft.Column(spacing=8),
@@ -44,7 +48,7 @@ class AppleFieldEditor:
     def build(self):
         main_column = ft.Column(spacing=15)
         
-        for category in ["primary", "secondary", "auxiliary", "back"]:
+        for category in ["header", "primary", "secondary", "auxiliary", "back"]:
             title_text = ft.Text(self.TITLES[category], size=12, weight=ft.FontWeight.W_600, color=SECTION_HEADER)
             
             add_button = ft.TextButton(
@@ -76,7 +80,7 @@ class AppleFieldEditor:
         col = main_column or self.main_column
         if not col: return
         
-        for i, category in enumerate(["primary", "secondary", "auxiliary", "back"]):
+        for i, category in enumerate(["header", "primary", "secondary", "auxiliary", "back"]):
             # Each cat_container is at index `i` in main_column
             cat_container = col.controls[i]
             row_header = cat_container.controls[0]
@@ -143,7 +147,7 @@ class AppleFieldEditor:
     def get_fields_data(self):
         """Returns a list of dicts: [{'field_type': str, 'label': str, 'value': str}]"""
         result = []
-        for category in ["primary", "secondary", "auxiliary", "back"]:
+        for category in ["header", "primary", "secondary", "auxiliary", "back"]:
             for field in self.fields[category]:
                 lbl = field["label_tf"].value
                 val = field["value_tf"].value

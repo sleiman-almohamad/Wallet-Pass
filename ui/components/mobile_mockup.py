@@ -218,6 +218,10 @@ class MobileMockupPreview:
         logo_text = d.get("logo_text") or "PASS"
         strip_url = d.get("strip_url")
         holder = d.get("holder_name") or "Holder Name"
+        
+        ticket_layout = "strip" if bool(strip_url) else "background"
+        bg_image_url = d.get("background_image_url")
+        thumbnail_url = d.get("thumbnail_url")
 
         # Fields
         def _field_row(label, value):
@@ -231,6 +235,7 @@ class MobileMockupPreview:
 
         dynamic_fields = d.get("dynamic_fields", [])
         
+        header_controls = []
         primary_controls = []
         secondary_controls = []
         auxiliary_controls = []
@@ -238,7 +243,9 @@ class MobileMockupPreview:
         for f in dynamic_fields:
             ftype = f.get("field_type")
             f_widget = _field_row(f.get("label"), f.get("value"))
-            if ftype == "primary":
+            if ftype == "header":
+                header_controls.append(f_widget)
+            elif ftype == "primary":
                 primary_controls.append(f_widget)
             elif ftype == "secondary":
                 secondary_controls.append(f_widget)
@@ -247,6 +254,7 @@ class MobileMockupPreview:
 
         # Apple cards show primary on its own row, then secondary/auxiliary usually in row formatting depending on space.
         # We will wrap them in rows to match the typical Apple pass layout: secondary fields on one line, auxiliary on another line below.
+        header_row = ft.Row(header_controls, spacing=14) if header_controls else ft.Container()
         primary_row = ft.Row(primary_controls, spacing=14) if primary_controls else ft.Container()
         secondary_row = ft.Row(secondary_controls, spacing=14, wrap=True) if secondary_controls else ft.Container()
         auxiliary_row = ft.Row(auxiliary_controls, spacing=14, wrap=True) if auxiliary_controls else ft.Container()
@@ -262,24 +270,35 @@ class MobileMockupPreview:
                                  horizontal_alignment=ft.CrossAxisAlignment.CENTER))
         )
 
-        apple_wallet_card = ft.Container(
-            bgcolor=bg,
-            border_radius=18,
-            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+        thumbnail_widget = ft.Image(src=thumbnail_url, fit=ft.ImageFit.CONTAIN, height=60) if thumbnail_url else ft.Container()
+
+        logo_row = ft.Container(
+            padding=ft.padding.only(left=20, right=20, top=16, bottom=12),
+            content=ft.Row([
+                ft.Text(logo_text, size=18, weight=ft.FontWeight.BOLD, color=fg,
+                        max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                ft.Container(expand=True),
+                header_row if header_controls else ft.Text(org, size=12, color=lbl_clr),
+            ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+        )
+
+        barcode_section = ft.Container(
+            bgcolor="white",
+            padding=ft.padding.symmetric(vertical=20),
             content=ft.Column([
-                # Logo row
+                ft.Icon(ft.Icons.QR_CODE_2, size=80, color="black"),
+                ft.Text(holder, size=14, color="grey700", weight=ft.FontWeight.W_600),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
+            alignment=ft.alignment.center
+        )
+
+        if ticket_layout == "background":
+            card_content = ft.Column([
+                logo_row,
                 ft.Container(
-                    padding=ft.padding.only(left=20, right=20, top=16, bottom=12),
-                    content=ft.Row([
-                        ft.Text(logo_text, size=18, weight=ft.FontWeight.BOLD, color=fg,
-                                max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                        ft.Container(expand=True),
-                        ft.Text(org, size=12, color=lbl_clr),
-                    ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                   padding=ft.padding.symmetric(horizontal=20),
+                   content=ft.Row([ft.Container(expand=True), thumbnail_widget]),
                 ),
-                # Strip
-                strip_widget,
-                # Fields
                 ft.Container(
                     padding=ft.padding.symmetric(horizontal=20, vertical=16),
                     content=ft.Column([
@@ -288,17 +307,32 @@ class MobileMockupPreview:
                         auxiliary_row
                     ], spacing=14),
                 ),
-                # Barcode
-                ft.Container(
-                    bgcolor="white",
-                    padding=ft.padding.symmetric(vertical=20),
-                    content=ft.Column([
-                        ft.Icon(ft.Icons.QR_CODE_2, size=80, color="black"),
-                        ft.Text(holder, size=14, color="grey700", weight=ft.FontWeight.W_600),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
-                    alignment=ft.alignment.center
-                ),
+                barcode_section
             ], spacing=0)
+        else: # strip layout
+            card_content = ft.Column([
+                logo_row,
+                ft.Container(
+                    padding=ft.padding.only(left=20, right=20, bottom=12),
+                    content=primary_row,
+                ),
+                strip_widget,
+                ft.Container(
+                    padding=ft.padding.symmetric(horizontal=20, vertical=16),
+                    content=ft.Column([
+                        secondary_row,
+                        auxiliary_row
+                    ], spacing=14),
+                ),
+                barcode_section
+            ], spacing=0)
+
+        apple_wallet_card = ft.Container(
+            bgcolor=bg,
+            border_radius=18,
+            image=ft.DecorationImage(src=bg_image_url, fit=ft.ImageFit.COVER) if (ticket_layout == "background" and bg_image_url) else None,
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            content=card_content
         )
 
         return ft.Container(

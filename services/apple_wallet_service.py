@@ -29,8 +29,11 @@ import configs
 
 def _download_image(url: str, dest_path: str) -> str:
     """Download *url* to *dest_path*.  Returns *dest_path* on success."""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
     try:
-        resp = requests.get(url, timeout=15)
+        resp = requests.get(url, headers=headers, timeout=15)
         resp.raise_for_status()
     except requests.RequestException as exc:
         raise ValueError(f"Failed to download image from {url}: {exc}") from exc
@@ -178,40 +181,60 @@ class AppleWalletService:
         auxiliary_fields = []
         back_fields = []
 
-        if pass_data.get("apple_header_label") or pass_data.get("apple_header_value"):
-            header_fields.append({
-                "key": "header_1",
-                "label": pass_data.get("apple_header_label", ""),
-                "value": pass_data.get("apple_header_value", "")
-            })
+        dynamic_fields = pass_data.get("dynamic_fields", [])
+        if dynamic_fields:
+            for i, field in enumerate(dynamic_fields):
+                field_type = field.get("field_type")
+                field_dict = {
+                    "key": f"{field_type}_{i}",
+                    "label": field.get("label", ""),
+                    "value": field.get("value", "")
+                }
+                if field_type == "header":
+                    header_fields.append(field_dict)
+                elif field_type == "primary":
+                    primary_fields.append(field_dict)
+                elif field_type == "secondary":
+                    secondary_fields.append(field_dict)
+                elif field_type == "auxiliary":
+                    auxiliary_fields.append(field_dict)
+                elif field_type == "back":
+                    back_fields.append(field_dict)
+        else:
+            if pass_data.get("apple_header_label") or pass_data.get("apple_header_value"):
+                header_fields.append({
+                    "key": "header_1",
+                    "label": pass_data.get("apple_header_label", ""),
+                    "value": pass_data.get("apple_header_value", "")
+                })
 
-        if pass_data.get("apple_primary_label") or pass_data.get("apple_primary_value"):
-            primary_fields.append({
-                "key": "primary_1",
-                "label": pass_data.get("apple_primary_label", ""),
-                "value": pass_data.get("apple_primary_value", "")
-            })
+            if pass_data.get("apple_primary_label") or pass_data.get("apple_primary_value"):
+                primary_fields.append({
+                    "key": "primary_1",
+                    "label": pass_data.get("apple_primary_label", ""),
+                    "value": pass_data.get("apple_primary_value", "")
+                })
 
-        if pass_data.get("apple_sec_label") or pass_data.get("apple_sec_value"):
-            secondary_fields.append({
-                "key": "secondary_1",
-                "label": pass_data.get("apple_sec_label", ""),
-                "value": pass_data.get("apple_sec_value", "")
-            })
+            if pass_data.get("apple_sec_label") or pass_data.get("apple_sec_value"):
+                secondary_fields.append({
+                    "key": "secondary_1",
+                    "label": pass_data.get("apple_sec_label", ""),
+                    "value": pass_data.get("apple_sec_value", "")
+                })
 
-        if pass_data.get("apple_aux_label") or pass_data.get("apple_aux_value"):
-            auxiliary_fields.append({
-                "key": "auxiliary_1",
-                "label": pass_data.get("apple_aux_label", ""),
-                "value": pass_data.get("apple_aux_value", "")
-            })
+            if pass_data.get("apple_aux_label") or pass_data.get("apple_aux_value"):
+                auxiliary_fields.append({
+                    "key": "auxiliary_1",
+                    "label": pass_data.get("apple_aux_label", ""),
+                    "value": pass_data.get("apple_aux_value", "")
+                })
 
-        if pass_data.get("apple_back_label") or pass_data.get("apple_back_value"):
-            back_fields.append({
-                "key": "back_1",
-                "label": pass_data.get("apple_back_label", ""),
-                "value": pass_data.get("apple_back_value", "")
-            })
+            if pass_data.get("apple_back_label") or pass_data.get("apple_back_value"):
+                back_fields.append({
+                    "key": "back_1",
+                    "label": pass_data.get("apple_back_label", ""),
+                    "value": pass_data.get("apple_back_value", "")
+                })
 
         # Barcode
         barcode = {
@@ -233,14 +256,15 @@ class AppleWalletService:
             "labelColor": label_color,
             "barcode": barcode,
             "barcodes": [barcode],
-            "storeCard": {
-                "headerFields": header_fields,
-                "primaryFields": primary_fields,
-                "secondaryFields": secondary_fields,
-                "auxiliaryFields": auxiliary_fields,
-                "backFields": back_fields,
-            },
+            "storeCard": {},
         }
+        
+        if header_fields: pass_dict["storeCard"]["headerFields"] = header_fields
+        if primary_fields: pass_dict["storeCard"]["primaryFields"] = primary_fields
+        if secondary_fields: pass_dict["storeCard"]["secondaryFields"] = secondary_fields
+        if auxiliary_fields: pass_dict["storeCard"]["auxiliaryFields"] = auxiliary_fields
+        if back_fields: pass_dict["storeCard"]["backFields"] = back_fields
+
 
         return pass_dict
 
@@ -251,21 +275,35 @@ class AppleWalletService:
     @staticmethod
     def _collect_images(class_data: dict, pass_data: dict, build_dir: str, files: dict):
         """Download remote images and add their bytes to *files*."""
-        # Logo / icon
-        logo_url = pass_data.get("apple_logo_url") or class_data.get("logo_url")
+        # Logo
+        logo_url = pass_data.get("apple_logo_url") or pass_data.get("logo_url") or class_data.get("logo_url")
         if logo_url:
             try:
                 dl = _download_image(logo_url, os.path.join(build_dir, "logo_src.png"))
                 img_bytes = open(dl, "rb").read()
-                files["icon.png"] = img_bytes
-                files["icon@2x.png"] = img_bytes
                 files["logo.png"] = img_bytes
                 files["logo@2x.png"] = img_bytes
             except ValueError as exc:
                 print(f"Warning: Could not attach logo: {exc}")
 
-        # Hero → strip
-        strip_url = pass_data.get("apple_strip_url") or class_data.get("hero_image_url")
+        # Mandatory icon
+        icon_path = os.path.join("assets", "icon.png")
+        icon_2x_path = os.path.join("assets", "icon@2x.png")
+        b2f_path = os.path.join("assets", "B2F.png")
+        
+        # Fallback to B2F.png if icons are missing
+        if not os.path.exists(icon_path) and os.path.exists(b2f_path):
+            icon_path = b2f_path
+        if not os.path.exists(icon_2x_path) and os.path.exists(b2f_path):
+            icon_2x_path = b2f_path
+            
+        if os.path.exists(icon_path):
+            files["icon.png"] = open(icon_path, "rb").read()
+        if os.path.exists(icon_2x_path):
+            files["icon@2x.png"] = open(icon_2x_path, "rb").read()
+
+        # Hero -> strip
+        strip_url = pass_data.get("apple_strip_url") or pass_data.get("strip_url") or class_data.get("hero_image_url")
         if strip_url:
             try:
                 dl = _download_image(strip_url, os.path.join(build_dir, "strip_src.png"))
@@ -274,6 +312,28 @@ class AppleWalletService:
                 files["strip@2x.png"] = img_bytes
             except ValueError as exc:
                 print(f"Warning: Could not attach hero/strip image: {exc}")
+                
+        # Background
+        bg_url = pass_data.get("apple_background_image_url") or pass_data.get("background_image_url")
+        if bg_url:
+            try:
+                dl = _download_image(bg_url, os.path.join(build_dir, "background_src.png"))
+                img_bytes = open(dl, "rb").read()
+                files["background.png"] = img_bytes
+                files["background@2x.png"] = img_bytes
+            except ValueError as exc:
+                print(f"Warning: Could not attach background image: {exc}")
+
+        # Thumbnail
+        thumb_url = pass_data.get("apple_thumbnail_url") or pass_data.get("thumbnail_url")
+        if thumb_url:
+            try:
+                dl = _download_image(thumb_url, os.path.join(build_dir, "thumbnail_src.png"))
+                img_bytes = open(dl, "rb").read()
+                files["thumbnail.png"] = img_bytes
+                files["thumbnail@2x.png"] = img_bytes
+            except ValueError as exc:
+                print(f"Warning: Could not attach thumbnail image: {exc}")
 
     # ------------------------------------------------------------------
     # Internal — signing

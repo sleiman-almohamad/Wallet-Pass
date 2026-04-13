@@ -17,6 +17,8 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
     logo_text_ref = ft.Ref[ft.TextField]()
     logo_url_ref = ft.Ref[ft.TextField]()
     strip_url_ref = ft.Ref[ft.TextField]()
+    background_image_url_ref = ft.Ref[ft.TextField]()
+    thumbnail_url_ref = ft.Ref[ft.TextField]()
     # ── Apple Field Editor ──
     # Added later, so we initialize below where on_form_change is defined
 
@@ -54,6 +56,12 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
             pass_data["logo_url"] = logo_url_ref.current.value
         if strip_url_ref.current:
             pass_data["strip_url"] = strip_url_ref.current.value
+        if background_image_url_ref.current:
+            pass_data["background_image_url"] = background_image_url_ref.current.value
+        if thumbnail_url_ref.current:
+            pass_data["thumbnail_url"] = thumbnail_url_ref.current.value
+            
+        pass_data["ticket_layout"] = "strip" if pass_data.get("strip_url") else "background"
             
         pass_data["dynamic_fields"] = apple_field_editor.get_fields_data()
             
@@ -62,6 +70,30 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         pass_data["label_color"] = custom_color_state.get("label_color")
         
         preview.update_data(pass_data, "apple")
+
+    def check_image_fields_logic(e=None):
+        strip_val = strip_url_ref.current.value if strip_url_ref.current else ""
+        bg_val = background_image_url_ref.current.value if background_image_url_ref.current else ""
+        thumb_val = thumbnail_url_ref.current.value if thumbnail_url_ref.current else ""
+
+        if strip_val:
+            if background_image_url_ref.current: background_image_url_ref.current.disabled = True
+            if thumbnail_url_ref.current: thumbnail_url_ref.current.disabled = True
+            if strip_url_ref.current: strip_url_ref.current.disabled = False
+        elif bg_val or thumb_val:
+            if strip_url_ref.current: strip_url_ref.current.disabled = True
+            if background_image_url_ref.current: background_image_url_ref.current.disabled = False
+            if thumbnail_url_ref.current: thumbnail_url_ref.current.disabled = False
+        else:
+            if strip_url_ref.current: strip_url_ref.current.disabled = False
+            if background_image_url_ref.current: background_image_url_ref.current.disabled = False
+            if thumbnail_url_ref.current: thumbnail_url_ref.current.disabled = False
+        
+        on_form_change()
+        if e and e.control and e.control.page:
+            e.control.page.update()
+        else:
+            page.update()
 
     apple_field_editor = AppleFieldEditor(on_change=on_form_change)
     color_state_obj = SimpleColorState(custom_color_state, on_form_change)
@@ -174,6 +206,8 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                 logo_text_ref.current.value = p_data.get("logo_text", "")
                 logo_url_ref.current.value = p_data.get("logo_url", "")
                 strip_url_ref.current.value = p_data.get("strip_url", "")
+                background_image_url_ref.current.value = p_data.get("background_image_url", "")
+                thumbnail_url_ref.current.value = p_data.get("thumbnail_url", "")
                 
                 
                 def _get_fields(src_list, t_name):
@@ -186,30 +220,38 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                         })
                     return res
 
-                # Check where backend returns the fields list today. Often in pass_data.
-                # If they are separate arrays (primary_fields, etc.) we combine them:
-                loaded_fields = []
-                loaded_fields.extend(_get_fields(p_data.get("primary_fields", []), "primary"))
-                loaded_fields.extend(_get_fields(p_data.get("secondary_fields", []), "secondary"))
-                loaded_fields.extend(_get_fields(p_data.get("auxiliary_fields", []), "auxiliary"))
-                loaded_fields.extend(_get_fields(p_data.get("back_fields", []), "back"))
-                
-                # Check pass_data wrapper just in case
-                if not loaded_fields and "pass_data" in p_data:
-                    c_pd = p_data["pass_data"]
-                    loaded_fields.extend(_get_fields(c_pd.get("primary_fields", []), "primary"))
-                    loaded_fields.extend(_get_fields(c_pd.get("secondary_fields", []), "secondary"))
-                    loaded_fields.extend(_get_fields(c_pd.get("auxiliary_fields", []), "auxiliary"))
-                    loaded_fields.extend(_get_fields(c_pd.get("back_fields", []), "back"))
-                    
-                    # Alternatively, if dynamic_fields list was stored directly:
-                    if "dynamic_fields" in c_pd:
-                        loaded_fields.extend(c_pd["dynamic_fields"])
+                # Map directly from the new DB fields structure returned from API
+                db_fields = p_data.get("fields", [])
+                mapped_fields = []
+                for f in db_fields:
+                    mapped_fields.append({
+                        "field_type": f.get("type"),
+                        "label": f.get("label", ""),
+                        "value": f.get("value", "")
+                    })
+
+                # Fallback to old schema if the new 'fields' list is empty
+                if not mapped_fields and ("header_fields" in p_data or "pass_data" in p_data):
+                    if "header_fields" in p_data:
+                        mapped_fields.extend(_get_fields(p_data.get("header_fields", []), "header"))
+                        mapped_fields.extend(_get_fields(p_data.get("primary_fields", []), "primary"))
+                        mapped_fields.extend(_get_fields(p_data.get("secondary_fields", []), "secondary"))
+                        mapped_fields.extend(_get_fields(p_data.get("auxiliary_fields", []), "auxiliary"))
+                        mapped_fields.extend(_get_fields(p_data.get("back_fields", []), "back"))
+                    elif "pass_data" in p_data:
+                        c_pd = p_data["pass_data"]
+                        mapped_fields.extend(_get_fields(c_pd.get("header_fields", []), "header"))
+                        mapped_fields.extend(_get_fields(c_pd.get("primary_fields", []), "primary"))
+                        mapped_fields.extend(_get_fields(c_pd.get("secondary_fields", []), "secondary"))
+                        mapped_fields.extend(_get_fields(c_pd.get("auxiliary_fields", []), "auxiliary"))
+                        mapped_fields.extend(_get_fields(c_pd.get("back_fields", []), "back"))
+                        if "dynamic_fields" in c_pd:
+                            mapped_fields.extend(c_pd["dynamic_fields"])
 
                 # Remove duplicates just in case
                 unique_fields = []
                 _seen = set()
-                for lf in loaded_fields:
+                for lf in mapped_fields:
                     sig = (lf["field_type"], lf["label"], lf["value"])
                     if sig not in _seen:
                         _seen.add(sig)
@@ -217,7 +259,10 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
 
                 apple_field_editor.set_fields_data(unique_fields)
                 
+                # Check locks and invoke preview sync
+                check_image_fields_logic()
                 on_form_change()
+                
             except Exception as exc:
                 print(f"Error loading Apple pass data: {exc}")
         page.update()
@@ -227,6 +272,10 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         template_dropdown.value = None
         pass_dropdown.value = None
         pass_dropdown.visible = False
+        
+        for ref in [strip_url_ref, background_image_url_ref, thumbnail_url_ref]:
+            if ref.current: ref.current.disabled = False
+            
         edit_form.visible = False
         preview.update_data({"bg_color": "#1a1a2e"}, "apple")
         page.update()
@@ -246,6 +295,9 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                 "logo_text": pass_data.get("logo_text"),
                 "logo_url": pass_data.get("logo_url"),
                 "strip_url": pass_data.get("strip_url"),
+                "background_image_url": pass_data.get("background_image_url"),
+                "thumbnail_url": pass_data.get("thumbnail_url"),
+                "ticket_layout": "strip" if pass_data.get("strip_url") else "background",
                 "background_color": custom_color_state.get("background_color"),
                 "foreground_color": custom_color_state.get("foreground_color"),
                 "label_color": custom_color_state.get("label_color"),
@@ -256,6 +308,7 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                 return [{"key": f"{ftype}_{i}", "label": f["label"], "value": f["value"]}
                         for i, f in enumerate(dynamic_fields) if f["field_type"] == ftype]
 
+            update_payload["header_fields"] = _extract_fields("header")
             update_payload["primary_fields"] = _extract_fields("primary")
             update_payload["secondary_fields"] = _extract_fields("secondary")
             update_payload["auxiliary_fields"] = _extract_fields("auxiliary")
@@ -319,7 +372,14 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         ft.TextField(ref=org_name_ref, label="Organization Name", on_change=on_form_change),
         ft.TextField(ref=logo_text_ref, label="Logo Text", on_change=on_form_change),
         ft.TextField(ref=logo_url_ref, label="Logo URL", on_change=on_form_change),
-        ft.TextField(ref=strip_url_ref, label="Strip Image URL", on_change=on_form_change),
+        
+        ft.Divider(),
+        ft.Text("Event Ticket Layout", size=18, weight=ft.FontWeight.BOLD),
+        ft.TextField(ref=strip_url_ref, label="Strip Image URL", on_change=check_image_fields_logic),
+        ft.Row([
+            ft.TextField(ref=background_image_url_ref, label="Background Image URL", on_change=check_image_fields_logic, expand=1),
+            ft.TextField(ref=thumbnail_url_ref, label="Thumbnail URL", on_change=check_image_fields_logic, expand=1),
+        ], spacing=10),
         ft.Divider(),
         
         ft.Text("Card Fields", size=18, weight=ft.FontWeight.BOLD),

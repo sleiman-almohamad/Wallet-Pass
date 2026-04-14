@@ -1,6 +1,97 @@
 import flet as ft
 from ui.theme import BORDER_COLOR, SECTION_HEADER, TEXT_MUTED
 
+class EmojiPicker:
+    def __init__(self, page: ft.Page):
+        self.page = page
+        self.target_textfield = None
+        self._build_dialog()
+
+    def _build_dialog(self):
+        import json
+        import os
+        
+        emoji_path = os.path.join(os.path.dirname(__file__), "emoji_data.json")
+        try:
+            with open(emoji_path, "r", encoding="utf-8") as f:
+                raw_cats = json.load(f)
+             
+            # Map Github gemoji categories to nicer Tab names
+            name_map = {
+                "Smileys & Emotion": "😀 Smileys",
+                "People & Body": "👋 People",
+                "Animals & Nature": "🐻 Nature",
+                "Food & Drink": "🍔 Food",
+                "Travel & Places": "🚗 Travel",
+                "Activities": "🎪 Activities",
+                "Objects": "🛠️ Objects",
+                "Symbols": "🚩 Symbols",
+                "Flags": "🏳️ Flags"
+            }
+            categories = {name_map.get(k, k): v for k, v in raw_cats.items()}
+        except Exception:
+            categories = {
+                "😀 Smileys": ["😀", "😁", "😂", "🤣", "😊", "😇", "😍", "🥰", "😋", "😎", "🤔", "🙄", "😴", "🤐", "🥵"],
+                "🎪 Activities": ["⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏉", "🎱", "🏓", "🏸", "🥊", "🥋", "🥅", "⛳", "⛸️"],
+                "🛠️ Objects": ["💻", "⌨️", "🖥️", "🖨️", "🖱️", "🖲️", "🕹️", "🗜️", "💽", "💾", "💿", "📀", "📼", "📷", "📸"],
+                "🚩 Symbols": ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗"]
+            }
+
+        tabs = []
+        for name, emojis in categories.items():
+            grid = ft.GridView(
+                expand=1,
+                runs_count=6,
+                max_extent=45,
+                child_aspect_ratio=1.0,
+                spacing=5,
+                run_spacing=5,
+            )
+            for e in emojis:
+                grid.controls.append(
+                    ft.TextButton(
+                        text=e,
+                        data=e,
+                        on_click=self._on_emoji_click,
+                        style=ft.ButtonStyle(padding=0, shape=ft.RoundedRectangleBorder(radius=4))
+                    )
+                )
+            tabs.append(ft.Tab(tab_content=ft.Text(name, size=12), content=ft.Container(content=grid, padding=10)))
+
+        self.tabs_control = ft.Tabs(
+            selected_index=0,
+            animation_duration=300,
+            tabs=tabs,
+            expand=1,
+        )
+
+        self.dialog = ft.AlertDialog(
+            title=ft.Text("Select Emoji", size=16, weight=ft.FontWeight.BOLD),
+            content=ft.Container(
+                width=400,
+                height=300,
+                content=self.tabs_control
+            ),
+            actions=[ft.TextButton("Close", on_click=lambda e: self.close())],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+    def _on_emoji_click(self, e):
+        emoji = e.control.data
+        if self.target_textfield:
+            self.target_textfield.value = (self.target_textfield.value or "") + emoji
+            self.target_textfield.update()
+            if hasattr(self.target_textfield, '_on_change_trigger') and self.target_textfield._on_change_trigger:
+                self.target_textfield._on_change_trigger(None)
+
+    def open(self, target_textfield, on_change_callback=None):
+        self.target_textfield = target_textfield
+        self.target_textfield._on_change_trigger = on_change_callback
+        self.page.open(self.dialog)
+
+    def close(self):
+        self.page.close(self.dialog)
+
 class AppleFieldEditor:
     """
     Dynamic Field Editor for Apple Wallet Passes.
@@ -24,8 +115,10 @@ class AppleFieldEditor:
         "back": "Back Fields",
     }
 
-    def __init__(self, on_change=None):
+    def __init__(self, page=None, on_change=None):
+        self.page = page
         self.on_change = on_change
+        self.emoji_picker = EmojiPicker(self.page) if self.page else None
         
         # Structure: dict of category -> list of Dicts {"label": TextField, "value": TextField, "row": ft.Row}
         self.fields = {
@@ -106,14 +199,31 @@ class AppleFieldEditor:
             value=label_val, 
             hint_text=f"{self.TITLES[category]} Label",
             expand=1, border_radius=8, text_size=13,
-            on_change=on_text_change
+            on_change=on_text_change,
+            suffix=ft.IconButton(
+                icon=ft.Icons.EMOJI_EMOTIONS,
+                icon_size=16,
+                tooltip="Add Emoji",
+                on_click=lambda e: self.emoji_picker.open(lbl_tf, on_text_change) if self.emoji_picker else None
+            )
         )
+        is_back = (category == "back")
+
         val_tf = ft.TextField(
             label="Value", 
             value=value_val, 
             hint_text=f"{self.TITLES[category]} Value",
             expand=1, border_radius=8, text_size=13,
-            on_change=on_text_change
+            on_change=on_text_change,
+            multiline=is_back,
+            min_lines=3 if is_back else 1,
+            max_lines=10 if is_back else 1,
+            suffix=ft.IconButton(
+                icon=ft.Icons.EMOJI_EMOTIONS,
+                icon_size=16,
+                tooltip="Add Emoji",
+                on_click=lambda e: self.emoji_picker.open(val_tf, on_text_change) if self.emoji_picker else None
+            )
         )
 
         remove_btn = ft.IconButton(
@@ -122,7 +232,8 @@ class AppleFieldEditor:
             tooltip="Remove Field"
         )
         
-        row = ft.Row([lbl_tf, val_tf, remove_btn], spacing=12, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+        row = ft.Row([lbl_tf, val_tf, remove_btn], spacing=12, vertical_alignment=ft.CrossAxisAlignment.START if is_back else ft.CrossAxisAlignment.CENTER)
+
         
         field_obj = {
             "label_tf": lbl_tf,
@@ -177,3 +288,10 @@ class AppleFieldEditor:
                     
         self._update_add_buttons()
         # Don't trigger change on initial load to avoid redundant triggers
+
+    def reset(self):
+        """Clear all dynamic fields and reset internal lists."""
+        for cat in self.fields:
+            self.fields[cat].clear()
+            self.sections_ui[cat].controls.clear()
+        self._update_add_buttons()

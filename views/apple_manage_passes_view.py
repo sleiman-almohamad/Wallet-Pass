@@ -95,7 +95,7 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         else:
             page.update()
 
-    apple_field_editor = AppleFieldEditor(on_change=on_form_change)
+    apple_field_editor = AppleFieldEditor(page=page, on_change=on_form_change)
     color_state_obj = SimpleColorState(custom_color_state, on_form_change)
     bg_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "background_color", "Background Color")
     fg_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "foreground_color", "Foreground Color")

@@ -46,7 +46,34 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
     current_class_data = None
 
     # ── AppleFieldEditor ──
-    apple_field_editor = AppleFieldEditor(on_change=None)  # We will set on_change after _sync_preview is defined
+    apple_field_editor = AppleFieldEditor(page=page, on_change=None)  # We will set on_change after _sync_preview is defined
+
+    # ── File Picker ──
+    file_picker = ft.FilePicker()
+    page.overlay.append(file_picker)
+    current_picker_target = [None]
+    
+    def on_file_picked(e: ft.FilePickerResultEvent):
+        if e.files and current_picker_target[0]:
+            file_path = e.files[0].path
+            target = current_picker_target[0]
+            if target in dynamic_field_refs and dynamic_field_refs[target].current:
+                dynamic_field_refs[target].current.value = file_path
+                dynamic_field_refs[target].current.update()
+                
+                # Check logic or sync preview
+                if target in ["apple_strip_url", "apple_background_image_url", "apple_thumbnail_url"]:
+                    check_image_fields_logic()
+                else:
+                    _sync_preview()
+            page.update()
+            
+    file_picker.on_result = on_file_picked
+
+    def _open_file_picker(target_name):
+        current_picker_target[0] = target_name
+        file_picker.pick_files(allow_multiple=False)
+
 
     # ── Preview sync ──
     def _sync_preview(_=None):
@@ -309,6 +336,8 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             if ref.current:
                 ref.current.value = ""
                 ref.current.disabled = False
+                
+        apple_field_editor.reset()
         
         # Reset color state
         custom_color_state["background_color"] = "#1a1a2e"
@@ -418,6 +447,11 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                         label=state.t("label.logo_icon_url"), hint_text=state.t("hint.logo_url"),
                         expand=1, border_radius=8, text_size=13, on_change=_sync_preview,
                     ),
+                    ft.IconButton(
+                        icon=ft.Icons.FOLDER_OPEN,
+                        tooltip="Browse local file",
+                        on_click=lambda e: _open_file_picker("apple_logo_url")
+                    ),
                 ], spacing=12),
                 
                 ft.Divider(height=1, color=BORDER_COLOR),
@@ -427,6 +461,11 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                         ref=dynamic_field_refs["apple_strip_url"],
                         label=state.t("label.strip_hero_image_url"), hint_text=state.t("hint.strip_url"),
                         expand=1, border_radius=8, text_size=13, on_change=check_image_fields_logic,
+                    ),
+                    ft.IconButton(
+                        icon=ft.Icons.FOLDER_OPEN,
+                        tooltip="Browse local file",
+                        on_click=lambda e: _open_file_picker("apple_strip_url")
                     ),
                 ]),
                 ft.Row([

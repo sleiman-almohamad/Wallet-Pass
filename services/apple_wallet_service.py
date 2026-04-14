@@ -29,6 +29,11 @@ import configs
 
 def _download_image(url: str, dest_path: str) -> str:
     """Download *url* to *dest_path*.  Returns *dest_path* on success."""
+    import shutil
+    if os.path.exists(url) and os.path.isfile(url):
+        shutil.copy2(url, dest_path)
+        return dest_path
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
@@ -117,7 +122,7 @@ class AppleWalletService:
             files: dict[str, bytes] = {}  # filename → raw bytes
 
             # pass.json
-            pass_json_bytes = json.dumps(pass_json, separators=(',', ':')).encode("utf-8")
+            pass_json_bytes = json.dumps(pass_json, separators=(',', ':'), ensure_ascii=False).encode("utf-8")
             files["pass.json"] = pass_json_bytes
 
             # images
@@ -283,6 +288,21 @@ class AppleWalletService:
         if logo_url:
             try:
                 dl = _download_image(logo_url, os.path.join(build_dir, "logo_src.png"))
+                
+                # Pillow automation for icons
+                try:
+                    from PIL import Image
+                    with Image.open(dl) as img:
+                        img = img.convert("RGBA")
+                        icon_path = os.path.join(build_dir, "icon_gen.png")
+                        icon2x_path = os.path.join(build_dir, "icon_gen@2x.png")
+                        img.resize((29, 29), Image.Resampling.LANCZOS).save(icon_path, "PNG")
+                        img.resize((58, 58), Image.Resampling.LANCZOS).save(icon2x_path, "PNG")
+                        files["icon.png"] = open(icon_path, "rb").read()
+                        files["icon@2x.png"] = open(icon2x_path, "rb").read()
+                except Exception as p_err:
+                    print(f"Warning: Pillow auto-generation failed: {p_err}")
+
                 img_bytes = open(dl, "rb").read()
                 files["logo.png"] = img_bytes
                 files["logo@2x.png"] = img_bytes
@@ -300,9 +320,9 @@ class AppleWalletService:
         if not os.path.exists(icon_2x_path) and os.path.exists(b2f_path):
             icon_2x_path = b2f_path
             
-        if os.path.exists(icon_path):
+        if "icon.png" not in files and os.path.exists(icon_path):
             files["icon.png"] = open(icon_path, "rb").read()
-        if os.path.exists(icon_2x_path):
+        if "icon@2x.png" not in files and os.path.exists(icon_2x_path):
             files["icon@2x.png"] = open(icon_2x_path, "rb").read()
 
         # Hero -> strip

@@ -57,6 +57,9 @@ def _hex_to_rgb(hex_color: str) -> str:
         return "rgb(255, 255, 255)"
 
 
+def _sha1_hex(data: bytes) -> str:
+    return hashlib.sha1(data).hexdigest()
+
 def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -71,7 +74,7 @@ class AppleWalletService:
     def __init__(self):
         self.cert_path = configs.APPLE_CERT_PATH
         self.key_path = configs.APPLE_KEY_PATH
-        self.wwdr_path = configs.APPLE_WWDR_PATH
+        self.wwdr_path = "certs/wwdr_g4.pem"
         self.key_password = configs.APPLE_KEY_PASSWORD or ""
         self.team_id = configs.APPLE_TEAM_ID
         self.pass_type_id = configs.APPLE_PASS_TYPE_ID
@@ -114,15 +117,15 @@ class AppleWalletService:
             files: dict[str, bytes] = {}  # filename → raw bytes
 
             # pass.json
-            pass_json_bytes = json.dumps(pass_json, indent=2).encode("utf-8")
+            pass_json_bytes = json.dumps(pass_json, separators=(',', ':')).encode("utf-8")
             files["pass.json"] = pass_json_bytes
 
             # images
             self._collect_images(class_data, pass_data, build_dir, files)
 
             # 3. Build manifest.json
-            manifest = {fname: _sha256_hex(data) for fname, data in files.items()}
-            manifest_bytes = json.dumps(manifest, indent=2).encode("utf-8")
+            manifest = {fname: _sha1_hex(data) for fname, data in files.items()}
+            manifest_bytes = json.dumps(manifest, sort_keys=True, separators=(',', ':')).encode("utf-8")
             files["manifest.json"] = manifest_bytes
 
             # 4. Create PKCS#7 detached signature of manifest.json
@@ -256,14 +259,14 @@ class AppleWalletService:
             "labelColor": label_color,
             "barcode": barcode,
             "barcodes": [barcode],
-            "storeCard": {},
+            "eventTicket": {},
         }
         
-        if header_fields: pass_dict["storeCard"]["headerFields"] = header_fields
-        if primary_fields: pass_dict["storeCard"]["primaryFields"] = primary_fields
-        if secondary_fields: pass_dict["storeCard"]["secondaryFields"] = secondary_fields
-        if auxiliary_fields: pass_dict["storeCard"]["auxiliaryFields"] = auxiliary_fields
-        if back_fields: pass_dict["storeCard"]["backFields"] = back_fields
+        if header_fields: pass_dict["eventTicket"]["headerFields"] = header_fields
+        if primary_fields: pass_dict["eventTicket"]["primaryFields"] = primary_fields
+        if secondary_fields: pass_dict["eventTicket"]["secondaryFields"] = secondary_fields
+        if auxiliary_fields: pass_dict["eventTicket"]["auxiliaryFields"] = auxiliary_fields
+        if back_fields: pass_dict["eventTicket"]["backFields"] = back_fields
 
 
         return pass_dict
@@ -335,32 +338,52 @@ class AppleWalletService:
             except ValueError as exc:
                 print(f"Warning: Could not attach thumbnail image: {exc}")
 
+
     # ------------------------------------------------------------------
     # Internal — signing
     # ------------------------------------------------------------------
 
     def _sign_manifest(self, manifest_bytes: bytes) -> bytes:
         """Create a PKCS#7 detached (DER) signature of *manifest_bytes*."""
-        # Load signing certificate
-        with open(self.cert_path, "rb") as f:
-            cert = x509.load_pem_x509_certificate(f.read())
+        import logging
+        logger = logging.getLogger(__name__)
+        try:
+            # Load signing certificate
+            with open(self.cert_path, "rb") as f:
+                cert = x509.load_pem_x509_certificate(f.read())
 
-        # Load private key
-        key_password = self.key_password.encode("utf-8") if self.key_password else None
-        with open(self.key_path, "rb") as f:
-            private_key = serialization.load_pem_private_key(f.read(), password=key_password)
+            # Load private key
+            key_password = self.key_password.encode("utf-8") if self.key_password else None
+            with open(self.key_path, "rb") as f:
+                private_key = serialization.load_pem_private_key(f.read(), password=key_password)
 
-        # Load WWDR intermediate certificate
-        with open(self.wwdr_path, "rb") as f:
-            wwdr_cert = x509.load_pem_x509_certificate(f.read())
+            # Load WWDR intermediate certificate
+            with open(self.wwdr_path, "rb") as f:
+                wwdr_cert = x509.load_pem_x509_certificate(f.read())
+                
+            # --- START DIAGNOSTIC LOGGING ---
+            logger.info("--- Apple Wallet PKCS#7 Diagnostic ---")
+            logger.info(f"Certificate Subject: {cert.subject}")
+            logger.info(f"Valid After: {cert.not_valid_before_utc} | Valid Before: {cert.not_valid_after_utc}")
+            
+            # Cross check identifiers (UID usually holds TeamID, Subject holds PASS TYPE ID sometimes in OU)
+            # The prompt warned about mismatch of teamIdentifier/passTypeIdentifier
+            logger.info(f"Target Team ID: {self.team_id} | Target Pass Type ID: {self.pass_type_id}")
+            logger.info("Ensure the identifiers above match the embedded Certificate Subject precisely.")
+            logger.info("---------------------------------------")
 
-        # Build PKCS#7 signed-data (detached, DER-encoded)
-        signature = (
-            pkcs7.PKCS7SignatureBuilder()
-            .set_data(manifest_bytes)
-            .add_signer(cert, private_key, hashes.SHA256())
-            .add_certificate(wwdr_cert)
-            .sign(serialization.Encoding.DER, [pkcs7.PKCS7Options.DetachedSignature])
-        )
+            # Build PKCS#7 signed-data (detached, DER-encoded)
+            signature = (
+                pkcs7.PKCS7SignatureBuilder()
+                .set_data(manifest_bytes)
+                # Note: iOS 10+ and modern `cryptography` require SHA256 here, even if manifest is SHA1
+                .add_signer(cert, private_key, hashes.SHA256())
+                .add_certificate(wwdr_cert)
+                .sign(serialization.Encoding.DER, [pkcs7.PKCS7Options.DetachedSignature])
+            )
 
-        return signature
+            return signature
+            
+        except Exception as e:
+            logger.error(f"Critical OpenSSL/Signing Error generating digital signature: {e}")
+            raise

@@ -692,6 +692,55 @@ async def update_apple_pass(serial_number: str, pass_data: ApplePassUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/passes/apple/{serial_number}/download", tags=["Passes"])
+async def download_apple_pass(serial_number: str):
+    """Generate and download an Apple Wallet pass with iOS compatible MIME types"""
+    from fastapi.responses import FileResponse
+    import os
+    try:
+        pass_data = db.get_apple_pass(serial_number)
+        if not pass_data:
+            raise HTTPException(status_code=404, detail=f"Apple Pass '{serial_number}' not found")
+            
+        template_data = db.get_apple_template(pass_data.get('template_id', ''))
+        
+        from services.apple_wallet_service import AppleWalletService
+        apple_service = AppleWalletService()
+        
+        class_data_for_service = {
+            "class_type": "Generic",
+            "template_id": pass_data.get('template_id', ''),
+        }
+        
+        # Construct payload with visual data and dynamic fields combined
+        pass_payload = pass_data.get("visual_data", {})
+        if not isinstance(pass_payload, dict):
+            pass_payload = {}
+        pass_payload["dynamic_fields"] = pass_data.get("fields_data", [])
+        
+        pkpass_path = apple_service.create_pass(
+            class_data=class_data_for_service,
+            pass_data=pass_payload,
+            object_id=serial_number,
+        )
+        
+        if not os.path.exists(pkpass_path):
+            raise HTTPException(status_code=500, detail="Generated PKPASS file not found on disk")
+            
+        return FileResponse(
+            path=pkpass_path,
+            filename=f"pass_{serial_number}.pkpass",
+            media_type="application/vnd.apple.pkpass",
+            headers={
+                "Content-Disposition": f'attachment; filename="pass.pkpass"'
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ========================================================================
 # Passes Endpoints

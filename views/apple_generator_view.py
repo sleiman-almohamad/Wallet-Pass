@@ -223,6 +223,11 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             from services.apple_wallet_service import AppleWalletService
             apple_service = AppleWalletService()
 
+            # Generate auth_token BEFORE building the .pkpass so it gets
+            # embedded in pass.json and matches the DB record.
+            auth_token = secrets.token_hex(16)
+            pass_data["auth_token"] = auth_token
+
             # Build dummy class_data for the service (mostly for compatibility with existing create_pass)
             class_data_for_service = {
                 "class_type": "Generic",
@@ -237,7 +242,6 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             )
 
             apple_folder = os.path.dirname(apple_pass_path)
-            auth_token = secrets.token_hex(16)
 
             dynamic_fields = apple_field_editor.get_fields_data()
             def _extract_fields(ftype):

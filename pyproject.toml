@@ -25,4 +25,5 @@ dependencies = [
     "pymysql>=1.1.0",
     "python-dotenv>=1.2.1",
     "wallet>=2.1.525",
+    "httpx[http2]>=0.28.1",
 ]

@@ -364,3 +364,7 @@ class NotificationRequest(BaseModel):
     """Model for sending a push notification"""
     message: str = Field(..., description="The notification message text")
 
+
+class AppleRegistrationRequest(BaseModel):
+    """Model for registering an Apple device for push notifications"""
+    pushToken: str = Field(..., description="The APNs push token for the device")

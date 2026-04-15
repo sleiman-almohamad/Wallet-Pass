@@ -42,3 +42,5 @@ APPLE_CERT_PATH = os.getenv("APPLE_CERT_PATH", "certs/pass_certificate.pem")
 APPLE_KEY_PATH = os.getenv("APPLE_KEY_PATH", "certs/pass_key.pem")
 APPLE_WWDR_PATH = os.getenv("APPLE_WWDR_PATH", "certs/wwdr.pem")
 APPLE_KEY_PASSWORD = os.getenv("APPLE_KEY_PASSWORD", "")
+# My ngrok url
+APPLE_WEB_SERVICE_URL = "https://breeding-caddy-fondly.ngrok-free.dev"

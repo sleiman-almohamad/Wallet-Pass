@@ -189,24 +189,27 @@ class AppleWalletService:
         auxiliary_fields = []
         back_fields = []
 
-        dynamic_fields = pass_data.get("dynamic_fields", [])
-        if dynamic_fields:
-            for i, field in enumerate(dynamic_fields):
-                field_type = field.get("field_type")
+        fields_source = pass_data.get("fields") or pass_data.get("dynamic_fields", [])
+        
+        if fields_source:
+            for i, field in enumerate(fields_source):
+                ftype = field.get("type") or field.get("field_type")
+                if not ftype: continue
+
                 field_dict = {
-                    "key": f"{field_type}_{i}",
+                    "key": field.get("key") or f"{ftype}_{i}",
                     "label": field.get("label", ""),
                     "value": field.get("value", "")
                 }
-                if field_type == "header":
+                if ftype == "header":
                     header_fields.append(field_dict)
-                elif field_type == "primary":
+                elif ftype == "primary":
                     primary_fields.append(field_dict)
-                elif field_type == "secondary":
+                elif ftype == "secondary":
                     secondary_fields.append(field_dict)
-                elif field_type == "auxiliary":
+                elif ftype == "auxiliary":
                     auxiliary_fields.append(field_dict)
-                elif field_type == "back":
+                elif ftype == "back":
                     back_fields.append(field_dict)
         else:
             if pass_data.get("apple_header_label") or pass_data.get("apple_header_value"):
@@ -265,14 +268,26 @@ class AppleWalletService:
             "barcode": barcode,
             "barcodes": [barcode],
             "eventTicket": {},
+            "webServiceURL": configs.APPLE_WEB_SERVICE_URL,
+            "authenticationToken": pass_data.get("auth_token", ""),
         }
         
         if header_fields: pass_dict["eventTicket"]["headerFields"] = header_fields
         if primary_fields: pass_dict["eventTicket"]["primaryFields"] = primary_fields
         if secondary_fields: pass_dict["eventTicket"]["secondaryFields"] = secondary_fields
+        
+        # Inject Admin Message (Notification Channel) into auxiliaryFields
+        admin_msg_val = pass_data.get("admin_message", "Welcome!")
+        notif_field = {
+            "key": "admin_message",
+            "label": "📢 Important Update",
+            "value": admin_msg_val,
+            "changeMessage": "New Update: %@" 
+        }
+        auxiliary_fields.append(notif_field)
+        
         if auxiliary_fields: pass_dict["eventTicket"]["auxiliaryFields"] = auxiliary_fields
         if back_fields: pass_dict["eventTicket"]["backFields"] = back_fields
-
 
         return pass_dict
 
@@ -407,3 +422,70 @@ class AppleWalletService:
         except Exception as e:
             logger.error(f"Critical OpenSSL/Signing Error generating digital signature: {e}")
             raise
+
+    # ------------------------------------------------------------------
+    # APNs Integration
+    # ------------------------------------------------------------------
+
+    def send_push_notification(self, serial_number: str) -> dict:
+        """
+        Send a silent push notification to all Apple devices registered for this pass.
+        Uses APNs via HTTP/2.
+        """
+        from database.db_manager import DatabaseManager
+        import httpx
+        import traceback
+        import logging
+        
+        log = logging.getLogger(__name__)
+        db = DatabaseManager()
+        push_tokens = db.get_registered_devices_for_pass(serial_number)
+        
+        if not push_tokens:
+            log.info(f"No devices registered for pass {serial_number}")
+            return {"status": "success", "sent": 0, "failed": 0}
+            
+        success_count = 0
+        failure_count = 0
+        apns_host = "api.push.apple.com" 
+        
+        payload = "{}"
+        headers = {
+            "apns-topic": self.pass_type_id,
+            "apns-push-type": "background",
+            "apns-priority": "5"  
+        }
+        
+        cert_tuple = (self.cert_path, self.key_path)
+        
+        try:
+            # Use with to ensure HTTP/2 client is closed
+            with httpx.Client(http2=True, cert=cert_tuple, verify=True) as client:
+                for token in push_tokens:
+                    try:
+                        url = f"https://{apns_host}/3/device/{token}"
+                        response = client.post(url, headers=headers, content=payload.encode())
+                        
+                        if response.status_code == 200:
+                            success_count += 1
+                            log.info(f"✅ APNs sent successfully to {token[:10]}...")
+                        else:
+                            failure_count += 1
+                            log.error(f"❌ APNs failed for token {token[:10]}. Status: {response.status_code}, Body: {response.text}")
+                            if response.status_code == 410 or "Unregistered" in response.text:
+                                log.info(f"Token unregistered. Removing from DB: {token}")
+                                db.unregister_apple_device_by_token(token)
+                                
+                    except Exception as e:
+                        failure_count += 1
+                        log.error(f"❌ Error sending APNs to {token[:10]}: {str(e)}")
+                        
+        except Exception as e:
+            log.error(f"Failed to setup HTTP/2 client for APNs: {e}")
+            return {"status": "error", "message": f"HTTP/2 Client setup failed: {str(e)}"}
+            
+        return {
+            "status": "success",
+            "sent": success_count,
+            "failed": failure_count
+        }

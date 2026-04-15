@@ -3,7 +3,7 @@ FastAPI Application for Wallet Passes
 Provides RESTful API endpoints for managing pass classes and passes
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import copy
 from typing import List, Optional, Dict, Any
@@ -21,7 +21,7 @@ from api.models import (
     PassStatusUpdate, PassResponse, ApplePassCreate,
     AppleTemplateCreate, AppleTemplateUpdate, AppleTemplateResponse,
     ApplePassResponse, ApplePassUpdate,
-    HealthResponse, MessageResponse, NotificationRequest
+    HealthResponse, MessageResponse, NotificationRequest, AppleRegistrationRequest
 )
 
 # Import service layer and wallet client
@@ -616,6 +616,14 @@ async def update_apple_template(template_id: str, template_data: AppleTemplateUp
         
         success = db.update_apple_template(template_id, **update_data)
         if success:
+            # Trigger push for all passes using this template
+            try:
+                from services.apple_wallet_service import AppleWalletService
+                apple_service = AppleWalletService()
+                apple_service.send_apple_template_notification(template_id, "Template Updated")
+                logger.info(f"APPLE: Auto-pushed updates for all passes in template {template_id}")
+            except Exception as e:
+                logger.error(f"APPLE: Failed to auto-push template updates: {e}")
             return MessageResponse(
                 message=f"Apple Template '{template_id}' updated successfully",
                 success=True
@@ -681,6 +689,14 @@ async def update_apple_pass(serial_number: str, pass_data: ApplePassUpdate):
             
         success = db.update_apple_pass(serial_number, **update_dict)
         if success:
+            # Automatically trigger push notification on update
+            try:
+                from services.apple_wallet_service import AppleWalletService
+                apple_service = AppleWalletService()
+                apple_service.send_push_notification(serial_number)
+                logger.info(f"APPLE: Auto-pushed update for pass {serial_number}")
+            except Exception as e:
+                logger.error(f"APPLE: Failed to auto-push update for pass {serial_number}: {e}")
             return MessageResponse(
                 message=f"Apple Pass '{serial_number}' updated successfully",
                 success=True
@@ -712,15 +728,10 @@ async def download_apple_pass(serial_number: str):
             "template_id": pass_data.get('template_id', ''),
         }
         
-        # Construct payload with visual data and dynamic fields combined
-        pass_payload = pass_data.get("visual_data", {})
-        if not isinstance(pass_payload, dict):
-            pass_payload = {}
-        pass_payload["dynamic_fields"] = pass_data.get("fields_data", [])
-        
+        # Construct payload with pass data
         pkpass_path = apple_service.create_pass(
             class_data=class_data_for_service,
-            pass_data=pass_payload,
+            pass_data=pass_data,
             object_id=serial_number,
         )
         
@@ -1480,8 +1491,115 @@ async def send_pass_notification(object_id: str, request: NotificationRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error sending pass notification: {e}")
+        logger.error(f"Error sending notification: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/passes/apple/{serial_number}/notify", response_model=MessageResponse, tags=["Passes"])
+async def send_apple_pass_notification(serial_number: str, request: NotificationRequest):
+    """Send a silent push notification via APNs to all devices registered for this Apple pass."""
+    try:
+        from services.apple_wallet_service import AppleWalletService
+        pass_data = db.get_apple_pass(serial_number)
+        if not pass_data:
+            raise HTTPException(status_code=404, detail=f"Apple pass '{serial_number}' not found")
+        
+        # 1. Update the message in the database for the lock-screen notification
+        db.update_apple_pass_message(serial_number, request.message)
+        
+        # 2. Regenerate the pass file locally so the device fetches the updated content
+        apple_service = AppleWalletService()
+        template_id = pass_data.get('template_id', '')
+        template_data = db.get_apple_template(template_id)
+        
+        class_data = {
+            "class_type": "Generic",
+            "template_id": template_id,
+        }
+        # Refetch updated pass_data from DB to get the new admin_message
+        updated_pass_data = db.get_apple_pass(serial_number)
+        
+        apple_service.create_pass(
+            class_data=class_data,
+            pass_data=updated_pass_data,
+            object_id=serial_number
+        )
+        
+        # 3. Trigger the silent APNs push
+        result = apple_service.send_push_notification(serial_number)
+        
+        if result.get("status") == "error":
+            raise HTTPException(status_code=500, detail=result.get("message", "Unknown APNs error"))
+            
+        return MessageResponse(
+            message=f"Apple Lock-Screen Notification triggered. Success: {result['sent']}",
+            success=True
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending Apple notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/templates/apple/{template_id}/notify", response_model=MessageResponse, tags=["Apple Templates"])
+async def send_apple_template_notification(template_id: str, request: NotificationRequest):
+    """Send a silent push notification via APNs to ALL passes belonging to an Apple template."""
+    try:
+        from services.apple_wallet_service import AppleWalletService
+        
+        template = db.get_apple_template(template_id)
+        if not template:
+            raise HTTPException(status_code=404, detail=f"Apple template '{template_id}' not found")
+        
+        # Fetch all apple passes for this template
+        all_apple = db.get_all_apple_passes()
+        template_passes = [p for p in all_apple if p.get("template_id") == template_id]
+        
+        if not template_passes:
+            return MessageResponse(
+                message=f"No passes found for template '{template_id}'.",
+                success=True
+            )
+        
+        apple_service = AppleWalletService()
+        sent_count = 0
+        
+        for p in template_passes:
+            serial = p.get("serial_number")
+            if not serial: continue
+            
+            # 1. Update the message in the database 
+            db.update_apple_pass_message(serial, request.message)
+            
+            # 2. Regenerate the pass
+            class_data = {"class_type": "Generic", "template_id": template_id}
+            updated_p = db.get_apple_pass(serial)
+            apple_service.create_pass(class_data=class_data, pass_data=updated_p, object_id=serial)
+            
+            # 3. Trigger APNs
+            result = apple_service.send_push_notification(serial)
+            if result.get("sent"):
+                sent_count += 1
+                
+        return MessageResponse(
+            message=f"Bulk Apple Lock-Screen Notification triggered for {sent_count} devices.",
+            success=True
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending bulk Apple notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/passes/apple/{serial_number}/devices", tags=["Passes"])
+async def get_apple_pass_devices_count(serial_number: str):
+    """Get the count of devices registered for push updates on this pass."""
+    try:
+        push_tokens = db.get_registered_devices_for_pass(serial_number)
+        return {"serial_number": serial_number, "count": len(push_tokens)}
+    except Exception as e:
+        logger.error(f"Error fetching registered devices count: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/classes/{class_id}/notify", response_model=MessageResponse, tags=["Classes"])
 async def send_class_notification(class_id: str, request: NotificationRequest):
@@ -1520,6 +1638,198 @@ async def send_class_notification(class_id: str, request: NotificationRequest):
     except Exception as e:
         logger.error(f"Error sending bulk notification: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================================================================
+# Apple Web Service V1 Endpoints (APNs & Wallet Updates)
+# ========================================================================
+
+def _verify_apple_auth(request: Request, serial_number: str) -> dict:
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("ApplePass "):
+        logger.warning(f"APPLE AUTH: Missing or invalid Header for serial {serial_number}")
+        raise HTTPException(status_code=401, detail="Unauthorized: Missing or invalid Authorization header")
+    
+    token = auth_header[len("ApplePass "):]
+    pass_data = db.get_apple_pass(serial_number)
+    
+    db_token = pass_data.get("auth_token") if pass_data else None
+    
+    # Log detailed auth attempt for debugging
+    with open("apple_wallet_logs.txt", "a") as f:
+        f.write(f"[{datetime.now()}] AUTH CHECK: Serial={serial_number}, IncomingToken={token}, DBToken={db_token}\n")
+    
+    if not pass_data or db_token != token:
+        logger.error(f"APPLE AUTH FAILED for {serial_number}")
+        raise HTTPException(status_code=401, detail="Unauthorized: Token mismatch or pass not found")
+        
+    return pass_data
+
+@app.post("/v1/log", tags=["Apple Web Service"])
+async def log_apple_messages(request: Request):
+    """Endpoint for Apple Wallet devices to send their logs and errors to."""
+    body = await request.json()
+    
+    with open("apple_wallet_logs.txt", "a") as f:
+        f.write(f"\n================================\nAPPLE WALLET LOGS\n================================\n")
+        for index, log_entry in enumerate(body.get('logs', [])):
+            f.write(f"[{index}] {log_entry}\n")
+        f.write("================================\n\n")
+        
+    return Response(status_code=200)
+
+@app.post("/v1/devices/{device_library_id}/registrations/{pass_type_id}/{serial_number}", tags=["Apple Web Service"])
+async def register_apple_device(
+    device_library_id: str, 
+    pass_type_id: str, 
+    serial_number: str, 
+    registration: AppleRegistrationRequest,
+    request: Request
+):
+    """Register a device to receive push notifications for a pass"""
+    try:
+        _verify_apple_auth(request, serial_number)
+        logger.info(f"Registering device {device_library_id} for pass {serial_number} with token {registration.pushToken}")
+        
+        success = db.register_apple_device(device_library_id, registration.pushToken, pass_type_id, serial_number)
+        if success:
+            return Response(status_code=201)
+        return Response(status_code=200)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error registering apple device: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/v1/devices/{device_library_id}/registrations/{pass_type_id}/{serial_number}", tags=["Apple Web Service"])
+async def unregister_apple_device(
+    device_library_id: str, 
+    pass_type_id: str, 
+    serial_number: str, 
+    request: Request
+):
+    """Unregister a device (user deleted the pass)"""
+    try:
+        _verify_apple_auth(request, serial_number)
+        logger.info(f"Unregistering device {device_library_id} for pass {serial_number}")
+        
+        db.unregister_apple_device(device_library_id, serial_number)
+        return Response(status_code=200)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error unregistering apple device: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/v1/devices/{device_library_id}/registrations/{pass_type_id}", tags=["Apple Web Service"])
+async def get_serial_numbers_for_device(
+    device_library_id: str,
+    pass_type_id: str,
+    request: Request
+):
+    """Return serial numbers for passes registered to a device."""
+    try:
+        passes_updated_since = request.query_params.get("passesUpdatedSince")
+        logger.info(f"APPLE: Device {device_library_id} requested serials for {pass_type_id} (UpdatedSince: {passes_updated_since})")
+        
+        if passes_updated_since:
+            try:
+                # Try parsing ISO format
+                since_dt = datetime.fromisoformat(passes_updated_since.replace(' ', '+'))
+            except (ValueError, TypeError):
+                # Try parsing as unix timestamp if provided as number
+                try:
+                    since_dt = datetime.fromtimestamp(float(passes_updated_since))
+                except (ValueError, TypeError):
+                    # Fallback to a safe minimum for MariaDB TIMESTAMP (1970)
+                    since_dt = datetime(1970, 1, 1)
+            
+            serial_numbers = db.get_apple_passes_updated_since(
+                pass_type_id=pass_type_id,
+                device_library_id=device_library_id,
+                passes_updated_since=since_dt
+            )
+        else:
+            serial_numbers = db.get_passes_by_device(
+                device_library_id=device_library_id,
+                pass_type_id=pass_type_id
+            )
+        
+        if not serial_numbers:
+            logger.info(f"APPLE: No updated passes for device {device_library_id}")
+            return Response(status_code=204)
+        
+        last_updated = datetime.now().isoformat()
+        
+        return {
+            "serialNumbers": serial_numbers,
+            "lastUpdated": last_updated
+        }
+    except Exception as e:
+        import traceback
+        err_detail = traceback.format_exc()
+        logger.error(f"Error in get_serial_numbers_for_device: {e}\n{err_detail}")
+        with open("apple_wallet_logs.txt", "a") as f:
+            f.write(f"[{datetime.now()}] 500 ERROR in get_serial_numbers_for_device: {e}\n{err_detail}\n")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.get("/v1/passes/{pass_type_id}/{serial_number}", tags=["Apple Web Service"])
+async def get_updated_apple_pass(
+    pass_type_id: str, 
+    serial_number: str, 
+    request: Request
+):
+    """Generate and return the latest updated .pkpass file to the device"""
+    from fastapi.responses import FileResponse
+    import os
+    try:
+        pass_data = _verify_apple_auth(request, serial_number)
+        print(f"🍏 [V1-UPDATE] Device '{request.headers.get('User-Agent')}' is downloading updated pass: {serial_number}")
+        logger.info(f"Device requesting updated pass {serial_number}")
+        
+        template_data = db.get_apple_template(pass_data.get('template_id', ''))
+        
+        from services.apple_wallet_service import AppleWalletService
+        apple_service = AppleWalletService()
+        
+        class_data_for_service = {
+            "class_type": "Generic",
+            "template_id": pass_data.get('template_id', ''),
+        }
+        
+        pass_payload = pass_data.get("visual_data", {})
+        if not isinstance(pass_payload, dict):
+            pass_payload = {}
+        pass_payload["dynamic_fields"] = pass_data.get("fields", [])
+        
+        pkpass_path = apple_service.create_pass(
+            class_data=class_data_for_service,
+            pass_data=pass_data,
+            object_id=serial_number,
+        )
+        
+        if not os.path.exists(pkpass_path):
+            raise HTTPException(status_code=500, detail="Generated PKPASS file not found on disk")
+            
+        modified_time = os.path.getmtime(pkpass_path)
+        last_modified = datetime.fromtimestamp(modified_time).strftime('%a, %d %b %Y %H:%M:%S GMT')
+        
+        return FileResponse(
+            path=pkpass_path,
+            filename=f"pass_{serial_number}.pkpass",
+            media_type="application/vnd.apple.pkpass",
+            headers={
+                "Last-Modified": last_modified,
+                "Content-Disposition": f'attachment; filename="pass.pkpass"'
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating pass for update: {e}")
+        import traceback; traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 if __name__ == "__main__":

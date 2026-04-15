@@ -451,6 +451,54 @@ class APIClient:
         except Exception as e:
             raise APIClientError(f"Error sending bulk notification: {e}") from e
 
+    def send_apple_pass_notification(self, serial_number: str, message: str) -> Dict[str, Any]:
+        """Send a push notification via APNs to an Apple Wallet Pass"""
+        try:
+            response = requests.post(
+                f"{self.base_url}/passes/apple/{serial_number}/notify",
+                json={"message": message}
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(
+                f"Error sending Apple notification: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except Exception as e:
+            raise APIClientError(f"Error sending Apple notification: {e}") from e
+
+    def send_apple_template_notification(self, template_id: str, message: str) -> Dict[str, Any]:
+        """Send a push notification via APNs to all passes in an Apple template"""
+        try:
+            response = requests.post(
+                f"{self.base_url}/templates/apple/{template_id}/notify",
+                json={"message": message}
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(
+                f"Error sending bulk Apple notification: {error_detail}",
+                status_code=e.response.status_code if e.response else None,
+                detail=str(error_detail),
+            ) from e
+        except Exception as e:
+            raise APIClientError(f"Error sending bulk Apple notification: {e}") from e
+
+    def get_apple_pass_devices_count(self, serial_number: str) -> int:
+        """Fetch the number of registered devices for an Apple Wallet Pass"""
+        try:
+            response = requests.get(f"{self.base_url}/passes/apple/{serial_number}/devices")
+            response.raise_for_status()
+            return response.json().get("count", 0)
+        except Exception as e:
+            print(f"Error fetching registered device count: {e}")
+            return 0
+
     # ========================================================================
     # Apple Template Endpoints
     # ========================================================================

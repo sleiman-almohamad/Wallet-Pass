@@ -338,6 +338,7 @@ class ApplePassesData(Base):
     background_image_url = Column(String(512))
     thumbnail_url = Column(String(512))
     ticket_layout = Column(String(50), default="strip")
+    admin_message = Column(Text, nullable=True) # Lock-screen notification message
 
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
@@ -378,7 +379,7 @@ class AppleNotificationsTable(Base):
 class AppleDeviceRegistrations(Base):
     """Tracks which Apple devices have registered to receive push updates
     for specific passes."""
-    __tablename__ = "Apple_Device_Registrations"
+    __tablename__ = "Apple_Device_Registerations"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     device_library_id = Column(String(255), nullable=False, index=True)

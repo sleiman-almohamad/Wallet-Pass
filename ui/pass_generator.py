@@ -878,6 +878,12 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 from services.apple_wallet_service import AppleWalletService
                 apple_service = AppleWalletService()
 
+                # Generate auth_token BEFORE building the .pkpass so it gets
+                # embedded in pass.json and matches the DB record.
+                import secrets
+                auth_token = secrets.token_hex(16)
+                pass_data["auth_token"] = auth_token
+
                 apple_pass_path = apple_service.create_pass(
                     class_data=current_class_data,
                     pass_data=pass_data,
@@ -885,10 +891,6 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 )
 
                 apple_folder = os.path.dirname(apple_pass_path)
-                
-                # Generate a secure random token for APNs
-                import secrets
-                auth_token = secrets.token_hex(16)
                 
                 # Call the API client to save the pass to the database
                 def safe_field(label_ref, value_ref, key_name):

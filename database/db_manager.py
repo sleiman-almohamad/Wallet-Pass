@@ -799,6 +799,7 @@ class DatabaseManager:
             "logo_url": p.logo_url,
             "icon_url": p.icon_url,
             "strip_url": p.strip_url,
+            "admin_message": p.admin_message,
             "created_at": p.created_at,
             "updated_at": p.updated_at,
         }
@@ -851,6 +852,15 @@ class DatabaseManager:
             session.delete(p)
             return True
 
+    def update_apple_pass_message(self, serial_number: str, message: str) -> bool:
+        """Update the admin_message for a specific Apple pass to trigger lock-screen notification."""
+        with self.get_session() as session:
+            p = session.get(ApplePassesData, serial_number)
+            if not p:
+                return False
+            p.admin_message = message
+            return True
+
     # ========================================================================
     # Apple Device Registration Operations
     # ========================================================================
@@ -887,6 +897,13 @@ class DatabaseManager:
                 session.delete(existing)
                 return True
             return False
+
+    def unregister_apple_device_by_token(self, push_token: str) -> bool:
+        """Removes all registrations associated with a specific push token.
+        Called when APNs returns a 410 (Unregistered)."""
+        with self.get_session() as session:
+            session.query(AppleDeviceRegistrations).filter_by(push_token=push_token).delete()
+            return True
 
     def get_registered_devices_for_pass(self, serial_number: str) -> List[str]:
         """Returns list of push tokens for a given pass serial number."""

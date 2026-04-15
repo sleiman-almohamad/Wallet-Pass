@@ -392,3 +392,51 @@ APPLE WALLET LOGS
 ================================
 
 [2026-04-15 11:04:36.528449] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 11:12:06 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Device received spurious push. Request for passesUpdatedSince '2026-04-15T10:49:31.947938' returned no serial numbers. (Device = ec4c100bfd89fb0313fc4d08fe7fa43a)
+================================
+
+[2026-04-15 11:14:05.776285] AUTH CHECK: Serial=pass_1776238879_sleiman, IncomingToken=a7be17cf29d9053150a54329403a04dc, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 11:14:05 +0200] Unregister task (for device b232149da06b4406098d7470cbe68836, pass type pass.com.mfo.wallet, serial number pass_1776238879_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+================================
+
+[2026-04-15 11:15:29.699620] AUTH CHECK: Serial=pass_1776171178_sleiman, IncomingToken=default_token_123456789, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 11:15:29 +0200] Unregister task (for device f3b074164271f46bb602f1ddba7d7ccf, pass type pass.com.mfo.wallet, serial number pass_1776171178_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+================================
+
+[2026-04-15 11:16:47.364885] AUTH CHECK: Serial=pass_1776242911_sleiman, IncomingToken=3d78fb17386cf015126b8cf2f42d3721, DBToken=3d78fb17386cf015126b8cf2f42d3721
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 11:18:31 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Device received spurious push. Request for passesUpdatedSince '2026-04-15T10:49:31.947938' returned no serial numbers. (Device = ec4c100bfd89fb0313fc4d08fe7fa43a)
+================================
+
+[2026-04-15 11:27:26.960496] AUTH CHECK: Serial=pass_1776238879_sleiman, IncomingToken=a7be17cf29d9053150a54329403a04dc, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 11:27:26 +0200] Unregister task (for device b232149da06b4406098d7470cbe68836, pass type pass.com.mfo.wallet, serial number pass_1776238879_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+================================
+
+[2026-04-15 11:28:12.309380] AUTH CHECK: Serial=pass_1776242911_sleiman, IncomingToken=3d78fb17386cf015126b8cf2f42d3721, DBToken=3d78fb17386cf015126b8cf2f42d3721
+[2026-04-15 11:45:32.361920] AUTH CHECK: Serial=pass_1776171178_sleiman, IncomingToken=default_token_123456789, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 11:45:32 +0200] Unregister task (for device f3b074164271f46bb602f1ddba7d7ccf, pass type pass.com.mfo.wallet, serial number pass_1776171178_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+================================
+

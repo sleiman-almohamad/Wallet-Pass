@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import copy
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import sys
 from pathlib import Path
 import mysql.connector
@@ -1812,7 +1812,8 @@ async def get_updated_apple_pass(
             raise HTTPException(status_code=500, detail="Generated PKPASS file not found on disk")
             
         modified_time = os.path.getmtime(pkpass_path)
-        last_modified = datetime.fromtimestamp(modified_time).strftime('%a, %d %b %Y %H:%M:%S GMT')
+        # Convert timestamp to true UTC (GMT) for the header
+        last_modified = datetime.fromtimestamp(modified_time, tz=timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')
         
         return FileResponse(
             path=pkpass_path,

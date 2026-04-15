@@ -453,7 +453,8 @@ class AppleWalletService:
         headers = {
             "apns-topic": self.pass_type_id,
             "apns-push-type": "background",
-            "apns-priority": "5"  
+            "apns-priority": "10",  # Immediate delivery required for lock-screen alerts
+            "apns-expiration": "0" # Do not store if device is offline (ensure fresh data)
         }
         
         cert_tuple = (self.cert_path, self.key_path)

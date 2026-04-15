@@ -69,6 +69,30 @@ def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+# Mapping from our DB template style names → Apple's official pass.json keys
+_STYLE_MAP = {
+    "eventticket": "eventTicket",
+    "event ticket": "eventTicket",
+    "ticket": "eventTicket",
+    "storecard": "storeCard",
+    "store card": "storeCard",
+    "coupon": "coupon",
+    "boardingpass": "boardingPass",
+    "boarding pass": "boardingPass",
+    "generic": "generic",
+}
+
+
+def _map_apple_style(raw_style: str | None) -> str:
+    """Convert a DB / UI pass-style string to the official Apple JSON key.
+
+    Falls back to ``"generic"`` when the input is empty or unrecognised.
+    """
+    if not raw_style:
+        return "generic"
+    return _STYLE_MAP.get(raw_style.strip().lower(), "generic")
+
+
 # ---------------------------------------------------------------------------
 # Service
 # ---------------------------------------------------------------------------
@@ -254,6 +278,25 @@ class AppleWalletService:
             "messageEncoding": "iso-8859-1",
         }
 
+        # ----- Resolve Apple Style Key from Template -----
+        # 1. Try class_data (already passed by caller)
+        raw_style = class_data.get("pass_style")
+
+        # 2. If missing, look up the template from the database
+        if not raw_style:
+            template_id = class_data.get("template_id")
+            if template_id:
+                try:
+                    from database.db_manager import DatabaseManager
+                    _db = DatabaseManager()
+                    tpl = _db.get_apple_template(template_id)
+                    if tpl:
+                        raw_style = tpl.get("pass_style")
+                except Exception:
+                    pass  # Fallback to generic if DB lookup fails
+
+        style = _map_apple_style(raw_style)
+        
         pass_dict = {
             "formatVersion": 1,
             "passTypeIdentifier": self.pass_type_id,
@@ -267,14 +310,14 @@ class AppleWalletService:
             "labelColor": label_color,
             "barcode": barcode,
             "barcodes": [barcode],
-            "eventTicket": {},
+            style: {},
             "webServiceURL": configs.APPLE_WEB_SERVICE_URL,
             "authenticationToken": pass_data.get("auth_token", ""),
         }
         
-        if header_fields: pass_dict["eventTicket"]["headerFields"] = header_fields
-        if primary_fields: pass_dict["eventTicket"]["primaryFields"] = primary_fields
-        if secondary_fields: pass_dict["eventTicket"]["secondaryFields"] = secondary_fields
+        if header_fields: pass_dict[style]["headerFields"] = header_fields
+        if primary_fields: pass_dict[style]["primaryFields"] = primary_fields
+        if secondary_fields: pass_dict[style]["secondaryFields"] = secondary_fields
         
         # Inject Admin Message (Notification Channel) into auxiliaryFields
         admin_msg_val = pass_data.get("admin_message", "Welcome!")
@@ -286,8 +329,8 @@ class AppleWalletService:
         }
         auxiliary_fields.append(notif_field)
         
-        if auxiliary_fields: pass_dict["eventTicket"]["auxiliaryFields"] = auxiliary_fields
-        if back_fields: pass_dict["eventTicket"]["backFields"] = back_fields
+        if auxiliary_fields: pass_dict[style]["auxiliaryFields"] = auxiliary_fields
+        if back_fields: pass_dict[style]["backFields"] = back_fields
 
         return pass_dict
 
@@ -453,8 +496,7 @@ class AppleWalletService:
         headers = {
             "apns-topic": self.pass_type_id,
             "apns-push-type": "background",
-            "apns-priority": "10",  # Immediate delivery required for lock-screen alerts
-            "apns-expiration": "0" # Do not store if device is offline (ensure fresh data)
+            "apns-priority": "5",  # Must be 5 for background push-type (10 is rejected)
         }
         
         cert_tuple = (self.cert_path, self.key_path)

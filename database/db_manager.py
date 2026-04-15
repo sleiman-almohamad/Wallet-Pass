@@ -854,11 +854,14 @@ class DatabaseManager:
 
     def update_apple_pass_message(self, serial_number: str, message: str) -> bool:
         """Update the admin_message for a specific Apple pass to trigger lock-screen notification."""
+        from datetime import datetime as dt
         with self.get_session() as session:
             p = session.get(ApplePassesData, serial_number)
             if not p:
                 return False
             p.admin_message = message
+            p.updated_at = dt.now()  # Force timestamp update for passesUpdatedSince queries
+            print(f"📝 [DB] Updated admin_message for {serial_number}: '{message[:30]}...' at {p.updated_at}")
             return True
 
     # ========================================================================

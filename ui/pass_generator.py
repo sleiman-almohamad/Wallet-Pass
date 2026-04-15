@@ -884,8 +884,16 @@ def create_pass_generator(page: ft.Page, state, api_client, wallet_client):
                 auth_token = secrets.token_hex(16)
                 pass_data["auth_token"] = auth_token
 
+                # Look up the Apple template to get the correct pass_style
+                db_class_id = class_id.split('.')[-1] if '.' in class_id else class_id
+                apple_template_info = api_client.get_apple_template(db_class_id) if api_client else None
+                
+                apple_class_data = dict(current_class_data) if current_class_data else {}
+                if apple_template_info and apple_template_info.get("pass_style"):
+                    apple_class_data["pass_style"] = apple_template_info["pass_style"]
+
                 apple_pass_path = apple_service.create_pass(
-                    class_data=current_class_data,
+                    class_data=apple_class_data,
                     pass_data=pass_data,
                     object_id=object_id,
                 )

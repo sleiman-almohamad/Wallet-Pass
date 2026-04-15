@@ -1514,6 +1514,7 @@ async def send_apple_pass_notification(serial_number: str, request: Notification
         class_data = {
             "class_type": "Generic",
             "template_id": template_id,
+            "pass_style": template_data.get("pass_style", "eventTicket") if template_data else "eventTicket",
         }
         # Refetch updated pass_data from DB to get the new admin_message
         updated_pass_data = db.get_apple_pass(serial_number)
@@ -1571,7 +1572,12 @@ async def send_apple_template_notification(template_id: str, request: Notificati
             db.update_apple_pass_message(serial, request.message)
             
             # 2. Regenerate the pass
-            class_data = {"class_type": "Generic", "template_id": template_id}
+            template_info = db.get_apple_template(template_id)
+            class_data = {
+                "class_type": "Generic",
+                "template_id": template_id,
+                "pass_style": template_info.get("pass_style", "eventTicket") if template_info else "eventTicket",
+            }
             updated_p = db.get_apple_pass(serial)
             apple_service.create_pass(class_data=class_data, pass_data=updated_p, object_id=serial)
             
@@ -1730,6 +1736,7 @@ async def get_serial_numbers_for_device(
     """Return serial numbers for passes registered to a device."""
     try:
         passes_updated_since = request.query_params.get("passesUpdatedSince")
+        print(f"🍏 [V1-SERIALS] Device {device_library_id[:10]}... checking for updates (since: {passes_updated_since})")
         logger.info(f"APPLE: Device {device_library_id} requested serials for {pass_type_id} (UpdatedSince: {passes_updated_since})")
         
         if passes_updated_since:
@@ -1756,10 +1763,12 @@ async def get_serial_numbers_for_device(
             )
         
         if not serial_numbers:
+            print(f"🍏 [V1-SERIALS] → No updated passes found. Returning 204.")
             logger.info(f"APPLE: No updated passes for device {device_library_id}")
             return Response(status_code=204)
         
         last_updated = datetime.now().isoformat()
+        print(f"🍏 [V1-SERIALS] → Found {len(serial_numbers)} updated pass(es): {serial_numbers}")
         
         return {
             "serialNumbers": serial_numbers,
@@ -1795,6 +1804,7 @@ async def get_updated_apple_pass(
         class_data_for_service = {
             "class_type": "Generic",
             "template_id": pass_data.get('template_id', ''),
+            "pass_style": template_data.get("pass_style", "eventTicket") if template_data else "eventTicket",
         }
         
         pass_payload = pass_data.get("visual_data", {})

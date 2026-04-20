@@ -221,7 +221,12 @@ class JSONTemplateManager:
         text_module_rows = kwargs.get("text_module_rows", [])
         if text_module_rows:
             card_row_template_infos = []
-            for i, row in enumerate(text_module_rows):
+            # Only the first 2 rows are shown on the front of the pass.
+            # Remaining text modules still exist in textModulesData on the
+            # object level and Google automatically renders them on the
+            # back / details view.
+            front_rows = text_module_rows[:2]
+            for i, row in enumerate(front_rows):
                 row_items = []
                 
                 # Check which items are present in the blueprint

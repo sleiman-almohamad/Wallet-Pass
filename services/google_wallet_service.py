@@ -83,6 +83,7 @@ class WalletClient:
             
         return ids
 
+
     def get_object(self, object_id):
         """
         Iterates through all possible Object types (Loyalty, Generic, Event, etc.)
@@ -1021,6 +1022,11 @@ class WalletClient:
                         "value": str(value)
                     })
             
+            # Add text modules if provided
+            raw_modules = pass_data.get("textModulesData") or pass_data.get("text_modules", [])
+            if raw_modules:
+                obj["textModulesData"] = raw_modules
+            
             if info_label_values:
                 obj["infoModulesData"] = [{
                     "showTime": {},
@@ -1077,8 +1083,12 @@ class WalletClient:
                     "id": "member_info"
                 })
             
-            if text_modules:
-                obj["textModulesData"] = text_modules
+            # Combine with any other text modules from pass_data
+            raw_modules = text_modules + (pass_data.get("textModulesData") or pass_data.get("text_modules", []))
+            
+            # Keep all text modules in textModulesData
+            if raw_modules:
+                obj["textModulesData"] = raw_modules
             
             # Add info modules for tier and other details
             info_label_values = []
@@ -1233,23 +1243,19 @@ class WalletClient:
         
         if pass_data:
             
-            # If UI provided explicit pass text modules, keep them as-is on the object.
-            # (This is separate from infoModulesData.)
-            if isinstance(pass_data.get("textModulesData"), list):
-                obj["textModulesData"] = pass_data.get("textModulesData", [])
-
-            # Add text modules for any text-heavy fields
-            text_modules = []
+            # Gather all text modules and keep them ALL in textModulesData.
+            # The front/back split is controlled by classTemplateInfo on the CLASS,
+            # not by removing items from the object.
+            all_raw_modules = (pass_data.get("textModulesData") or pass_data.get("text_modules", [])).copy()
             if "description" in pass_data and pass_data["description"]:
-                text_modules.append({
+                all_raw_modules.append({
                     "header": "Description",
                     "body": str(pass_data["description"]),
                     "id": "description"
                 })
             
-            if text_modules:
-                # Merge with any existing modules from the UI
-                obj["textModulesData"] = (obj.get("textModulesData") or []) + text_modules
+            if all_raw_modules:
+                obj["textModulesData"] = all_raw_modules
             
             # Add info modules for all other data
             info_label_values = []

@@ -1112,6 +1112,21 @@ async def update_pass(object_id: str, pass_update: PassUpdate, sync_to_google: b
                 
                     if class_info:
                         logger.info(f"Syncing pass '{object_id}' to Google Wallet")
+                        
+                        # Re-sync class template to Google (ensures classTemplateInfo
+                        # front/back layout is up-to-date, e.g. first-2-rows-on-front)
+                        try:
+                            class_json = class_info.get('class_json', {})
+                            if class_json and class_info.get('class_type') == 'Generic':
+                                wallet_client.update_pass_class(
+                                    class_id=updated_pass['class_id'],
+                                    class_data=class_json,
+                                    class_type='Generic'
+                                )
+                                logger.info(f"Re-synced class template for '{updated_pass['class_id']}'")
+                        except Exception as cls_err:
+                            logger.warning(f"Class template re-sync failed (non-fatal): {cls_err}")
+                        
                         wallet_client.update_pass_object(
                             object_id=object_id,
                             class_id=updated_pass['class_id'],

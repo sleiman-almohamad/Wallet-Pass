@@ -144,31 +144,23 @@ def propagate_class_update_to_passes(
                     pass
                 # endregion
                 
-                # If a custom notification message is provided, ONLY send the notification
-                # (skip the pass object patch to avoid duplicate notifications from 
-                # class patch + pass patch + explicit push all triggering separately)
-                if notification_message:
-                    logger.debug(f"Sending notification only for pass: {full_object_id}")
-                    wallet_client.send_notification_only(
-                        object_id=object_id,
-                        class_type=class_type,
-                        message_header="Mertesacker Home Office",
-                        message_body=notification_message
-                    )
-                else:
-                    # Full pass object update (patches pass data + sends default notification)
-                    logger.debug(f"Updating pass object: {full_object_id}")
-                    wallet_client.update_pass_object(
-                        object_id=full_object_id,
-                        class_id=full_class_id,
-                        holder_name=holder_name,
-                        holder_email=holder_email,
-                        pass_data=pass_data,
-                        class_type=class_type
-                    )
+                # 3b. Call wallet client to send notification using the ATOMIC update method.
+                # This ensures the header is dynamic (Card Title) and the front field is updated.
+                # We always call update_pass_object even for custom notifications to ensure the 
+                # front logic (MFO: [Message]) is applied correctly.
+                wallet_client.update_pass_object(
+                    object_id=object_id,
+                    class_id=class_id,
+                    holder_name=holder_name,
+                    holder_email=holder_email,
+                    pass_data=pass_data,
+                    class_type=class_type,
+                    notification_message=notification_message,
+                    send_notification=True
+                )
                 
-                # Log success to database (include notification message content)
-                log_msg = f"Mertesacker Home Office: {notification_message}" if notification_message else "Pass updated successfully via Google Wallet API"
+                # Log success to database
+                log_msg = f"Notify: {notification_message}" if notification_message else "Pass updated successfully via Google Wallet API"
                 db_manager.create_notification(
                     class_id=class_id,
                     object_id=object_id,

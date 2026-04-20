@@ -422,16 +422,9 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                     if tf.current and tf.current.value
                 ]
 
-            # Sync push message if Generic
+            # Notification logic is now handled by the backend 'send_notification' flag.
+            # We removed manual 'messages' injection here to ensure silent updates work correctly.
             status_val = status_ref.current.value
-            msg_type = message_type_ref.current.value
-            if current_class_info.get("class_type") == "Generic":
-                form_pd["messages"] = [{
-                    "id": f"upd_{int(time.time())}",
-                    "header": "Pass Update",
-                    "body": "Your pass information has been updated.",
-                    "messageType": msg_type or "TEXT_AND_NOTIFY",
-                }]
 
             response = api_client.update_pass(
                 object_id=object_id,
@@ -439,7 +432,8 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                 holder_email=holder_email_ref.current.value,
                 status=status_val,
                 pass_data=form_pd,
-                sync_to_google=True
+                sync_to_google=True,
+                send_notification=False
             )
             # --- Success Dialog ---
             def dialog_dismissed(e):

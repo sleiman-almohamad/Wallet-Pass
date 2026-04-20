@@ -302,7 +302,8 @@ class APIClient:
                     holder_email: Optional[str] = None,
                     status: Optional[str] = None,
                     pass_data: Optional[Dict[str, Any]] = None,
-                    sync_to_google: bool = True) -> Dict[str, Any]:
+                    sync_to_google: bool = True,
+                    send_notification: bool = True) -> Dict[str, Any]:
         """Update an existing pass"""
         data = {}
         if holder_name is not None:
@@ -314,7 +315,7 @@ class APIClient:
         if pass_data is not None:
             data["pass_data"] = pass_data
         
-        url = f"{self.base_url}/passes/{object_id}?sync_to_google={'true' if sync_to_google else 'false'}"
+        url = f"{self.base_url}/passes/{object_id}?sync_to_google={'true' if sync_to_google else 'false'}&send_notification={'true' if send_notification else 'false'}"
         try:
             response = requests.put(url, json=data)
             response.raise_for_status()

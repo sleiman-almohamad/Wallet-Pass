@@ -1691,3 +1691,16 @@ APPLE WALLET LOGS
 
 [2026-04-20 13:03:32.219338] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
 [2026-04-20 13:03:32.588208] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 18:36:55.797022] AUTH CHECK: Serial=pass_1776702923_riccardo_fumiento, IncomingToken=1ac8e116ad83bc6a80944c9d70eb622c, DBToken=1ac8e116ad83bc6a80944c9d70eb622c
+[2026-04-20 18:36:55.966490] AUTH CHECK: Serial=pass_1776702923_riccardo_fumiento, IncomingToken=1ac8e116ad83bc6a80944c9d70eb622c, DBToken=1ac8e116ad83bc6a80944c9d70eb622c
+[2026-04-20 18:36:56.468906] AUTH CHECK: Serial=pass_1776702923_riccardo_fumiento, IncomingToken=1ac8e116ad83bc6a80944c9d70eb622c, DBToken=1ac8e116ad83bc6a80944c9d70eb622c
+[2026-04-20 18:38:48.752109] AUTH CHECK: Serial=pass_1776702923_riccardo_fumiento, IncomingToken=1ac8e116ad83bc6a80944c9d70eb622c, DBToken=1ac8e116ad83bc6a80944c9d70eb622c
+[2026-04-20 18:38:59.497474] AUTH CHECK: Serial=pass_1776702923_riccardo_fumiento, IncomingToken=1ac8e116ad83bc6a80944c9d70eb622c, DBToken=1ac8e116ad83bc6a80944c9d70eb622c
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-20 18:38:59 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Mon, 20 Apr 2026 16:38:48 GMT) and returned the full unchanged pass data for serial number 'pass_1776702923_riccardo_fumiento'.
+================================
+
+[2026-04-20 18:39:26.326769] AUTH CHECK: Serial=pass_1776702923_riccardo_fumiento, IncomingToken=1ac8e116ad83bc6a80944c9d70eb622c, DBToken=1ac8e116ad83bc6a80944c9d70eb622c

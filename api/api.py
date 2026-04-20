@@ -1073,7 +1073,7 @@ async def get_passes_by_email(email: str):
 
 
 @app.put("/passes/{object_id}", response_model=MessageResponse, tags=["Passes"])
-async def update_pass(object_id: str, pass_update: PassUpdate, sync_to_google: bool = True):
+async def update_pass(object_id: str, pass_update: PassUpdate, sync_to_google: bool = True, send_notification: bool = True):
     """Update a pass and optionally sync to Google Wallet"""
     try:
         # Check if pass exists
@@ -1133,7 +1133,8 @@ async def update_pass(object_id: str, pass_update: PassUpdate, sync_to_google: b
                             holder_name=updated_pass['holder_name'],
                             holder_email=updated_pass['holder_email'],
                             pass_data=updated_pass.get('pass_data', {}),
-                            class_type=class_info.get('class_type', 'Generic')
+                            class_type=class_info.get('class_type', 'Generic'),
+                            send_notification=send_notification
                         )
                         wallet_message = " 📱 Synced to Google Wallet."
                     else:
@@ -1555,16 +1556,17 @@ async def send_pass_notification(object_id: str, request: NotificationRequest):
         if not wallet_client:
             raise HTTPException(status_code=503, detail="Google Wallet client not initialized")
             
-        # 3. Call wallet client to send notification
-        wallet_client.send_push_notification(
-            full_object_id=wallet_client._prepare_ids_to_try(object_id)[0],
-            resource=wallet_client.service.genericobject() if class_data['class_type'] == 'Generic' 
-                     else wallet_client.service.eventticketobject() if class_data['class_type'] == 'EventTicket'
-                     else wallet_client.service.loyaltyobject() if class_data['class_type'] == 'LoyaltyCard'
-                     else wallet_client.service.giftcardobject() if class_data['class_type'] == 'GiftCard'
-                     else wallet_client.service.transitobject(),
-            message_header="Mertesacker Home Office",
-            message_body=request.message
+        # 3. Call wallet client to send notification using the ATOMIC update method.
+        # This ensures the header is dynamic (Card Title) and the front field is updated.
+        wallet_client.update_pass_object(
+            object_id=object_id,
+            class_id=pass_data['class_id'],
+            holder_name=pass_data.get('holder_name', 'Pass Holder'),
+            holder_email=pass_data.get('holder_email', ''),
+            pass_data=pass_data.get('pass_data', {}),
+            class_type=class_data['class_type'],
+            notification_message=request.message,
+            send_notification=True
         )
         
         # 4. Log to DB

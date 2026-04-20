@@ -749,7 +749,7 @@ class WalletClient:
         except Exception as e:
             print(f"NOTIFICATION WARNING: Failed to send notification for {full_object_id}: {e}")
     
-    def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket", status=None, notification_message=None):
+    def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket", status=None, notification_message=None, send_notification=True):
         """
         Update an individual pass object in Google Wallet using an ATOMIC patch.
         
@@ -819,12 +819,78 @@ class WalletClient:
                     full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
                 )
 
-            # 4. ATOMIC TRICK: Always append a Notification Message and rotate groupingId
+            # Resolve Header for the notification
+            display_header = "Update"
+            try:
+                # 1. Try to get cardTitle from EXISTING data at Google (priority for Generic)
+                existing_card_title = (
+                    current_data.get("cardTitle", {}).get("defaultValue", {}).get("value")
+                )
+                
+                # 2. Try to get card_title from the NEW object data or pass_data
+                new_card_title = (
+                    object_data.get("cardTitle", {}).get("defaultValue", {}).get("value") or
+                    pass_data.get("card_title") or
+                    pass_data.get("header_value")
+                )
+                
+                display_header = existing_card_title or new_card_title
+                
+                # 3. Fallback to Class Issuer Name if Card Title is missing
+                if not display_header:
+                    wallet_class = self.get_class(full_class_id)
+                    display_header = (
+                        wallet_class.get("issuerName") or 
+                        wallet_class.get("localizedIssuerName", {}).get("defaultValue", {}).get("value") or
+                        "Update"
+                    )
+                
+                # 4. Branding check: If it's a long "Mertesacker" name, shorten to "MFO" if appropriate
+                if isinstance(display_header, str) and "Mertesacker" in display_header:
+                    display_header = "MFO"
+                    
+            except Exception as e:
+                print(f"Warning: Could not resolve header for notification: {e}")
+
+            # 4. ATOMIC TRICK: Always replace with a single Notification Message and rotate groupingId
             # This ensures that EVERY update triggers a visible push notification on Android.
             
-            # Use default message if none provided
+            # Extract update message (if none provided, use default)
             msg_body = notification_message if notification_message else "Your pass information has been updated."
             
+            # FORMAT: "Card Title: Message Content" for the pass value
+            full_display_message = f"{display_header}: {msg_body}"
+
+            # UPDATE PASS CONTENT (Front and Back)
+            # ONLY update these "Status" fields if send_notification is True.
+            if send_notification:
+                try:
+                    # A. Update infoModulesData (Back for Generic, Front for others)
+                    info_modules = object_data.get("infoModulesData", [])
+                    if info_modules and "labelValueRows" in info_modules[0]:
+                        columns = info_modules[0]["labelValueRows"][0].get("columns", [])
+                        if len(columns) >= 2:
+                            columns[1]["value"] = full_display_message
+
+                    # B. UPDATE FRONT FOR GENERIC PASSES (textModulesData)
+                    # In your project, Generic passes use textModulesData for the front face.
+                    if class_type == "Generic":
+                        text_modules = object_data.get("textModulesData", [])
+                        if len(text_modules) >= 2:
+                            # Overwrite the second text module (which appears on the front)
+                            print(f"DEBUG: Overwriting text module '{text_modules[1].get('header')}' with '{full_display_message}'")
+                            text_modules[1]["body"] = full_display_message
+                        elif len(text_modules) == 1:
+                            # If only one exists, append the update as the second one
+                            text_modules.append({
+                                "header": "Status",
+                                "body": full_display_message,
+                                "id": "status_update"
+                            })
+                except Exception as e:
+                    print(f"Warning: Failed to update pass front fields: {e}")
+            # end if send_notification
+
             now = datetime.utcnow()
             msg_id = f"notif_{int(_time.time())}"
             # If user explicitly provided messages, use their messageType for the push message too.
@@ -834,8 +900,9 @@ class WalletClient:
                 last_type = user_messages[-1].get("messageType") or user_messages[-1].get("message_type")
                 if isinstance(last_type, str) and last_type.strip():
                     push_message_type = last_type.strip()
+            
             new_msg = {
-                "header": "Mertesacker Home Office",
+                "header": display_header,
                 "body": msg_body,
                 "kind": "walletobjects#walletObjectMessage",
                 "id": msg_id,
@@ -845,18 +912,22 @@ class WalletClient:
                     "end": {"date": (now + timedelta(hours=24)).isoformat() + "Z"}
                 }
             }
-            # If Generic pass_data includes user-managed messages, prefer those over existing history.
-            managed_messages_present = isinstance(user_messages, list) and user_messages and class_type == "Generic"
-            if managed_messages_present:
-                managed_messages = object_data.get("messages") or []
-                object_data["messages"] = managed_messages + [new_msg]
-            else:
-                # Merge with existing messages (keep history but add new one)
-                object_data["messages"] = existing_messages + [new_msg]
             
-            # ANDROID UI TRICK: Force immediate refresh by changing groupingId
-            # This is critical to make the notification pop up immediately
-            object_data["groupingId"] = f"grp_{int(_time.time())}"
+            # region [NOTIFICATIONS LOGIC]
+            if send_notification:
+                # ATOMIC REPLACE: We overwrite the messages array with ONLY the new message.
+                # This satisfies the requirement to notify while avoiding "Message History" clutter.
+                object_data["messages"] = [new_msg]
+                
+                # ANDROID UI TRICK: Force immediate refresh by changing groupingId
+                # This is critical to make the notification pop up immediately
+                object_data["groupingId"] = f"grp_{int(_time.time())}"
+            else:
+                # In silent mode, we remove any messages that would trigger a notification
+                # and do NOT rotate groupingId to avoid forcing a device refresh notification.
+                object_data.pop("messages", None)
+                object_data.pop("groupingId", None)
+            # endregion
 
             # 5. EXECUTE SINGLE PATCH (Atomic operation)
             result = resource.patch(

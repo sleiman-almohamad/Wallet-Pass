@@ -326,12 +326,18 @@ class AppleWalletService:
         if secondary_fields: pass_dict[style]["secondaryFields"] = secondary_fields
         
         # Inject Admin Message (Notification Channel) into auxiliaryFields
-        admin_msg_val = pass_data.get("admin_message", "Schützenfest Hannover")
+        # 1. Initial value: "Der Event Pass „{org_name}“ wurde hinzugefügt" (if no message set)
+        admin_msg_val = pass_data.get("admin_message")
+        if not admin_msg_val:
+            admin_msg_val = f"Der Event Pass „{org_name}“ wurde hinzugefügt"
+
+        # 2. Notification: "{org_name} : %@"
+        # 3. Label: "WEITERE INFOS ZUM SCHÜTZENFEST MIT KLICK AUF ↗️ (…)" (fixed)
         notif_field = {
             "key": "admin_message",
-            "label": "WEITERE INFOS ZUM SCHÜTZENFEST MIT KLICK AUF ↗(…) ",
+            "label": "WEITERE INFOS ZUM SCHÜTZENFEST MIT KLICK AUF ↗️ (…)",
             "value": admin_msg_val,
-            "changeMessage": "New Update: %@" 
+            "changeMessage": f"{org_name} : %@" 
         }
         auxiliary_fields.append(notif_field)
         

@@ -3,7 +3,8 @@ FastAPI Application for Wallet Passes
 Provides RESTful API endpoints for managing pass classes and passes
 """
 
-from fastapi import FastAPI, HTTPException, Query, Request, Response
+from fastapi import FastAPI, HTTPException, Query, Request, Response, File, UploadFile
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import copy
 from typing import List, Optional, Dict, Any
@@ -71,8 +72,60 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Middleware to skip ngrok browser warning
+@app.middleware("http")
+async def add_ngrok_skip_warning_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["ngrok-skip-browser-warning"] = "true"
+    return response
+
 # Initialize database manager
 db = DatabaseManager()
+
+# Mount static directory for serving uploaded images
+static_dir = Path(__file__).parent.parent / "static"
+static_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+
+# ========================================================================
+# Image Upload
+# ========================================================================
+
+@app.post("/upload/image", tags=["Storage"])
+async def upload_image(request: Request, file: UploadFile = File(...)):
+    """Upload an image and return its public URL"""
+    try:
+        # Create unique filename with URL-safe characters
+        import time
+        import os
+        import re
+        
+        # Strip extension and sanitize base name
+        base_name, ext = os.path.splitext(file.filename)
+        safe_base = re.sub(r'[^a-zA-Z0-9_-]', '', base_name.replace(' ', '_'))
+        filename = f"img_{int(time.time())}_{safe_base}{ext}"
+        
+        file_path = static_dir / "images" / filename
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+            
+        # Construct public URL
+        # We prioritize PUBLIC_URL from configs to ensure Google Wallet can reach the images
+        base_url = configs.PUBLIC_URL if hasattr(configs, "PUBLIC_URL") and configs.PUBLIC_URL else str(request.base_url).rstrip("/")
+        public_url = f"{base_url.rstrip('/')}/static/images/{filename}"
+        
+        return {
+            "url": public_url,
+            "filename": filename
+        }
+    except Exception as e:
+        logger.error(f"Upload failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
 
 
 # ========================================================================

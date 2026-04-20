@@ -911,6 +911,20 @@ class WalletClient:
                 "confirmationCode": custom_conf_code
             }
         }
+
+        # Add Branding (Logo/Hero) if in pass_data
+        branding_logo_url = pd.get("logo_url") or pd.get("logoUrl")
+        branding_hero_url = pd.get("hero_image_url") or pd.get("heroImageUrl") or pd.get("hero_url")
+        if branding_logo_url:
+            obj["logo"] = {
+                "sourceUri": {"uri": str(branding_logo_url)},
+                "contentDescription": {"defaultValue": {"language": "en-US", "value": "Logo"}}
+            }
+        if branding_hero_url:
+            obj["heroImage"] = {
+                "sourceUri": {"uri": str(branding_hero_url)},
+                "contentDescription": {"defaultValue": {"language": "en-US", "value": "Hero Image"}}
+            }
         
         # Add custom background color if provided
         if custom_color:
@@ -1167,9 +1181,15 @@ class WalletClient:
             obj["hexBackgroundColor"] = branding_bg
 
         if branding_logo_url:
-            obj["logo"] = {"sourceUri": {"uri": str(branding_logo_url)}}
+            obj["logo"] = {
+                "sourceUri": {"uri": str(branding_logo_url)},
+                "contentDescription": {"defaultValue": {"language": "en-US", "value": "Logo"}}
+            }
         if branding_hero_url:
-            obj["heroImage"] = {"sourceUri": {"uri": str(branding_hero_url)}}
+            obj["heroImage"] = {
+                "sourceUri": {"uri": str(branding_hero_url)},
+                "contentDescription": {"defaultValue": {"language": "en-US", "value": "Hero Image"}}
+            }
         
         # Barcode support (minimal: type + value)
         barcode_obj = None

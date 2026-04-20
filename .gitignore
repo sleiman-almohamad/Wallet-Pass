@@ -33,3 +33,9 @@ certs/
 debug_class_MensaParty.json
 test_view_flet.py
 scratch/
+apple_wallet_logs.txt
+cloudflared.deb
+discovery.json
+static/
+apple_wallet_logs.txt
+assets/

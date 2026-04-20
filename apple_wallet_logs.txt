@@ -1588,3 +1588,106 @@ APPLE WALLET LOGS
 [2026-04-20 10:12:57.564661] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
 [2026-04-20 10:14:08.345751] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
 [2026-04-20 10:14:09.283727] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:42:47.233273] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:42:47.447510] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:43:41.864837] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:43:42.138273] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:44:09.070326] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:44:09.633151] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:45:34.372585] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:45:34.456283] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:49:29.006955] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:49:29.216834] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:50:54.910849] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:50:55.267385] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:51:25.936178] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:51:26.282952] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:53:09.419714] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:53:09.504346] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:55:12.913027] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:55:13.327888] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:00:55.139221] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:00:55.222446] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:01:32.832935] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:01:33.292501] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:03:07.076094] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:03:07.337393] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:03:43.607890] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:03:44.161744] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:04:10.110299] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:04:10.966112] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:04:41.379261] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:04:41.462353] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 11:34:08.109570] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-20 11:34:31.766237] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-20 11:36:00.446363] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-20 11:36:00.545353] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-20 11:36:35.715712] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-20 12:14:04.892244] AUTH CHECK: Serial=pass_1776679980_sleiman, IncomingToken=31a08667a83aaaf0025c584a14b66754, DBToken=31a08667a83aaaf0025c584a14b66754
+[2026-04-20 12:14:05.092752] AUTH CHECK: Serial=pass_1776679980_sleiman, IncomingToken=31a08667a83aaaf0025c584a14b66754, DBToken=31a08667a83aaaf0025c584a14b66754
+[2026-04-20 12:15:09.299747] AUTH CHECK: Serial=pass_1776679980_sleiman, IncomingToken=31a08667a83aaaf0025c584a14b66754, DBToken=31a08667a83aaaf0025c584a14b66754
+[2026-04-20 12:16:41.784983] AUTH CHECK: Serial=pass_1776679980_sleiman, IncomingToken=31a08667a83aaaf0025c584a14b66754, DBToken=31a08667a83aaaf0025c584a14b66754
+[2026-04-20 12:17:06.650884] AUTH CHECK: Serial=pass_1776679980_sleiman, IncomingToken=31a08667a83aaaf0025c584a14b66754, DBToken=31a08667a83aaaf0025c584a14b66754
+[2026-04-20 12:17:19.181543] AUTH CHECK: Serial=pass_1776679980_sleiman, IncomingToken=31a08667a83aaaf0025c584a14b66754, DBToken=31a08667a83aaaf0025c584a14b66754
+[2026-04-20 12:18:14.962694] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:18:15.853556] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:18:54.375134] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:19:08.507332] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:19:08.651368] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:20:25.620208] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:20:25.845480] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:23:05.788133] AUTH CHECK: Serial=pass_1776679980_sleiman, IncomingToken=31a08667a83aaaf0025c584a14b66754, DBToken=31a08667a83aaaf0025c584a14b66754
+[2026-04-20 12:55:01.809721] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:55:02.670855] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:55:51.653742] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:55:52.433533] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:56:23.335876] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:56:23.420378] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-20 12:56:23 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Mon, 20 Apr 2026 10:55:51 GMT) and returned the full unchanged pass data for serial number 'pass_1776379069_florian_toussaint'.
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-20 12:56:23 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Mon, 20 Apr 2026 10:55:52 GMT) and returned the full unchanged pass data for serial number 'pass_1776379069_florian_toussaint'.
+================================
+
+[2026-04-20 12:57:23.871280] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:57:23.955411] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:58:03.349710] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:58:04.175458] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:58:53.609755] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 12:58:54.351521] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 13:00:28.326818] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 13:00:28.789666] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-20 13:00:28 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Mon, 20 Apr 2026 10:58:53 GMT) and returned the full unchanged pass data for serial number 'pass_1776379069_florian_toussaint'.
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-20 13:00:29 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Mon, 20 Apr 2026 10:58:54 GMT) and returned the full unchanged pass data for serial number 'pass_1776379069_florian_toussaint'.
+================================
+
+[2026-04-20 13:01:43.154975] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 13:01:43.598710] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 13:01:59.551698] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-20 13:02:00 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Mon, 20 Apr 2026 11:01:43 GMT) and returned the full unchanged pass data for serial number 'pass_1776379069_florian_toussaint'.
+================================
+
+[2026-04-20 13:03:32.219338] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 13:03:32.588208] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83

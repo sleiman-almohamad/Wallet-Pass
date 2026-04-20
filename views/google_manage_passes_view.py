@@ -4,6 +4,7 @@ from ui.components.color_picker import create_color_picker
 from ui.components.mobile_mockup import MobileMockupPreview
 import configs
 import time
+import httpx
 
 def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: MobileMockupPreview) -> ft.Container:
     """
@@ -95,6 +96,41 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
 
     status_text = ft.Text("", size=12)
     edit_form = ft.Column(visible=False, spacing=15)
+
+    # ── File Picker Logic ──
+    current_picker_target = None
+    
+    def on_file_result(e: ft.FilePickerResultEvent):
+        nonlocal current_picker_target
+        if e.files and current_picker_target:
+            file = e.files[0]
+            try:
+                # Get the API base URL
+                api_url = getattr(configs, "API_BASE_URL", "http://localhost:8000")
+                upload_endpoint = f"{api_url}/upload/image"
+                
+                with open(file.path, "rb") as f:
+                    files = {"file": (file.name, f)}
+                    response = httpx.post(upload_endpoint, files=files)
+                    
+                if response.status_code == 200:
+                    uploaded_url = response.json().get("url")
+                    current_picker_target.value = uploaded_url
+                    current_picker_target.update()
+                    _sync_preview()
+                else:
+                    print(f"Upload failed: {response.text}")
+            except Exception as ex:
+                print(f"File picker error: {ex}")
+        current_picker_target = None
+
+    file_picker = ft.FilePicker(on_result=on_file_result)
+    page.overlay.append(file_picker)
+
+    def pick_image_for(target_tf):
+        nonlocal current_picker_target
+        current_picker_target = target_tf
+        file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
 
     # ── Data Loading ──
     def load_classes():
@@ -254,14 +290,33 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
         details_controls = [section_title("Pass Details", ft.Icons.DESCRIPTION)]
         pd = pass_obj.get("pass_data", {})
 
-        def _add_detail_field(label, key, value, hint="", read_only=False):
+        def _add_detail_field(label, key, value, hint="", read_only=False, multiline=False):
             fref = ft.Ref[ft.TextField]()
             dynamic_field_refs[key] = fref
-            details_controls.append(ft.TextField(
+            
+            tf = ft.TextField(
                 ref=fref, label=label, value=str(value or ""), hint_text=hint,
                 read_only=read_only, border_radius=8, text_size=13,
+                expand=True,
+                multiline=multiline,
+                min_lines=3 if multiline else 1,
+                max_lines=10 if multiline else 1,
                 on_change=lambda e: _sync_preview()
-            ))
+            )
+            
+            # If it's an image field, add upload button
+            is_image_field = "url" in key.lower() or "image" in key.lower()
+            if is_image_field and not read_only:
+                details_controls.append(ft.Row([
+                    tf,
+                    ft.IconButton(
+                        icon=ft.Icons.IMAGE_SEARCH_ROUNDED,
+                        tooltip=f"Select {label}",
+                        on_click=lambda e, target=tf: pick_image_for(target)
+                    )
+                ], spacing=5))
+            else:
+                details_controls.append(tf)
 
         if class_type == "Generic":
              _add_detail_field("Issuer Name", "card_title", pd.get("card_title", pd.get("issuer_name", "")), "e.g., My Studio")
@@ -297,6 +352,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                             row_controls.append(ft.TextField(
                                 ref=fref, label=hdr, value=existing_body,
                                 expand=True, border_radius=8, text_size=13,
+                                multiline=True, min_lines=3, max_lines=10,
                                 on_change=lambda e: _sync_preview()
                             ))
                     if row_controls:

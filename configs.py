@@ -44,3 +44,7 @@ APPLE_WWDR_PATH = os.getenv("APPLE_WWDR_PATH", "certs/wwdr.pem")
 APPLE_KEY_PASSWORD = os.getenv("APPLE_KEY_PASSWORD", "")
 # My ngrok url
 APPLE_WEB_SERVICE_URL = "https://breeding-caddy-fondly.ngrok-free.dev"
+#APPLE_WEB_SERVICE_URL = "https://cleaners-org-therapist-buy.trycloudflare.com"
+#APPLE_WEB_SERVICE_URL = "https://f14cd5316b7e4c.lhr.life"
+# Public URL for Google Wallet images and callbacks
+PUBLIC_URL = os.getenv("PUBLIC_URL", APPLE_WEB_SERVICE_URL)

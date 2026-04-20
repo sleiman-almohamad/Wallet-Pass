@@ -9,6 +9,7 @@ import os
 import subprocess
 import platform as platform_mod
 import time
+import httpx
 from typing import Dict, List, Any, Optional
 
 from ui.theme import card, section_title, PRIMARY, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, BORDER_COLOR
@@ -129,6 +130,43 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                         text_modules.append({"id": field_id, "header": header_text, "body": val})
         return text_modules
 
+    # ── File Picker Logic ──
+    current_picker_target = None
+    
+    def on_file_result(e: ft.FilePickerResultEvent):
+        nonlocal current_picker_target
+        if e.files and current_picker_target:
+            file = e.files[0]
+            try:
+                # Get the API base URL from configs or deduce it
+                api_url = getattr(configs, "API_BASE_URL", "http://localhost:8000")
+                upload_endpoint = f"{api_url}/upload/image"
+                
+                # Upload the file
+                with open(file.path, "rb") as f:
+                    files = {"file": (file.name, f)}
+                    response = httpx.post(upload_endpoint, files=files)
+                    
+                if response.status_code == 200:
+                    uploaded_url = response.json().get("url")
+                    current_picker_target.value = uploaded_url
+                    current_picker_target.update()
+                    # Trigger visual sync
+                    _sync_preview()
+                else:
+                    print(f"Upload failed: {response.text}")
+            except Exception as ex:
+                print(f"File picker error: {ex}")
+        current_picker_target = None
+
+    file_picker = ft.FilePicker(on_result=on_file_result)
+    page.overlay.append(file_picker)
+
+    def pick_image_for(target_tf):
+        nonlocal current_picker_target
+        current_picker_target = target_tf
+        file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
+
     # ── Build form fields ──
     def build_form_fields():
         if not current_class_data:
@@ -213,14 +251,28 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                 if field_config["name"] == "event_date" and t_date: initial_value = t_date
                 elif field_config["name"] == "event_time" and t_time: initial_value = t_time
 
-            details_controls.append(ft.TextField(
+            tf = ft.TextField(
                 ref=field_ref,
                 label=state.t(field_config["label"]) if state.t(field_config["label"]) != field_config["label"] else field_config["label"].replace("label.", "").replace("_", " ").title(),
                 hint_text=field_config["hint"],
                 value=initial_value, read_only=is_readonly,
                 border_radius=8, text_size=13, expand=True,
                 on_change=lambda e: _sync_preview(),
-            ))
+            )
+            
+            # If it's an image field, add an upload button
+            is_image_field = "url" in field_config["name"].lower() or "image" in field_config["name"].lower()
+            if is_image_field and not is_readonly:
+                details_controls.append(ft.Row([
+                    tf,
+                    ft.IconButton(
+                        icon=ft.Icons.IMAGE_SEARCH_ROUNDED,
+                        tooltip=f"Select {field_config['label']}",
+                        on_click=lambda e, target=tf: pick_image_for(target)
+                    )
+                ], spacing=5))
+            else:
+                details_controls.append(tf)
 
         details_section = card(ft.Column(details_controls, spacing=8))
 
@@ -245,6 +297,7 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                                     ref=fref, label=header_text,
                                     hint_text=f"Enter {header_text}",
                                     expand=True, border_radius=8, text_size=13,
+                                    multiline=True, min_lines=3, max_lines=10,
                                     on_change=lambda e: _sync_preview(),
                                 )
                             )

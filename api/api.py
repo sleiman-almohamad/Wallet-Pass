@@ -681,28 +681,51 @@ async def get_apple_pass(serial_number: str):
 
 @app.put("/passes/apple/{serial_number}", response_model=MessageResponse, tags=["Passes"])
 async def update_apple_pass(serial_number: str, pass_data: ApplePassUpdate):
-    """Update an Apple Wallet pass"""
+    """Update an Apple Wallet pass, regenerate .pkpass, and push to device."""
     try:
         update_dict = pass_data.model_dump(exclude_unset=True)
         if not update_dict:
             raise HTTPException(status_code=400, detail="No fields to update")
             
+        # Step A: Update database
         success = db.update_apple_pass(serial_number, **update_dict)
-        if success:
-            # Automatically trigger push notification on update
-            try:
-                from services.apple_wallet_service import AppleWalletService
-                apple_service = AppleWalletService()
-                apple_service.send_push_notification(serial_number)
-                logger.info(f"APPLE: Auto-pushed update for pass {serial_number}")
-            except Exception as e:
-                logger.error(f"APPLE: Failed to auto-push update for pass {serial_number}: {e}")
-            return MessageResponse(
-                message=f"Apple Pass '{serial_number}' updated successfully",
-                success=True
-            )
-        else:
+        if not success:
             raise HTTPException(status_code=404, detail=f"Apple Pass '{serial_number}' not found")
+
+        # Step B: Regenerate the .pkpass file
+        try:
+            from services.apple_wallet_service import AppleWalletService
+            apple_service = AppleWalletService()
+            
+            # Fetch fresh pass data (with updates applied)
+            updated_pass = db.get_apple_pass(serial_number)
+            template_id = updated_pass.get("template_id", "")
+            template_data = db.get_apple_template(template_id)
+            
+            class_data = {
+                "class_type": "Generic",
+                "template_id": template_id,
+                "pass_style": template_data.get("pass_style", "eventTicket") if template_data else "eventTicket",
+            }
+            
+            apple_service.create_pass(
+                class_data=class_data,
+                pass_data=updated_pass,
+                object_id=serial_number,
+            )
+            print(f"🔄 [UPDATE] Regenerated .pkpass for {serial_number}")
+            
+            # Step C: Send APNs push
+            result = apple_service.send_push_notification(serial_number)
+            logger.info(f"APPLE: Auto-pushed update for pass {serial_number}: {result}")
+        except Exception as e:
+            logger.error(f"APPLE: Failed to regenerate/push pass {serial_number}: {e}")
+            import traceback; traceback.print_exc()
+
+        return MessageResponse(
+            message=f"Apple Pass '{serial_number}' updated, regenerated, and push sent.",
+            success=True
+        )
     except HTTPException:
         raise
     except Exception as e:

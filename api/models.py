@@ -317,7 +317,18 @@ class ApplePassUpdate(BaseModel):
     logo_url: Optional[str] = None
     icon_url: Optional[str] = None
     strip_url: Optional[str] = None
+    background_image_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    ticket_layout: Optional[str] = None
     fields: Optional[list[ApplePassFieldResponse]] = None
+    # Accept dynamic_fields from UI (list of {field_type, label, value})
+    dynamic_fields: Optional[list[dict]] = None
+    # Accept per-type field lists from UI
+    header_fields: Optional[list[dict]] = None
+    primary_fields: Optional[list[dict]] = None
+    secondary_fields: Optional[list[dict]] = None
+    auxiliary_fields: Optional[list[dict]] = None
+    back_fields: Optional[list[dict]] = None
 
 
 # ========================================================================

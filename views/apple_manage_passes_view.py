@@ -319,7 +319,8 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
             update_payload = {k: v for k, v in update_payload.items() if v is not None}
             
             if hasattr(api_client, "update_apple_pass"):
-                api_client.update_apple_pass(serial_number, **update_payload)
+                result = api_client.update_apple_pass(serial_number, **update_payload)
+                result_msg = result.get("message", "Pass updated.") if isinstance(result, dict) else "Pass updated."
                 
                 # --- Success Dialog ---
                 def dialog_dismissed(e):
@@ -330,8 +331,15 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
 
                 upd_dlg = ft.AlertDialog(
                     modal=False,
-                    title=ft.Text("✅ Pass Updated Successfully!", weight=ft.FontWeight.BOLD),
-                    content=ft.Text(f"Pass {serial_number} has been updated successfully.", size=13),
+                    title=ft.Text("✅ Pass Updated & Push Sent", weight=ft.FontWeight.BOLD),
+                    content=ft.Column([
+                        ft.Text(f"Pass {serial_number} has been:", size=13),
+                        ft.Text("  1. Updated in the database", size=12, color="green"),
+                        ft.Text("  2. .pkpass file regenerated", size=12, color="green"),
+                        ft.Text("  3. Push notification sent to device", size=12, color="green"),
+                        ft.Container(height=5),
+                        ft.Text(result_msg, size=11, color="grey", italic=True),
+                    ], tight=True, spacing=4),
                     on_dismiss=dialog_dismissed,
                     actions=[
                         ft.TextButton("Close", on_click=close_dlg),

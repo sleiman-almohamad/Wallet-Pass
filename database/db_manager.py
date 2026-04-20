@@ -833,15 +833,67 @@ class DatabaseManager:
             return [self._apple_pass_to_dict(r) for r in rows]
 
     def update_apple_pass(self, serial_number: str, **kwargs) -> bool:
+        from datetime import datetime as dt
         with self.get_session() as session:
             p = session.get(ApplePassesData, serial_number)
             if not p:
                 return False
-                
+
+            # Separate field-related keys from column-level keys
+            field_keys = {"dynamic_fields", "header_fields", "primary_fields",
+                          "secondary_fields", "auxiliary_fields", "back_fields", "fields"}
+            
+            # Update column-level attributes
             for k, v in kwargs.items():
+                if k in field_keys:
+                    continue  # Handle separately below
                 if hasattr(p, k):
                     setattr(p, k, v)
-                    
+
+            # Handle dynamic fields → write to ApplePassFields table
+            # Prefer dynamic_fields (from UI), fallback to per-type lists
+            dynamic_fields = kwargs.get("dynamic_fields")
+            if dynamic_fields:
+                # Delete existing fields
+                session.query(ApplePassFields).filter(
+                    ApplePassFields.pass_id == serial_number
+                ).delete()
+                # Insert new fields
+                for i, f in enumerate(dynamic_fields):
+                    ftype = f.get("field_type", "auxiliary")
+                    session.add(ApplePassFields(
+                        pass_id=serial_number,
+                        field_type=ftype,
+                        field_key=f.get("key", f"{ftype}_{i}"),
+                        label=f.get("label", ""),
+                        value=f.get("value", ""),
+                    ))
+                print(f"📝 [DB] Updated {len(dynamic_fields)} fields for pass {serial_number}")
+            else:
+                # Try per-type field lists
+                all_fields = []
+                for ftype in ["header", "primary", "secondary", "auxiliary", "back"]:
+                    flist = kwargs.get(f"{ftype}_fields", [])
+                    for f in flist:
+                        all_fields.append({**f, "field_type": ftype})
+                
+                if all_fields:
+                    session.query(ApplePassFields).filter(
+                        ApplePassFields.pass_id == serial_number
+                    ).delete()
+                    for i, f in enumerate(all_fields):
+                        ftype = f.get("field_type", "auxiliary")
+                        session.add(ApplePassFields(
+                            pass_id=serial_number,
+                            field_type=ftype,
+                            field_key=f.get("key", f"{ftype}_{i}"),
+                            label=f.get("label", ""),
+                            value=f.get("value", ""),
+                        ))
+                    print(f"📝 [DB] Updated {len(all_fields)} fields for pass {serial_number}")
+
+            # Force timestamp for passesUpdatedSince queries
+            p.updated_at = dt.now()
             return True
 
     def delete_apple_pass(self, serial_number: str) -> bool:

@@ -179,11 +179,17 @@ class AppleWalletService:
 
     def _build_pass_json(self, class_data: dict, pass_data: dict, object_id: str) -> dict:
         """Construct the Apple-format pass.json dictionary."""
-        # Organisation / description
-        org_name = pass_data.get("apple_org_name") or pass_data.get("organizationName") or "My Business"
-        description = pass_data.get("apple_org_name") or pass_data.get("organizationName") or "My Business"
+        # Organisation / description — check both UI keys and DB column names
+        org_name = (pass_data.get("apple_org_name")
+                    or pass_data.get("organization_name")
+                    or pass_data.get("organizationName")
+                    or "My Business")
+        description = org_name
 
-        logo_text = pass_data.get("apple_logo_text") or pass_data.get("logoText") or org_name
+        logo_text = (pass_data.get("apple_logo_text")
+                     or pass_data.get("logo_text")
+                     or pass_data.get("logoText")
+                     or org_name)
 
         # Colours
         bg = _hex_to_rgb(
@@ -320,10 +326,10 @@ class AppleWalletService:
         if secondary_fields: pass_dict[style]["secondaryFields"] = secondary_fields
         
         # Inject Admin Message (Notification Channel) into auxiliaryFields
-        admin_msg_val = pass_data.get("admin_message", "Welcome!")
+        admin_msg_val = pass_data.get("admin_message", "Schützenfest Hannover")
         notif_field = {
             "key": "admin_message",
-            "label": "📢 Important Update",
+            "label": "WEITERE INFOS ZUM SCHÜTZENFEST MIT KLICK AUF ↗(…) ",
             "value": admin_msg_val,
             "changeMessage": "New Update: %@" 
         }

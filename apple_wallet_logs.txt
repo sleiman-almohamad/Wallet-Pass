@@ -879,3 +879,712 @@ APPLE WALLET LOGS
 
 [2026-04-15 14:58:53.283803] AUTH CHECK: Serial=pass_1776257747_sleiman, IncomingToken=f878e805676c26a71d93cd665bc07b56, DBToken=f878e805676c26a71d93cd665bc07b56
 [2026-04-15 14:59:10.168602] AUTH CHECK: Serial=pass_1776257747_sleiman, IncomingToken=f878e805676c26a71d93cd665bc07b56, DBToken=f878e805676c26a71d93cd665bc07b56
+[2026-04-15 15:03:32.798327] AUTH CHECK: Serial=pass_1776238879_sleiman, IncomingToken=a7be17cf29d9053150a54329403a04dc, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:03:32 +0200] Unregister task (for device b232149da06b4406098d7470cbe68836, pass type pass.com.mfo.wallet, serial number pass_1776238879_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+================================
+
+[2026-04-15 15:04:00.456150] AUTH CHECK: Serial=pass_1776257747_sleiman, IncomingToken=f878e805676c26a71d93cd665bc07b56, DBToken=f878e805676c26a71d93cd665bc07b56
+[2026-04-15 15:14:46.031768] AUTH CHECK: Serial=pass_1776248190_sleiman, IncomingToken=355ed95d5ef4101e3791a59e75a66e56, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:14:46 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+================================
+
+[2026-04-15 15:15:15.684379] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:15:15.897478] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:15:16 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776258841_sleiman, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-15 15:15:16.418887] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:15:16 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776258841_sleiman, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-15 15:15:16.885854] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:15:17 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776258841_sleiman, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-15 15:15:47.666288] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:15:48 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776258841_sleiman, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-15 15:16:21.553706] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:18:33.067287] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:27:17 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Device received spurious push. Request for passesUpdatedSince '2026-04-15T15:18:32.905792' returned no serial numbers. (Device = f26da9eaa5f84ca315c33b21d23865a4)
+================================
+
+[2026-04-15 15:27:47.105222] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:27:47 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Wed, 15 Apr 2026 13:18:33 GMT) and returned the full unchanged pass data for serial number 'pass_1776258841_sleiman'.
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:28:54 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Device received spurious push. Request for passesUpdatedSince '2026-04-15T15:18:32.905792' returned no serial numbers. (Device = f26da9eaa5f84ca315c33b21d23865a4)
+================================
+
+[2026-04-15 15:29:07.538501] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:29:37 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Device received spurious push. Request for passesUpdatedSince '2026-04-15T15:18:32.905792' returned no serial numbers. (Device = f26da9eaa5f84ca315c33b21d23865a4)
+================================
+
+[2026-04-15 15:30:06.171941] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:30:29 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Device received spurious push. Request for passesUpdatedSince '2026-04-15T15:18:32.905792' returned no serial numbers. (Device = f26da9eaa5f84ca315c33b21d23865a4)
+================================
+
+[2026-04-15 15:30:42.109162] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:30:42 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Wed, 15 Apr 2026 13:30:06 GMT) and returned the full unchanged pass data for serial number 'pass_1776258841_sleiman'.
+================================
+
+[2026-04-15 15:30:44.361319] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:30:44 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Wed, 15 Apr 2026 13:30:42 GMT) and returned the full unchanged pass data for serial number 'pass_1776258841_sleiman'.
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:31:16 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Device received spurious push. Request for passesUpdatedSince '2026-04-15T15:18:32.905792' returned no serial numbers. (Device = f26da9eaa5f84ca315c33b21d23865a4)
+================================
+
+[2026-04-15 15:31:58.041575] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:32:04.848384] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:32:05 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Wed, 15 Apr 2026 13:31:58 GMT) and returned the full unchanged pass data for serial number 'pass_1776258841_sleiman'.
+================================
+
+[2026-04-15 15:32:16.317574] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:32:16 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Wed, 15 Apr 2026 13:32:04 GMT) and returned the full unchanged pass data for serial number 'pass_1776258841_sleiman'.
+================================
+
+[2026-04-15 15:33:10.693198] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:33:11 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Wed, 15 Apr 2026 13:32:16 GMT) and returned the full unchanged pass data for serial number 'pass_1776258841_sleiman'.
+================================
+
+[2026-04-15 15:33:41.822443] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:33:42 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Wed, 15 Apr 2026 13:33:10 GMT) and returned the full unchanged pass data for serial number 'pass_1776258841_sleiman'.
+================================
+
+[2026-04-15 15:44:52.378864] AUTH CHECK: Serial=pass_1776248190_sleiman, IncomingToken=355ed95d5ef4101e3791a59e75a66e56, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:44:52 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+================================
+
+[2026-04-15 15:54:24.759462] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:55:13.135851] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:55:32.386817] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:55:49.600104] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:56:00.169785] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:56:46.192318] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:57:06.453252] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-15 15:57:18.236107] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 15:57:18 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Wed, 15 Apr 2026 13:57:06 GMT) and returned the full unchanged pass data for serial number 'pass_1776258841_sleiman'.
+================================
+
+[2026-04-15 15:58:35.943533] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+[2026-04-15 15:58:36.061673] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+[2026-04-15 15:58:59.484808] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+[2026-04-15 15:58:59.606365] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+[2026-04-15 15:59:01.556569] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+[2026-04-15 16:00:58.607052] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+[2026-04-15 16:00:59.227979] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+[2026-04-15 16:00:59.710390] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+[2026-04-17 00:39:28.067082] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:39:28.259285] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:39:28.851324] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 16:11:49 +0200] Unregister task (for device b232149da06b4406098d7470cbe68836, pass type pass.com.mfo.wallet, serial number pass_1776238879_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[1] [2026-04-15 16:21:50 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[2] [2026-04-15 17:01:42 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[3] [2026-04-15 18:01:49 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[4] [2026-04-15 19:02:00 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[5] [2026-04-15 19:22:04 +0200] Unregister task (for device c4dc95c59ec57f55013715742569d341, pass type pass.com.mfo.wallet, serial number pass_1776170718_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[6] [2026-04-15 20:02:12 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[7] [2026-04-16 01:03:04 +0200] Unregister task (for device f3b074164271f46bb602f1ddba7d7ccf, pass type pass.com.mfo.wallet, serial number pass_1776171178_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[8] [2026-04-16 02:17:39 +0200] Unregister task (for device b232149da06b4406098d7470cbe68836, pass type pass.com.mfo.wallet, serial number pass_1776238879_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[9] [2026-04-16 05:27:47 +0200] Unregister task (for device c4dc95c59ec57f55013715742569d341, pass type pass.com.mfo.wallet, serial number pass_1776170718_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[10] [2026-04-16 06:06:52 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[11] [2026-04-16 11:19:39 +0200] Unregister task (for device f3b074164271f46bb602f1ddba7d7ccf, pass type pass.com.mfo.wallet, serial number pass_1776171178_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[12] [2026-04-16 13:04:00 +0200] Unregister task (for device b232149da06b4406098d7470cbe68836, pass type pass.com.mfo.wallet, serial number pass_1776238879_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[13] [2026-04-16 16:09:48 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[14] [2026-04-16 22:38:33 +0200] Unregister task (for device f3b074164271f46bb602f1ddba7d7ccf, pass type pass.com.mfo.wallet, serial number pass_1776171178_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[15] [2026-04-16 23:06:53 +0200] Unregister task (for device b232149da06b4406098d7470cbe68836, pass type pass.com.mfo.wallet, serial number pass_1776238879_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[16] [2026-04-17 00:39:28 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:39:29 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:39:29.485973] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:39:29 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:40:02.677353] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:40:03 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:40:35.628917] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:40:36 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:40:46.096011] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:40:46 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:40:46.553434] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:40:47.323729] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:40:47 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:40:47 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:41:03.217307] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:41:03 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:41:04.114480] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:41:04.662162] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:41:04 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:41:05 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:41:50.145646] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:41:50 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:41:58.026273] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:41:58 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:41:58.586670] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:41:58 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:41:59.082338] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:41:59 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:42:33.477967] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:42:33.749085] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:42:33 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:42:56.606559] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:42:56.691817] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:42:57 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:43:01.790042] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:43:02 +0200] Web service error for pass.com.mfo.wallet (https://breeding-caddy-fondly.ngrok-free.dev): Server ignored the 'if-modified-since' header (Thu, 16 Apr 2026 22:42:56 GMT) and returned the full unchanged pass data for serial number 'pass_1776258841_sleiman'.
+================================
+
+[2026-04-17 00:45:10.489400] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:45:12 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:45:22.043943] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:45:23.192759] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:45:22 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:45:23 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:45:23.683861] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:45:24 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:46:10.680334] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:46:11 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:46:15.314628] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:46:15 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:46:15.849842] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:46:16 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:46:16.401764] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:46:16 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:47:18.188716] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:47:18 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:47:34.880274] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:47:35 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:47:35.725826] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:47:36.186206] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:47:36 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:47:36 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:47:43.659932] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:47:49.925422] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:47:50.026864] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:47:50 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:47:50.682776] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:47:51 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:47:51.213729] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:47:51 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:48:16.795566] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:48:17 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:48:20.902680] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:48:21 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:48:21.624714] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:48:22 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:48:22.168212] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:48:22 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:49:15.718549] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:49:16 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:50:12.079719] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:50:12 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:50:19.233430] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:50:19 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:50:19.738127] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:50:20 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:50:20.203098] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:50:20 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:51:18.245190] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 00:51:18 +0200] Get pass task (pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint, if-modified-since (null); with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Received invalid pass data (The pass cannot be read because it isn’t valid.)
+================================
+
+[2026-04-17 00:51:36.084637] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:52:34.833373] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:53:26.893366] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:54:30.605053] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:55:50.787593] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:56:29.119221] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 00:57:02.357075] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:00:04.950021] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:00:32.615201] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:00:38.529774] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:00:38.716835] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:01:29.939113] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:03:30.378163] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-17 01:04:24.513025] AUTH CHECK: Serial=pass_1776258841_sleiman, IncomingToken=0fafdfc424e484215a7bc2c9b320ddfa, DBToken=0fafdfc424e484215a7bc2c9b320ddfa
+[2026-04-17 01:06:08.408164] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:07:38.567353] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:09:07.162505] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:09:34.252095] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:10:13.886513] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:11:13.590698] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:13:13.963178] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:14:58.317302] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:15:12.143987] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:15:21.053911] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:15:21.190612] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:15:56.394568] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:16:13.994559] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:20:43.309290] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:20:43.550147] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:20:44.210345] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:21:20.073846] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:22:15.470561] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:23:00.372168] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:23:14.140933] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:23:18.754254] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:23:18.991422] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 01:28:50.621980] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-15 16:07:45 +0200] Unregister task (for device 537d09c744e22f01294566ffb6e674ee, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[1] [2026-04-15 16:07:45 +0200] Unregister task (for device 537d09c744e22f01294566ffb6e674ee, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[2] [2026-04-15 16:07:45 +0200] Unregister task (for device 537d09c744e22f01294566ffb6e674ee, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[3] [2026-04-15 16:08:58 +0200] Unregister task (for device 537d09c744e22f01294566ffb6e674ee, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[4] [2026-04-15 16:43:49 +0200] Unregister task (for device 537d09c744e22f01294566ffb6e674ee, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[5] [2026-04-15 16:44:49 +0200] Unregister task (for device 537d09c744e22f01294566ffb6e674ee, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[6] [2026-04-15 16:45:52 +0200] Unregister task (for device 537d09c744e22f01294566ffb6e674ee, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[7] [2026-04-15 17:25:48 +0200] Unregister task (for device 537d09c744e22f01294566ffb6e674ee, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[8] [2026-04-15 17:43:43 +0200] Unregister task (for device 537d09c744e22f01294566ffb6e674ee, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[9] [2026-04-15 17:43:43 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[10] [2026-04-15 17:43:43 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[11] [2026-04-15 17:43:43 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[12] [2026-04-15 18:42:46 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[13] [2026-04-15 20:43:41 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[14] [2026-04-15 22:54:37 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[15] [2026-04-16 03:28:05 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[16] [2026-04-16 03:43:03 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[17] [2026-04-16 04:13:46 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[18] [2026-04-16 04:44:25 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[19] [2026-04-16 05:14:27 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[20] [2026-04-16 05:50:04 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[21] [2026-04-16 06:20:24 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[22] [2026-04-16 07:21:20 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[23] [2026-04-16 08:21:45 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[24] [2026-04-16 09:21:56 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[25] [2026-04-16 19:24:09 +0200] Register task (for device 02213de3a6026e8b3249d3538c4806cd, pass type pass.com.mfo.wallet, serial number pass_1776243773_anna-lena; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+================================
+
+[2026-04-17 01:28:53.001151] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+[2026-04-17 09:50:56.744458] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 09:50:56.827235] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 01:58:57 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[1] [2026-04-17 01:58:57 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[2] [2026-04-17 01:58:57 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[3] [2026-04-17 01:59:03 +0200] Register task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[4] [2026-04-17 01:59:03 +0200] Register task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[5] [2026-04-17 01:59:03 +0200] Register task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[6] [2026-04-17 01:59:57 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[7] [2026-04-17 01:59:57 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[8] [2026-04-17 01:59:58 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[9] [2026-04-17 02:30:59 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[10] [2026-04-17 02:30:59 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[11] [2026-04-17 03:02:12 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[12] [2026-04-17 03:30:47 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[13] [2026-04-17 03:31:49 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[14] [2026-04-17 03:42:01 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[15] [2026-04-17 03:53:43 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[16] [2026-04-17 04:24:33 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[17] [2026-04-17 05:24:21 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[18] [2026-04-17 06:23:24 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[19] [2026-04-17 06:53:45 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[20] [2026-04-17 07:56:00 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[21] [2026-04-17 09:17:51 +0200] Unregister task (for device f26da9eaa5f84ca315c33b21d23865a4, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+================================
+
+[2026-04-17 09:53:53.045526] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 09:54:05.898053] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 09:55:44.714693] AUTH CHECK: Serial=pass_1776243773_anna-lena, IncomingToken=10aac7e719460981a8d196308ff4689d, DBToken=10aac7e719460981a8d196308ff4689d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 08:03:45 +0200] Register task (for device 404c3d35762be58716584765f8ac5e87, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[1] [2026-04-17 08:03:45 +0200] Register task (for device 404c3d35762be58716584765f8ac5e87, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[2] [2026-04-17 08:03:45 +0200] Register task (for device 404c3d35762be58716584765f8ac5e87, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[3] [2026-04-17 08:04:15 +0200] Register task (for device 404c3d35762be58716584765f8ac5e87, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[4] [2026-04-17 08:05:28 +0200] Register task (for device 404c3d35762be58716584765f8ac5e87, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[5] [2026-04-17 08:06:28 +0200] Register task (for device 404c3d35762be58716584765f8ac5e87, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[6] [2026-04-17 08:36:29 +0200] Register task (for device 404c3d35762be58716584765f8ac5e87, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[7] [2026-04-17 09:06:39 +0200] Register task (for device 404c3d35762be58716584765f8ac5e87, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[8] [2026-04-17 09:28:40 +0200] Register task (for device 404c3d35762be58716584765f8ac5e87, pass type pass.com.mfo.wallet, serial number pass_1776379069_florian_toussaint; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+================================
+
+[2026-04-17 09:59:38.700400] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 09:59:39.233379] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:09:29.456671] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:09:29.610524] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:10:19.201618] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:10:19.539181] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:10:26.540245] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:11:30.701779] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:11:49.564347] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:11:49.744551] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:29:38.109190] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:29:38.332584] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-17 10:29:55.392834] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 09:57:28.744444] AUTH CHECK: Serial=pass_1776248190_sleiman, IncomingToken=355ed95d5ef4101e3791a59e75a66e56, DBToken=None
+[2026-04-20 09:57:28.746647] AUTH CHECK: Serial=pass_1776170718_sleiman, IncomingToken=default_token_123456789, DBToken=None
+[2026-04-20 09:57:28.747855] AUTH CHECK: Serial=pass_1776238879_sleiman, IncomingToken=a7be17cf29d9053150a54329403a04dc, DBToken=None
+[2026-04-20 09:57:28.749759] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 09:57:28.766189] AUTH CHECK: Serial=pass_1776171178_sleiman, IncomingToken=default_token_123456789, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-17 11:51:37 +0200] Unregister task (for device c4dc95c59ec57f55013715742569d341, pass type pass.com.mfo.wallet, serial number pass_1776170718_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[1] [2026-04-18 08:18:57 +0200] Unregister task (for device b232149da06b4406098d7470cbe68836, pass type pass.com.mfo.wallet, serial number pass_1776238879_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[2] [2026-04-18 08:18:57 +0200] Unregister task (for device f3b074164271f46bb602f1ddba7d7ccf, pass type pass.com.mfo.wallet, serial number pass_1776171178_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+[3] [2026-04-18 12:06:23 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Unexpected response code 404
+================================
+
+[2026-04-20 09:57:29.042906] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-20 09:57:29 +0200] Unregister task (for device d12402292c07fdf29f86ad62224e76e5, pass type pass.com.mfo.wallet, serial number pass_1776248190_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+[1] [2026-04-20 09:57:29 +0200] Unregister task (for device c4dc95c59ec57f55013715742569d341, pass type pass.com.mfo.wallet, serial number pass_1776170718_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+[2] [2026-04-20 09:57:29 +0200] Unregister task (for device b232149da06b4406098d7470cbe68836, pass type pass.com.mfo.wallet, serial number pass_1776238879_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+[3] [2026-04-20 09:57:29 +0200] Unregister task (for device f3b074164271f46bb602f1ddba7d7ccf, pass type pass.com.mfo.wallet, serial number pass_1776171178_sleiman; with web service url https://breeding-caddy-fondly.ngrok-free.dev) encountered error: Authentication failure
+================================
+
+[2026-04-20 09:58:46.823284] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 09:58:47.094908] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:00:23.349103] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:00:24.050523] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:04:29.920122] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:04:30.168632] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:12:57.318207] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:12:57.564661] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:14:08.345751] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83
+[2026-04-20 10:14:09.283727] AUTH CHECK: Serial=pass_1776379069_florian_toussaint, IncomingToken=8ba4f8e42eb316e6878fd3cd34944e83, DBToken=8ba4f8e42eb316e6878fd3cd34944e83

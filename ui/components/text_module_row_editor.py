@@ -35,12 +35,12 @@ class TextModuleRowEditor(ft.Container):
             self.rows = [dict(r) for r in initial_rows]
         else:
             # Pass mode: recreate rows from flat list of modules
-            # Modules typically have id like "row_0_left" or similar.
             row_dict = {}
             for mod in initial_rows:
                 mod_id = mod.get('id', '')
                 header = mod.get('header', '')
                 body = mod.get('body', '')
+                m_type = mod.get('module_type', mod.get('type', 'text'))
                 
                 parts = mod_id.split('_')
                 if len(parts) >= 3 and parts[0] == 'row':
@@ -54,6 +54,7 @@ class TextModuleRowEditor(ft.Container):
                         if col in ['left', 'middle', 'right']:
                             row_dict[r_idx][f'{col}_header'] = header
                             row_dict[r_idx][f'{col}_body'] = body
+                            row_dict[r_idx][f'{col}_type'] = m_type
                     except ValueError:
                         pass
             
@@ -69,24 +70,26 @@ class TextModuleRowEditor(ft.Container):
             # Flatten to pass mode
             flat_modules = []
             for r_idx, row in enumerate(self.rows):
-                # We enforce row_index to match current position in flat output
                 # Left
                 l_hdr = row.get('left_header')
                 l_bdy = row.get('left_body')
+                l_typ = row.get('left_type', 'text')
                 if l_hdr or l_bdy:
-                    flat_modules.append({'id': f'row_{r_idx}_left', 'header': l_hdr or '', 'body': l_bdy or ''})
+                    flat_modules.append({'id': f'row_{r_idx}_left', 'header': l_hdr or '', 'body': l_bdy or '', 'module_type': l_typ})
                 
                 # Middle
                 m_hdr = row.get('middle_header')
                 m_bdy = row.get('middle_body')
+                m_typ = row.get('middle_type', 'text')
                 if m_hdr or m_bdy:
-                    flat_modules.append({'id': f'row_{r_idx}_middle', 'header': m_hdr or '', 'body': m_bdy or ''})
+                    flat_modules.append({'id': f'row_{r_idx}_middle', 'header': m_hdr or '', 'body': m_bdy or '', 'module_type': m_typ})
                 
                 # Right
                 r_hdr = row.get('right_header')
                 r_bdy = row.get('right_body')
+                r_typ = row.get('right_type', 'text')
                 if r_hdr or r_bdy:
-                    flat_modules.append({'id': f'row_{r_idx}_right', 'header': r_hdr or '', 'body': r_bdy or ''})
+                    flat_modules.append({'id': f'row_{r_idx}_right', 'header': r_hdr or '', 'body': r_bdy or '', 'module_type': r_typ})
                     
             self.on_change_callback(flat_modules)
 
@@ -101,28 +104,25 @@ class TextModuleRowEditor(ft.Container):
                 # Left
                 l_hdr = row.get('left_header')
                 l_bdy = row.get('left_body')
+                l_typ = row.get('left_type', 'text')
                 if l_hdr or l_bdy:
-                    flat_modules.append({'id': f'row_{r_idx}_left', 'header': l_hdr or '', 'body': l_bdy or ''})
+                    flat_modules.append({'id': f'row_{r_idx}_left', 'header': l_hdr or '', 'body': l_bdy or '', 'module_type': l_typ})
                 
                 # Middle
                 m_hdr = row.get('middle_header')
                 m_bdy = row.get('middle_body')
+                m_typ = row.get('middle_type', 'text')
                 if m_hdr or m_bdy:
-                    flat_modules.append({'id': f'row_{r_idx}_middle', 'header': m_hdr or '', 'body': m_bdy or ''})
+                    flat_modules.append({'id': f'row_{r_idx}_middle', 'header': m_hdr or '', 'body': m_bdy or '', 'module_type': m_typ})
                 
                 # Right
                 r_hdr = row.get('right_header')
                 r_bdy = row.get('right_body')
+                r_typ = row.get('right_type', 'text')
                 if r_hdr or r_bdy:
-                    flat_modules.append({'id': f'row_{r_idx}_right', 'header': r_hdr or '', 'body': r_bdy or ''})
+                    flat_modules.append({'id': f'row_{r_idx}_right', 'header': r_hdr or '', 'body': r_bdy or '', 'module_type': r_typ})
                     
             return flat_modules
-
-    def add_row(self, e):
-        new_index = len(self.rows)
-        self.rows.append({'row_index': new_index})
-        self.update()
-        self._trigger_change()
 
     def remove_row(self, index: int):
         if 0 <= index < len(self.rows):
@@ -137,44 +137,76 @@ class TextModuleRowEditor(ft.Container):
     def update_field(self, row_idx: int, field: str, value: str):
         if 0 <= row_idx < len(self.rows):
             self.rows[row_idx][field] = value
+            if field.endswith('_type'):
+                # Refresh UI to update labels if type changed
+                self.content = self._build_content()
+                self.update()
             self._trigger_change()
 
     def build_row_ui(self, row_data: Dict, index: int):
         def make_field(col_prefix, label_postfix):
             field_name = f"{col_prefix}_{label_postfix.lower()}"
-            label_key = f"label.{col_prefix}"
-            postfix_key = f"label.{label_postfix.lower()}"
-            label = f"{self.state.t(label_key)} {self.state.t(postfix_key)}" if self.state else f"{col_prefix.capitalize()} {label_postfix}"
+            current_type = row_data.get(f"{col_prefix}_type", "text")
+            
+            # Map labels based on type
+            display_label = label_postfix
+            if current_type == "link":
+                if label_postfix == "Header": display_label = "Button Label"
+                if label_postfix == "Body":   display_label = "Target URL"
+
+            label = f"{col_prefix.capitalize()} {display_label}"
             
             return ft.TextField(
                 label=label,
                 value=row_data.get(field_name, ""),
                 width=160 if self.mode == "class" else 120,
-                text_size=12,
+                text_size=11,
                 height=45,
                 content_padding=5,
                 on_change=lambda e: self.update_field(index, field_name, e.control.value)
             )
 
         def build_col(prefix):
+            col_type = row_data.get(f"{prefix}_type", "text")
+            type_picker = ft.Dropdown(
+                value=col_type,
+                options=[
+                    ft.dropdown.Option("text", "Text"),
+                    ft.dropdown.Option("link", "Link"),
+                ],
+                width=80 if self.mode == "class" else 70,
+                text_size=10,
+                content_padding=5,
+                on_change=lambda e: self.update_field(index, f"{prefix}_type", e.control.value)
+            )
+            
             if self.mode == "class":
-                return ft.Column([make_field(prefix, "Header")], spacing=5)
+                # In class mode, we usually only define the header (blueprint)
+                return ft.Column([
+                    ft.Row([ft.Text(prefix.upper(), size=9, weight="bold"), type_picker], spacing=5),
+                    make_field(prefix, "Header")
+                ], spacing=5)
             else:
-                return ft.Column([make_field(prefix, "Header"), make_field(prefix, "Body")], spacing=5)
+                # In pass mode, we provide values for header and body
+                return ft.Column([
+                    ft.Row([ft.Text(prefix.upper(), size=9, weight="bold"), type_picker], spacing=5),
+                    make_field(prefix, "Header"),
+                    make_field(prefix, "Body")
+                ], spacing=3)
 
         return ft.Container(
             border=ft.border.all(1, "grey300"),
-            border_radius=5,
+            border_radius=8,
             padding=10,
             margin=ft.margin.only(bottom=10),
-            bgcolor="grey50",
+            bgcolor="white",
             content=ft.Column([
                 ft.Row([
-                    ft.Text(f"{self.state.t('label.row') if self.state else 'Row'} {index + 1}", weight=ft.FontWeight.BOLD),
+                    ft.Text(f"ROW {index + 1}", weight=ft.FontWeight.W_600, size=12),
                     ft.IconButton(
-                        icon="delete",
-                        icon_color="red",
-                        tooltip=self.state.t("tooltip.remove_row") if self.state else "Remove Row",
+                        icon=ft.Icons.DELETE_OUTLINE,
+                        icon_color="red400",
+                        icon_size=18,
                         on_click=lambda e, i=index: self.remove_row(i)
                     )
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -182,7 +214,7 @@ class TextModuleRowEditor(ft.Container):
                     build_col("left"),
                     build_col("middle"),
                     build_col("right"),
-                ], spacing=10)
+                ], spacing=10, vertical_alignment=ft.CrossAxisAlignment.START)
             ])
         )
 
@@ -194,16 +226,21 @@ class TextModuleRowEditor(ft.Container):
 
         return ft.Column([
             ft.Row([
-                ft.Text(self.state.t("label.text_module_rows") if self.state else "Text Module Rows", size=14, weight=ft.FontWeight.BOLD),
-                ft.ElevatedButton(self.state.t("btn.add_row") if self.state else "Add Row", icon="add", on_click=self.add_row, style=ft.ButtonStyle(padding=5)),
+                ft.Text("Information Fields", size=14, weight=ft.FontWeight.BOLD),
+                ft.ElevatedButton("Add Row", icon=ft.Icons.ADD, on_click=self.add_row, 
+                                 style=ft.ButtonStyle(padding=5, shape=ft.RoundedRectangleBorder(radius=8))),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ft.Text(self.state.t("msg.row_hint") if self.state else "Supports up to 3 columns per row on the pass.", size=10, color="grey"),
+            ft.Text("Define text blocks or interactive link buttons.", size=11, color="grey"),
+            ft.Container(height=5),
             rows_list
         ])
 
     def add_row(self, e):
         new_index = len(self.rows)
-        self.rows.append({'row_index': new_index})
+        self.rows.append({
+            'row_index': new_index,
+            'left_type': 'text', 'middle_type': 'text', 'right_type': 'text'
+        })
         self.content = self._build_content()
         self.update()
         self._trigger_change()

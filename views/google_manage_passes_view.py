@@ -15,6 +15,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
     current_class_info = None
     dynamic_field_refs: dict = {}
     dynamic_text_modules: dict = {}
+    dynamic_text_modules_types: dict = {}
 
     # ── Refs for core fields ──
     holder_name_ref = ft.Ref[ft.TextField]()
@@ -64,7 +65,12 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
         # Sync text modules
         if dynamic_text_modules:
             preview_data["textModulesData"] = [
-                {"id": mid, "header": tf.current.label if tf.current.label else tf.current.hint_text, "body": tf.current.value}
+                {
+                    "id": mid, 
+                    "header": tf.current.label if tf.current.label else tf.current.hint_text, 
+                    "body": tf.current.value,
+                    "module_type": dynamic_text_modules_types.get(mid, "text")
+                }
                 for mid, tf in dynamic_text_modules.items()
                 if tf.current and tf.current.value
             ]
@@ -248,6 +254,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
         class_type = class_info.get("class_type", "Generic")
         dynamic_field_refs.clear()
         dynamic_text_modules.clear()
+        dynamic_text_modules_types.clear()
 
         # Holder Info Section
         holder_controls = [
@@ -344,15 +351,30 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                     row_controls = []
                     for pos in ["left", "middle", "right"]:
                         hdr = row.get(f"{pos}_header")
+                        m_type = row.get(f"{pos}_type", "text")
                         if hdr:
                             mid = f"row_{i}_{pos}"
-                            existing_body = pass_modules.get(mid, {}).get("body", "")
+                            # Template defines the field type — it's the schema.
+                            # Pass modules just store values.
+                            pass_mod = pass_modules.get(mid, {})
+                            curr_type = m_type  # Template is source of truth
+                            existing_body = pass_mod.get("body", "")
+                            
                             fref = ft.Ref[ft.TextField]()
                             dynamic_text_modules[mid] = fref
+                            dynamic_text_modules_types[mid] = curr_type
+                            
+                            hint = f"Enter {hdr}"
+                            if curr_type == "link":
+                                hint = f"Enter URL for {hdr}"
+                                
                             row_controls.append(ft.TextField(
                                 ref=fref, label=hdr, value=existing_body,
+                                hint_text=hint,
                                 expand=True, border_radius=8, text_size=13,
-                                multiline=True, min_lines=3, max_lines=10,
+                                multiline=curr_type != "link", 
+                                min_lines=3 if curr_type != "link" else 1, 
+                                max_lines=10 if curr_type != "link" else 1,
                                 on_change=lambda e: _sync_preview()
                             ))
                     if row_controls:
@@ -417,7 +439,12 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
             
             if dynamic_text_modules:
                 form_pd["textModulesData"] = [
-                    {"id": mid, "header": tf.current.label if tf.current.label else tf.current.hint_text, "body": tf.current.value}
+                    {
+                        "id": mid, 
+                        "header": tf.current.label if tf.current.label else tf.current.hint_text, 
+                        "body": tf.current.value,
+                        "module_type": dynamic_text_modules_types.get(mid, "text")
+                    }
                     for mid, tf in dynamic_text_modules.items()
                     if tf.current and tf.current.value
                 ]

@@ -105,10 +105,13 @@ class GenericClassTextModuleRows(Base):
     row_index = Column(Integer, nullable=False, default=0)
     left_header = Column(String(255), nullable=True)
     left_body = Column(Text, nullable=True)
+    left_type = Column(String(50), nullable=False, server_default="text")
     middle_header = Column(String(255), nullable=True)
     middle_body = Column(Text, nullable=True)
+    middle_type = Column(String(50), nullable=False, server_default="text")
     right_header = Column(String(255), nullable=True)
     right_body = Column(Text, nullable=True)
+    right_type = Column(String(50), nullable=False, server_default="text")
 
     parent_generic_fields = relationship("GenericClassFields", back_populates="text_module_rows")
 
@@ -249,6 +252,7 @@ class PassTextModules(Base):
     module_id = Column(String(255))
     header = Column(String(255))
     body = Column(Text)
+    module_type = Column(String(50), nullable=False, server_default="text")
     display_order = Column(Integer, default=0)
 
     parent_pass = relationship("PassesTable", back_populates="text_modules")

@@ -929,6 +929,7 @@ class WalletClient:
                 object_data.pop("groupingId", None)
             # endregion
 
+
             # 5. EXECUTE SINGLE PATCH (Atomic operation)
             result = resource.patch(
                 resourceId=full_object_id,
@@ -1093,10 +1094,28 @@ class WalletClient:
                         "value": str(value)
                     })
             
-            # Add text modules if provided
+            # Add text/link modules if provided
             raw_modules = pass_data.get("textModulesData") or pass_data.get("text_modules", [])
-            if raw_modules:
-                obj["textModulesData"] = raw_modules
+            text_mods = []
+            link_mods = []
+            for m in raw_modules:
+                m_type = m.get("module_type", m.get("type", "text"))
+                m_body = str(m.get("body", "")).strip()
+                if m_type == "link":
+                    uri = m_body if m_body.startswith(("http://", "https://")) else f"https://{m_body}"
+                    link_mod = {"uri": uri}
+                    if m.get("header"): link_mod["description"] = m.get("header")
+                    if m.get("id"): link_mod["id"] = m.get("id")
+                    link_mods.append(link_mod)
+                else:
+                    text_mod = {"header": m.get("header", ""), "body": m_body}
+                    if m.get("id"): text_mod["id"] = m.get("id")
+                    text_mods.append(text_mod)
+
+            if text_mods:
+                obj["textModulesData"] = text_mods
+            if link_mods:
+                obj["linksModuleData"] = {"uris": link_mods}
             
             if info_label_values:
                 obj["infoModulesData"] = [{
@@ -1154,12 +1173,27 @@ class WalletClient:
                     "id": "member_info"
                 })
             
-            # Combine with any other text modules from pass_data
-            raw_modules = text_modules + (pass_data.get("textModulesData") or pass_data.get("text_modules", []))
-            
-            # Keep all text modules in textModulesData
-            if raw_modules:
-                obj["textModulesData"] = raw_modules
+            # Separate text and link modules
+            text_mods = []
+            link_mods = []
+            for m in (text_modules + (pass_data.get("textModulesData") or pass_data.get("text_modules", []))):
+                m_type = m.get("module_type", m.get("type", "text"))
+                m_body = str(m.get("body", "")).strip()
+                if m_type == "link":
+                    uri = m_body if m_body.startswith(("http://", "https://")) else f"https://{m_body}"
+                    link_mod = {"uri": uri}
+                    if m.get("header"): link_mod["description"] = m.get("header")
+                    if m.get("id"): link_mod["id"] = m.get("id")
+                    link_mods.append(link_mod)
+                else:
+                    text_mod = {"header": m.get("header", ""), "body": m_body}
+                    if m.get("id"): text_mod["id"] = m.get("id")
+                    text_mods.append(text_mod)
+
+            if text_mods:
+                obj["textModulesData"] = text_mods
+            if link_mods:
+                obj["linksModuleData"] = {"uris": link_mods}
             
             # Add info modules for tier and other details
             info_label_values = []
@@ -1261,12 +1295,12 @@ class WalletClient:
         if branding_bg:
             obj["hexBackgroundColor"] = branding_bg
 
-        if branding_logo_url:
+        if branding_logo_url and str(branding_logo_url).startswith(("http://", "https://")):
             obj["logo"] = {
                 "sourceUri": {"uri": str(branding_logo_url)},
                 "contentDescription": {"defaultValue": {"language": "en-US", "value": "Logo"}}
             }
-        if branding_hero_url:
+        if branding_hero_url and str(branding_hero_url).startswith(("http://", "https://")):
             obj["heroImage"] = {
                 "sourceUri": {"uri": str(branding_hero_url)},
                 "contentDescription": {"defaultValue": {"language": "en-US", "value": "Hero Image"}}
@@ -1322,18 +1356,40 @@ class WalletClient:
                 all_raw_modules.append({
                     "header": "Description",
                     "body": str(pass_data["description"]),
-                    "id": "description"
+                    "id": "description",
+                    "module_type": "text"
                 })
             
-            if all_raw_modules:
-                obj["textModulesData"] = all_raw_modules
+            text_mods = []
+            link_mods = []
+            for m in all_raw_modules:
+                m_type = m.get("module_type", m.get("type", "text"))
+                m_body = str(m.get("body", "")).strip()
+                if m_type == "link":
+                    uri = m_body if m_body.startswith(("http://", "https://")) else f"https://{m_body}"
+                    link_mod = {"uri": uri}
+                    if m.get("header"): link_mod["description"] = m.get("header")
+                    if m.get("id"): link_mod["id"] = m.get("id")
+                    link_mods.append(link_mod)
+                else:
+                    text_mod = {"header": m.get("header", ""), "body": m_body}
+                    if m.get("id"): text_mod["id"] = m.get("id")
+                    text_mods.append(text_mod)
+
+            if text_mods:
+                obj["textModulesData"] = text_mods
+            if link_mods:
+                obj["linksModuleData"] = {"uris": link_mods}
             
             # Add info modules for all other data
             info_label_values = []
             
             # Skip fields already used in header, cardTitle, subheader, or textModules
             skip_fields = [
+                "card_title",
+                "cardTitle",
                 "header_value",
+                "header",
                 "subheader",
                 "subheader_value",
                 "description",
@@ -1352,6 +1408,7 @@ class WalletClient:
                 "heroImageUrl",
                 "hero_url",
                 "hexBackgroundColor",
+                "hex_background_color",
                 "background_color",
                 "base_color",
             ]

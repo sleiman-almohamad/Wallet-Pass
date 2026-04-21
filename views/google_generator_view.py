@@ -126,8 +126,9 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                 field_id = f"row_{row_idx}_{col}"
                 if header_text and field_id in dynamic_field_refs and dynamic_field_refs[field_id].current:
                     val = dynamic_field_refs[field_id].current.value
+                    m_type = row.get(f"{col}_type", "text")
                     if val:
-                        text_modules.append({"id": field_id, "header": header_text, "body": val})
+                        text_modules.append({"id": field_id, "header": header_text, "body": val, "module_type": m_type})
         return text_modules
 
     # ── File Picker Logic ──
@@ -288,16 +289,24 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
 
                     def _add_field(col_name, header_key, parent_row, _row=row, _row_idx=row_idx):
                         header_text = _row.get(header_key)
+                        m_type = _row.get(f"{col_name}_type", "text")
                         if header_text:
                             fid = f"row_{_row_idx}_{col_name}"
                             fref = ft.Ref[ft.TextField]()
                             dynamic_field_refs[fid] = fref
+                            
+                            hint = f"Enter {header_text}"
+                            if m_type == "link":
+                                hint = f"Enter URL for {header_text}"
+                                
                             parent_row.controls.append(
                                 ft.TextField(
                                     ref=fref, label=header_text,
-                                    hint_text=f"Enter {header_text}",
+                                    hint_text=hint,
                                     expand=True, border_radius=8, text_size=13,
-                                    multiline=True, min_lines=3, max_lines=10,
+                                    multiline=m_type != "link", 
+                                    min_lines=3 if m_type != "link" else 1,
+                                    max_lines=10 if m_type != "link" else 1,
                                     on_change=lambda e: _sync_preview(),
                                 )
                             )

@@ -151,6 +151,7 @@ class TextModuleModel(BaseModel):
     id: Optional[str] = None
     header: Optional[str] = None
     body: Optional[str] = None
+    module_type: Optional[str] = None
 
 class MessageModel(BaseModel):
     id: Optional[str] = None
@@ -179,10 +180,13 @@ class TextModuleRowModel(BaseModel):
     row_index: Optional[int] = None
     left_header: Optional[str] = None
     left_body: Optional[str] = None
+    left_type: Optional[str] = None
     middle_header: Optional[str] = None
     middle_body: Optional[str] = None
+    middle_type: Optional[str] = None
     right_header: Optional[str] = None
     right_body: Optional[str] = None
+    right_type: Optional[str] = None
 
 # ========================================================================
 # Pass Models

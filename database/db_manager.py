@@ -100,9 +100,9 @@ class DatabaseManager:
                         session.add(GenericClassTextModuleRows(
                             class_id=class_id,
                             row_index=row.get('row_index', 0),
-                            left_header=row.get('left_header'), left_body=row.get('left_body'),
-                            middle_header=row.get('middle_header'), middle_body=row.get('middle_body'),
-                            right_header=row.get('right_header'), right_body=row.get('right_body')
+                            left_header=row.get('left_header'), left_body=row.get('left_body'), left_type=row.get('left_type', 'text'),
+                            middle_header=row.get('middle_header'), middle_body=row.get('middle_body'), middle_type=row.get('middle_type', 'text'),
+                            right_header=row.get('right_header'), right_body=row.get('right_body'), right_type=row.get('right_type', 'text')
                         ))
             elif class_type == 'EventTicket':
                 session.add(EventTicketClassFields(
@@ -174,9 +174,9 @@ class DatabaseManager:
             d["text_module_rows"] = [
                 {
                     "row_index": r.row_index,
-                    "left_header": r.left_header, "left_body": r.left_body,
-                    "middle_header": r.middle_header, "middle_body": r.middle_body,
-                    "right_header": r.right_header, "right_body": r.right_body,
+                    "left_header": r.left_header, "left_body": r.left_body, "left_type": r.left_type,
+                    "middle_header": r.middle_header, "middle_body": r.middle_body, "middle_type": r.middle_type,
+                    "right_header": r.right_header, "right_body": r.right_body, "right_type": r.right_type,
                 }
                 for r in cls.generic_fields.text_module_rows
             ]
@@ -272,9 +272,9 @@ class DatabaseManager:
                         r_obj = GenericClassTextModuleRows(
                             class_id=class_id,
                             row_index=row.get('row_index', 0),
-                            left_header=row.get('left_header'), left_body=row.get('left_body'),
-                            middle_header=row.get('middle_header'), middle_body=row.get('middle_body'),
-                            right_header=row.get('right_header'), right_body=row.get('right_body')
+                            left_header=row.get('left_header'), left_body=row.get('left_body'), left_type=row.get('left_type', 'text'),
+                            middle_header=row.get('middle_header'), middle_body=row.get('middle_body'), middle_type=row.get('middle_type', 'text'),
+                            right_header=row.get('right_header'), right_body=row.get('right_body'), right_type=row.get('right_type', 'text')
                         )
                         if cls.generic_fields:
                             cls.generic_fields.text_module_rows.append(r_obj)
@@ -390,11 +390,12 @@ class DatabaseManager:
             text_modules = pd.get('textModulesData', pd.get('text_modules', []))
             if isinstance(text_modules, list):
                 for idx, mod in enumerate(text_modules):
-                    session.add(PassTextModules(
-                        object_id=object_id, module_id=mod.get('id'),
-                        header=mod.get('header'), body=mod.get('body'),
-                        display_order=idx,
-                    ))
+                        session.add(PassTextModules(
+                            object_id=object_id, module_id=mod.get('id'),
+                            header=mod.get('header'), body=mod.get('body'),
+                            module_type=mod.get('module_type', mod.get('type', 'text')),
+                            display_order=idx,
+                        ))
 
             # 4. Messages
             messages = pd.get('messages', [])
@@ -461,7 +462,7 @@ class DatabaseManager:
         # Text modules
         if p.text_modules:
             core['textModulesData'] = [
-                {'id': m.module_id, 'header': m.header, 'body': m.body}
+                {'id': m.module_id, 'header': m.header, 'body': m.body, 'module_type': m.module_type}
                 for m in p.text_modules
             ]
 
@@ -646,6 +647,7 @@ class DatabaseManager:
                             p.text_modules.append(PassTextModules(
                                 object_id=object_id, module_id=mod.get('id'),
                                 header=mod.get('header'), body=mod.get('body'),
+                                module_type=mod.get('module_type', mod.get('type', 'text')),
                                 display_order=idx,
                             ))
 

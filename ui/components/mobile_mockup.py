@@ -122,11 +122,26 @@ class MobileMockupPreview:
         for module in text_modules:
             header = module.get("header", "")
             body = module.get("body", "")
+            m_type = module.get("module_type", module.get("type", "text"))
 
-            col = ft.Column([
-                ft.Text(header.upper() if header else "", size=10, color="white70", weight=ft.FontWeight.W_500),
-                ft.Text(body or "—", size=14, color="white", weight=ft.FontWeight.BOLD, no_wrap=True, overflow=ft.TextOverflow.ELLIPSIS),
-            ], spacing=2, tight=True, expand=True)
+            if m_type == "link":
+                # Render as a sleek button for external links
+                col = ft.Container(
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.LANGUAGE, color="white", size=11),
+                        ft.Text(header or "Open Link", size=11, color="white", weight=ft.FontWeight.W_600),
+                    ], spacing=6, alignment=ft.MainAxisAlignment.CENTER),
+                    bgcolor="#1A73E8",
+                    padding=ft.padding.symmetric(horizontal=10, vertical=6),
+                    border_radius=18,
+                    expand=True,
+                    margin=ft.margin.only(top=4)
+                )
+            else:
+                col = ft.Column([
+                    ft.Text(header.upper() if header else "", size=10, color="white70", weight=ft.FontWeight.W_500),
+                    ft.Text(body or "—", size=14, color="white", weight=ft.FontWeight.BOLD, no_wrap=True, overflow=ft.TextOverflow.ELLIPSIS),
+                ], spacing=2, tight=True, expand=True)
 
             current_row.append(col)
             if len(current_row) == 3:

@@ -230,21 +230,21 @@ class JSONTemplateManager:
                 row_items = []
                 
                 # Check which items are present in the blueprint
-                if row.get("left_header"):
+                if row.get("left_header") or row.get("left_body"):
                     row_items.append({
                         "firstValue": {
                             "fields": [{"fieldPath": f"object.textModulesData['row_{i}_left']"}]
                         }
                     })
                 
-                if row.get("middle_header"):
+                if row.get("middle_header") or row.get("middle_body"):
                     row_items.append({
                         "firstValue": {
                             "fields": [{"fieldPath": f"object.textModulesData['row_{i}_middle']"}]
                         }
                     })
                 
-                if row.get("right_header"):
+                if row.get("right_header") or row.get("right_body"):
                     row_items.append({
                         "firstValue": {
                             "fields": [{"fieldPath": f"object.textModulesData['row_{i}_right']"}]
@@ -277,11 +277,55 @@ class JSONTemplateManager:
                 card_row_template_infos.append(row_template)
 
             if card_row_template_infos:
-                template["classTemplateInfo"] = {
+                # Build detailsTemplateOverride to exclude front rows from the back
+                back_rows = text_module_rows[2:]
+                details_infos = []
+                for j, back_row in enumerate(back_rows):
+                    actual_row_idx = back_row.get("row_index", j + 2)
+                    for pos in ["left", "middle", "right"]:
+                        if back_row.get(f"{pos}_header") or back_row.get(f"{pos}_body"):
+                            m_type = back_row.get(f"{pos}_type", "text")
+                            if m_type == "link":
+                                field_path = f"object.linksModuleData.uris['row_{actual_row_idx}_{pos}']"
+                            else:
+                                field_path = f"object.textModulesData['row_{actual_row_idx}_{pos}']"
+                                
+                            details_infos.append({
+                                "item": {
+                                    "firstValue": {
+                                        "fields": [{"fieldPath": field_path}]
+                                    }
+                                }
+                            })
+                
+                # Append standard items that should always appear on the back
+                # since detailsTemplateOverride hides everything not explicitly listed.
+                details_infos.append({
+                    "item": {
+                        "firstValue": {
+                            "fields": [{"fieldPath": "object.textModulesData['description']"}]
+                        }
+                    }
+                })
+                details_infos.append({
+                    "item": {
+                        "firstValue": {
+                            "fields": [{"fieldPath": "object.infoModulesData['generic_info_module']"}]
+                        }
+                    }
+                })
+                
+                class_template_info = {
                     "cardTemplateOverride": {
                         "cardRowTemplateInfos": card_row_template_infos
                     }
                 }
+                # Only add detailsTemplateOverride if there are back items or if we
+                # need to hide the front rows (empty details = nothing on back)
+                class_template_info["detailsTemplateOverride"] = {
+                    "detailsItemInfos": details_infos
+                }
+                template["classTemplateInfo"] = class_template_info
 
         return template
     

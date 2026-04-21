@@ -582,6 +582,10 @@ class WalletClient:
             final_body = copy.deepcopy(current_data)
             final_body.update(class_data)
             
+            # Note: classTemplateInfo is already included in class_data (from json_templates.py
+            # via _build_class_json). We do NOT regenerate it here — json_templates.py is the
+            # single source of truth for the front/back face layout.
+            
             def remove_review_status(obj):
                 if isinstance(obj, dict):
                     obj.pop('reviewStatus', None)
@@ -873,15 +877,13 @@ class WalletClient:
                             columns[1]["value"] = full_display_message
 
                     # B. UPDATE FRONT FOR GENERIC PASSES (textModulesData)
-                    # In your project, Generic passes use textModulesData for the front face.
+                    # Generic passes use textModulesData for the front face via cardTemplateOverride.
                     if class_type == "Generic":
                         text_modules = object_data.get("textModulesData", [])
                         if len(text_modules) >= 2:
                             # Overwrite the second text module (which appears on the front)
-                            print(f"DEBUG: Overwriting text module '{text_modules[1].get('header')}' with '{full_display_message}'")
                             text_modules[1]["body"] = full_display_message
                         elif len(text_modules) == 1:
-                            # If only one exists, append the update as the second one
                             text_modules.append({
                                 "header": "Status",
                                 "body": full_display_message,
@@ -1348,9 +1350,10 @@ class WalletClient:
         
         if pass_data:
             
-            # Gather all text modules and keep them ALL in textModulesData.
-            # The front/back split is controlled by classTemplateInfo on the CLASS,
-            # not by removing items from the object.
+            # Gather ALL text modules and keep them in textModulesData.
+            # The front/back split is controlled by classTemplateInfo.cardTemplateOverride
+            # on the CLASS, not by moving data between module types.
+            # Generic passes do NOT support infoModulesData for front-face display.
             all_raw_modules = (pass_data.get("textModulesData") or pass_data.get("text_modules", [])).copy()
             if "description" in pass_data and pass_data["description"]:
                 all_raw_modules.append({
@@ -1362,6 +1365,8 @@ class WalletClient:
             
             text_mods = []
             link_mods = []
+            
+            # Process ALL modules into textModulesData or linksModuleData.
             for m in all_raw_modules:
                 m_type = m.get("module_type", m.get("type", "text"))
                 m_body = str(m.get("body", "")).strip()
@@ -1381,36 +1386,17 @@ class WalletClient:
             if link_mods:
                 obj["linksModuleData"] = {"uris": link_mods}
             
-            # Add info modules for all other data
+            # Add info modules for all other data (non-textModule fields)
             info_label_values = []
             
             # Skip fields already used in header, cardTitle, subheader, or textModules
             skip_fields = [
-                "card_title",
-                "cardTitle",
-                "header_value",
-                "header",
-                "subheader",
-                "subheader_value",
-                "description",
-                "textModulesData",
-                "messages",
-                "messageType",
-                "message_header",
-                "message_body",
-                "barcode",
-                "barcode_type",
-                "barcode_value",
-                # Branding fields used above (should not appear as info rows)
-                "logo_url",
-                "logoUrl",
-                "hero_image_url",
-                "heroImageUrl",
-                "hero_url",
-                "hexBackgroundColor",
-                "hex_background_color",
-                "background_color",
-                "base_color",
+                "card_title", "cardTitle", "header_value", "header", "subheader", 
+                "subheader_value", "description", "textModulesData", "messages", 
+                "messageType", "message_header", "message_body", "barcode", 
+                "barcode_type", "barcode_value", "logo_url", "logoUrl", 
+                "hero_image_url", "heroImageUrl", "hero_url", "hexBackgroundColor", 
+                "hex_background_color", "background_color", "base_color",
             ]
             
             for key, value in pass_data.items():
@@ -1424,6 +1410,7 @@ class WalletClient:
             
             if info_label_values:
                 obj["infoModulesData"] = [{
+                    "id": "generic_info_module",
                     "showTime": {},
                     "labelValueRows": [{
                         "columns": info_label_values

@@ -315,6 +315,15 @@ class JSONTemplateManager:
                     }
                 })
                 
+                # Add the dedicated notification message to the back of the pass
+                details_infos.append({
+                    "item": {
+                        "firstValue": {
+                            "fields": [{"fieldPath": "object.textModulesData['notification_message']"}]
+                        }
+                    }
+                })
+                
                 class_template_info = {
                     "cardTemplateOverride": {
                         "cardRowTemplateInfos": card_row_template_infos

@@ -1558,6 +1558,7 @@ async def send_pass_notification(object_id: str, request: NotificationRequest):
             
         # 3. Call wallet client to send notification using the ATOMIC update method.
         # This ensures the header is dynamic (Card Title) and the front field is updated.
+        logger.info(f"Triggering Google Wallet notification for pass '{object_id}'")
         wallet_client.update_pass_object(
             object_id=object_id,
             class_id=pass_data['class_id'],

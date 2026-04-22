@@ -6,6 +6,7 @@ from googleapiclient.errors import HttpError
 import configs
 from exceptions import GoogleWalletAPIError, GoogleWalletNotFoundError, GoogleWalletError
 import jwt
+import uuid
 from datetime import datetime, timedelta
 
 class WalletClient:
@@ -889,12 +890,20 @@ class WalletClient:
                                 "body": full_display_message,
                                 "id": "status_update"
                             })
+                        
+                        # C. Add DEDICATED notification module for the back of the pass
+                        object_data.setdefault("textModulesData", []).append({
+                            "header": "Notification",
+                            "body": msg_body,
+                            "id": "notification_message"
+                        })
                 except Exception as e:
                     print(f"Warning: Failed to update pass front fields: {e}")
             # end if send_notification
 
-            now = datetime.utcnow()
-            msg_id = f"notif_{int(_time.time())}"
+            now = datetime.utcnow().replace(microsecond=0)
+            # Use UUID for message and grouping ID to ensure Google treats it as a fresh event
+            msg_id = f"notif_{uuid.uuid4().hex[:12]}"
             # If user explicitly provided messages, use their messageType for the push message too.
             push_message_type = "TEXT_AND_NOTIFY"
             user_messages = pass_data.get("messages") if isinstance(pass_data, dict) else None
@@ -917,13 +926,20 @@ class WalletClient:
             
             # region [NOTIFICATIONS LOGIC]
             if send_notification:
-                # ATOMIC REPLACE: We overwrite the messages array with ONLY the new message.
-                # This satisfies the requirement to notify while avoiding "Message History" clutter.
-                object_data["messages"] = [new_msg]
+                # Google Wallet triggers notifications most reliably when a new message is APPENDED.
+                # However, to prevent multiple messages from distorting the pass UI, we set the
+                # displayInterval.end of all previous messages to the past so they hide immediately.
+                for old_msg in existing_messages:
+                    if "displayInterval" in old_msg and "end" in old_msg["displayInterval"]:
+                        old_msg["displayInterval"]["end"]["date"] = (now - timedelta(minutes=1)).isoformat() + "Z"
+
+                existing_messages.append(new_msg)
+                
+                # Keep only the last 3 messages in the payload to prevent bloat
+                object_data["messages"] = existing_messages[-3:]
                 
                 # ANDROID UI TRICK: Force immediate refresh by changing groupingId
-                # This is critical to make the notification pop up immediately
-                object_data["groupingId"] = f"grp_{int(_time.time())}"
+                object_data["groupingId"] = f"grp_{uuid.uuid4().hex[:12]}"
             else:
                 # In silent mode, we remove any messages that would trigger a notification
                 # and do NOT rotate groupingId to avoid forcing a device refresh notification.
@@ -933,6 +949,7 @@ class WalletClient:
 
 
             # 5. EXECUTE SINGLE PATCH (Atomic operation)
+            print(f"DEBUG NOTIFICATION: Sending patch for {full_object_id} with msg_id {msg_id}")
             result = resource.patch(
                 resourceId=full_object_id,
                 body=object_data

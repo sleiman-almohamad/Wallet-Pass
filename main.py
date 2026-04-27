@@ -4,6 +4,8 @@ Thin bootstrap that initialises AppState and mounts the root view.
 """
 
 import os
+import subprocess
+import sys
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, module="google.api_core")
 os.environ["GDK_BACKEND"] = "x11"
@@ -46,5 +48,29 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    # Check if we are running in a standalone process and want to enable hot reload
+    
+    # If run as 'python main.py' without flet CLI, re-execute with hot reload
+    if len(sys.argv) == 1 and not os.getenv("FLET_APP_RELOAD_PROCESSED"):
+        os.environ["FLET_APP_RELOAD_PROCESSED"] = "1"
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        venv_flet = os.path.join(current_dir, ".venv", "bin", "flet")
+        bin_flet = os.path.join(os.path.dirname(sys.executable), "flet")
+        
+        flet_cmd = "flet"
+        if os.path.exists(venv_flet):
+            flet_cmd = venv_flet
+        elif os.path.exists(bin_flet):
+            flet_cmd = bin_flet
+
+        print(f"🚀 Starting Flet with Hot Reload (using {flet_cmd})...")
+        try:
+            # Force current directory to where main.py is
+            subprocess.run([flet_cmd, "run", "main.py", "--reload"], cwd=current_dir)
+        except Exception as e:
+            print(f"Hot reload failed to start: {e}. Falling back to standard mode.")
+            ft.app(target=main)
+    else:
+        # Normal flet run or fallback
+        ft.app(target=main)
     #ft.app(target=main, view=ft.AppView.WEB_BROWSER,port=8500)

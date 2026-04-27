@@ -28,7 +28,8 @@ class ClassCreate(BaseModel):
     logo_url: Optional[str] = Field(None, description="URL to the class logo")
     hero_image_url: Optional[str] = Field(None, description="Hero image URL")
     # Generic-specific
-    header_text: Optional[str] = Field(None, description="Header text (Generic)")
+    header: Optional[str] = Field(None, description="Header text (Generic)", alias="header_text")
+    subheader: Optional[str] = Field(None, description="Subheader value (Generic)", alias="subheader_value")
     card_title: Optional[str] = Field(None, description="Card title (Generic)")
     # EventTicket-specific
     event_name: Optional[str] = Field(None, description="Event name")
@@ -45,6 +46,7 @@ class ClassCreate(BaseModel):
     class_json: Optional[Dict[str, Any]] = Field(None, description="Complete Google Wallet class JSON configuration")
     
     model_config = {
+        "populate_by_name": True,
         "json_schema_extra": {
             "examples": [
                 {
@@ -67,7 +69,8 @@ class ClassUpdate(BaseModel):
     base_color: Optional[str] = Field(None, description="Hex color code")
     logo_url: Optional[str] = Field(None, description="URL to the class logo")
     hero_image_url: Optional[str] = Field(None, description="Hero image URL")
-    header_text: Optional[str] = Field(None, description="Header text (Generic)")
+    header: Optional[str] = Field(None, description="Header text (Generic)", alias="header_text")
+    subheader: Optional[str] = Field(None, description="Subheader value (Generic)", alias="subheader_value")
     card_title: Optional[str] = Field(None, description="Card title (Generic)")
     event_name: Optional[str] = Field(None, description="Event name")
     venue_name: Optional[str] = Field(None, description="Venue name")
@@ -80,6 +83,7 @@ class ClassUpdate(BaseModel):
     class_json: Optional[Dict[str, Any]] = Field(None, description="Complete Google Wallet class JSON configuration")
     
     model_config = {
+        "populate_by_name": True,
         "json_schema_extra": {
             "examples": [
                 {
@@ -97,8 +101,10 @@ class ClassResponse(BaseModel):
     class_type: str
     base_color: Optional[str] = None
     logo_url: Optional[str] = None
+    hero_image_url: Optional[str] = None
     issuer_name: Optional[str] = None
-    header_text: Optional[str] = None
+    header: Optional[str] = None
+    subheader: Optional[str] = None
     card_title: Optional[str] = None
     text_module_rows: Optional[list['TextModuleRowModel']] = Field(default_factory=list)
     class_json: Optional[Dict[str, Any]] = None
@@ -120,6 +126,17 @@ class AppleTemplateCreate(BaseModel):
     pass_style: str = Field(..., description="Apple Pass style (e.g., 'storeCard', 'boardingPass')")
     pass_type_identifier: str = Field(..., description="Apple Pass Type Identifier (e.g., 'pass.com.example')")
     team_identifier: str = Field(..., description="Apple Team Identifier")
+    # Branding & Visual Defaults
+    background_color: Optional[str] = None
+    foreground_color: Optional[str] = None
+    label_color: Optional[str] = None
+    logo_text: Optional[str] = None
+    organization_name: Optional[str] = None
+    logo_url: Optional[str] = None
+    icon_url: Optional[str] = None
+    strip_url: Optional[str] = None
+    background_image_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
 
 class AppleTemplateUpdate(BaseModel):
     """Model for updating an Apple Wallet template"""
@@ -127,6 +144,16 @@ class AppleTemplateUpdate(BaseModel):
     pass_style: Optional[str] = None
     pass_type_identifier: Optional[str] = None
     team_identifier: Optional[str] = None
+    background_color: Optional[str] = None
+    foreground_color: Optional[str] = None
+    label_color: Optional[str] = None
+    logo_text: Optional[str] = None
+    organization_name: Optional[str] = None
+    logo_url: Optional[str] = None
+    icon_url: Optional[str] = None
+    strip_url: Optional[str] = None
+    background_image_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
 
 class AppleTemplateResponse(BaseModel):
     """Model for Apple Template response"""
@@ -135,6 +162,16 @@ class AppleTemplateResponse(BaseModel):
     pass_style: str
     pass_type_identifier: str
     team_identifier: str
+    background_color: Optional[str] = None
+    foreground_color: Optional[str] = None
+    label_color: Optional[str] = None
+    logo_text: Optional[str] = None
+    organization_name: Optional[str] = None
+    logo_url: Optional[str] = None
+    icon_url: Optional[str] = None
+    strip_url: Optional[str] = None
+    background_image_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -383,3 +420,44 @@ class NotificationRequest(BaseModel):
 class AppleRegistrationRequest(BaseModel):
     """Model for registering an Apple device for push notifications"""
     pushToken: str = Field(..., description="The APNs push token for the device")
+
+
+# ========================================================================
+# QR Campaign Models
+# ========================================================================
+
+class QRCampaignCreate(BaseModel):
+    """Model for creating a new QR Campaign"""
+    campaign_name: str = Field(..., description="The name of the campaign")
+    slug: str = Field(..., description="Unique URL slug (e.g., 'summer-sales')")
+    google_class_id: Optional[str] = None
+    apple_template_id: Optional[str] = None
+    landing_title: Optional[str] = None
+    landing_subtitle: Optional[str] = None
+
+class QRCampaignUpdate(BaseModel):
+    """Model for updating a QR Campaign"""
+    campaign_name: Optional[str] = None
+    slug: Optional[str] = None
+    google_class_id: Optional[str] = None
+    apple_template_id: Optional[str] = None
+    landing_title: Optional[str] = None
+    landing_subtitle: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class QRCampaignResponse(BaseModel):
+    """Model for QR Campaign response"""
+    id: int
+    campaign_name: str
+    slug: str
+    google_class_id: Optional[str] = None
+    apple_template_id: Optional[str] = None
+    landing_title: Optional[str] = None
+    landing_subtitle: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {
+        "from_attributes": True
+    }

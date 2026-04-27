@@ -20,7 +20,8 @@ from database.models import (
     PassTextModules, PassMessages,
     NotificationsTable,
     ApplePassesTemplate, ApplePassesData, ApplePassFields,
-    AppleNotificationsTable, AppleDeviceRegistrations
+    AppleNotificationsTable, AppleDeviceRegistrations,
+    QRCampaigns
 )
 
 
@@ -57,7 +58,8 @@ class DatabaseManager:
                      logo_url: Optional[str] = None,
                      hero_image_url: Optional[str] = None,
                      # Generic-specific
-                     header_text: Optional[str] = None,
+                     header: Optional[str] = None,
+                     subheader: Optional[str] = None,
                      card_title: Optional[str] = None,
                      # EventTicket-specific
                      event_name: Optional[str] = None,
@@ -88,7 +90,7 @@ class DatabaseManager:
             # 2. Insert child row based on type
             if class_type == 'Generic':
                 session.add(GenericClassFields(
-                    class_id=class_id, header=header_text, card_title=card_title,
+                    class_id=class_id, header=header, subheader=subheader, card_title=card_title,
                 ))
                 session.flush()
                 
@@ -169,7 +171,7 @@ class DatabaseManager:
         # Flatten child fields
         if cls.generic_fields:
             d["header"] = cls.generic_fields.header
-            d["card_title"] = cls.generic_fields.card_title
+            d["subheader"] = cls.generic_fields.subheader
             d["card_title"] = cls.generic_fields.card_title
             d["text_module_rows"] = [
                 {
@@ -182,7 +184,7 @@ class DatabaseManager:
             ]
         else:
             d["header"] = None
-            d["card_title"] = None
+            d["subheader"] = None
             d["card_title"] = None
             d["text_module_rows"] = []
 
@@ -246,7 +248,8 @@ class DatabaseManager:
             # 3. Update / upsert child table
             if class_type == 'Generic':
                 child_vals = {
-                    'header': kwargs.get('header_text'),
+                    'header': kwargs.get('header'),
+                    'subheader': kwargs.get('subheader'),
                     'card_title': kwargs.get('card_title'),
                 }
                 child_vals = {k: v for k, v in child_vals.items() if v is not None}
@@ -1007,36 +1010,38 @@ class DatabaseManager:
             session.add(template)
             return True
 
+    def _apple_template_to_dict(self, t: ApplePassesTemplate) -> Dict[str, Any]:
+        return {
+            "template_id": t.template_id,
+            "template_name": t.template_name,
+            "pass_style": t.pass_style,
+            "pass_type_identifier": t.pass_type_identifier,
+            "team_identifier": t.team_identifier,
+            "created_at": t.created_at,
+            "updated_at": t.updated_at,
+            "background_color": t.background_color,
+            "foreground_color": t.foreground_color,
+            "label_color": t.label_color,
+            "logo_text": t.logo_text,
+            "organization_name": t.organization_name,
+            "logo_url": t.logo_url,
+            "icon_url": t.icon_url,
+            "strip_url": t.strip_url,
+            "background_image_url": t.background_image_url,
+            "thumbnail_url": t.thumbnail_url
+        }
+
     def get_apple_template(self, template_id: str) -> Optional[Dict[str, Any]]:
         with self.get_session() as session:
             t = session.get(ApplePassesTemplate, template_id)
             if not t:
                 return None
-            return {
-                "template_id": t.template_id,
-                "template_name": t.template_name,
-                "pass_style": t.pass_style,
-                "pass_type_identifier": t.pass_type_identifier,
-                "team_identifier": t.team_identifier,
-                "created_at": t.created_at,
-                "updated_at": t.updated_at
-            }
+            return self._apple_template_to_dict(t)
 
     def get_all_apple_templates(self) -> List[Dict[str, Any]]:
         with self.get_session() as session:
             rows = session.query(ApplePassesTemplate).order_by(ApplePassesTemplate.created_at.desc()).all()
-            return [
-                {
-                    "template_id": t.template_id,
-                    "template_name": t.template_name,
-                    "pass_style": t.pass_style,
-                    "pass_type_identifier": t.pass_type_identifier,
-                    "team_identifier": t.team_identifier,
-                    "created_at": t.created_at,
-                    "updated_at": t.updated_at
-                }
-                for t in rows
-            ]
+            return [self._apple_template_to_dict(t) for t in rows]
 
     def update_apple_template(self, template_id: str, **kwargs) -> bool:
         with self.get_session() as session:
@@ -1055,3 +1060,85 @@ class DatabaseManager:
                 return False
             session.delete(t)
             return True
+
+    def get_passes_by_apple_template(self, template_id: str) -> List[Dict[str, Any]]:
+        with self.get_session() as session:
+            rows = session.query(ApplePassesData).filter_by(template_id=template_id).all()
+            return [
+                {
+                    "serial_number": p.pass_id,
+                    "holder_name": p.holder_name,
+                    "holder_email": p.holder_email
+                }
+                for p in rows
+            ]
+
+    # ========================================================================
+    # QR Campaign Operations
+    # ========================================================================
+
+    def create_campaign(self, campaign_name: str, slug: str, 
+                        google_class_id: Optional[str] = None, 
+                        apple_template_id: Optional[str] = None,
+                        landing_title: Optional[str] = None,
+                        landing_subtitle: Optional[str] = None) -> bool:
+        with self.get_session() as session:
+            campaign = QRCampaigns(
+                campaign_name=campaign_name,
+                slug=slug,
+                google_class_id=google_class_id,
+                apple_template_id=apple_template_id,
+                landing_title=landing_title,
+                landing_subtitle=landing_subtitle
+            )
+            session.add(campaign)
+            return True
+
+    def get_campaign(self, slug_or_id: str) -> Optional[Dict[str, Any]]:
+        with self.get_session() as session:
+            # Try by ID first if numeric
+            if slug_or_id.isdigit():
+                c = session.get(QRCampaigns, int(slug_or_id))
+            else:
+                c = session.query(QRCampaigns).filter_by(slug=slug_or_id).first()
+            
+            if not c:
+                return None
+            return self._campaign_to_dict(c)
+
+    def get_all_campaigns(self) -> List[Dict[str, Any]]:
+        with self.get_session() as session:
+            rows = session.query(QRCampaigns).order_by(QRCampaigns.created_at.desc()).all()
+            return [self._campaign_to_dict(r) for r in rows]
+
+    def update_campaign(self, campaign_id: int, **kwargs) -> bool:
+        with self.get_session() as session:
+            c = session.get(QRCampaigns, campaign_id)
+            if not c:
+                return False
+            for k, v in kwargs.items():
+                if hasattr(c, k):
+                    setattr(c, k, v)
+            return True
+
+    def delete_campaign(self, campaign_id: int) -> bool:
+        with self.get_session() as session:
+            c = session.get(QRCampaigns, campaign_id)
+            if not c:
+                return False
+            session.delete(c)
+            return True
+
+    def _campaign_to_dict(self, c: QRCampaigns) -> dict:
+        return {
+            "id": c.id,
+            "campaign_name": c.campaign_name,
+            "slug": c.slug,
+            "google_class_id": c.google_class_id,
+            "apple_template_id": c.apple_template_id,
+            "landing_title": c.landing_title,
+            "landing_subtitle": c.landing_subtitle,
+            "is_active": c.is_active,
+            "created_at": c.created_at,
+            "updated_at": c.updated_at
+        }

@@ -114,13 +114,51 @@ def propagate_class_update_to_passes(
                 # Extract pass-specific data
                 holder_name = pass_obj.get('holder_name', '')
                 holder_email = pass_obj.get('holder_email', '')
-                pass_data = pass_obj.get('pass_data', {}) or {}
+                pass_data = dict(pass_obj.get('pass_data', {}) or {})
+                
+                # Merge class branding into pass_data so builders can pick it up
+                # We only overwrite if these fields are missing in the individual pass, 
+                # OR we explicitly want template-driven branding.
+                # In this case, since it's a template update, we should favor the new branding.
+                branding_fields = {
+                    "logo_url": updated_class.get("logo_url"),
+                    "hero_image_url": updated_class.get("hero_image_url"),
+                    "issuer_name": updated_class.get("issuer_name"),
+                    "card_title": updated_class.get("card_title"),
+                    "header_value": updated_class.get("header"), # mapped from 'header' in DB
+                    "subheader_value": updated_class.get("subheader"),
+                    "base_color": updated_class.get("base_color"),
+                    "hexBackgroundColor": updated_class.get("base_color"),
+                    "background_color": updated_class.get("base_color"),
+                }
+                for k, v in branding_fields.items():
+                    if v:
+                        pass_data[k] = v
 
-                # NOTE: For Generic classes, branding (logo/hero/color/header/cardTitle)
-                # is strictly object-level. Generic class updates only push rule/policy
-                # fields (multipleDevicesAndHoldersAllowedStatus, viewUnlockRequirement,
-                # enableSmartTap). We do NOT copy branding from the class to objects here.
-                # Per-pass branding is edited in Manage Passes.
+                # Extract and flatten text_module_rows from class to pass_data if Generic
+                if class_type == "Generic":
+                    raw_rows = updated_class.get("text_module_rows", [])
+                    flattened_modules = []
+                    
+                    # Transform row-based DB structure into flat Google-ready list
+                    for r_idx, row in enumerate(raw_rows):
+                        # Each row can have up to 3 modules (left, middle, right)
+                        for pos in ["left", "middle", "right"]:
+                            hdr = row.get(f"{pos}_header")
+                            bdy = row.get(f"{pos}_body")
+                            m_type = row.get(f"{pos}_type", "text")
+                            
+                            if hdr or bdy:
+                                # We use specific IDs (e.g., row_0_left) that match 
+                                # our template overrides in json_templates.py
+                                flattened_modules.append({
+                                    "id": f"row_{r_idx}_{pos}",
+                                    "header": hdr or "",
+                                    "body": bdy or "",
+                                    "type": m_type # text or link
+                                })
+                    
+                    pass_data["textModulesData"] = flattened_modules
 
                 # region agent log
                 try:
@@ -156,7 +194,7 @@ def propagate_class_update_to_passes(
                     pass_data=pass_data,
                     class_type=class_type,
                     notification_message=notification_message,
-                    send_notification=True
+                    send_notification=bool(notification_message)
                 )
                 
                 # Log success to database

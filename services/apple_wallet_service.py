@@ -544,3 +544,20 @@ class AppleWalletService:
             "sent": success_count,
             "failed": failure_count
         }
+
+    def send_apple_template_notification(self, template_id: str, message: str = "") -> dict:
+        """
+        Send push notifications to all passes using a specific template.
+        Typically triggered when template branding (logo, colors) changes.
+        """
+        from database.db_manager import DatabaseManager
+        db = DatabaseManager()
+        passes = db.get_passes_by_apple_template(template_id)
+        
+        results = {"status": "success", "sent": 0, "failed": 0}
+        for p in passes:
+            res = self.send_push_notification(p['serial_number'])
+            if res.get("status") == "success":
+                results["sent"] += res.get("sent", 0)
+                results["failed"] += res.get("failed", 0)
+        return results

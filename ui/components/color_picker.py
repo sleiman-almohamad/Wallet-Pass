@@ -37,7 +37,13 @@ def create_color_picker(page, color_state, on_change_callback, color_key="backgr
     Returns:
         ft.Container with color picker UI
     """
-    current_color = color_state.get(color_key, "#4285f4")
+    # Ensure current_color is never None
+    val = color_state.get(color_key)
+    if isinstance(color_state, dict):
+        current_color = color_state.get(color_key) or "#4285f4"
+    else:
+        # If it's a state object with a get() method
+        current_color = color_state.get(color_key) or "#4285f4"
     
     # Create refs for controls that need updating
     hex_input_ref = ft.Ref[ft.TextField]()
@@ -58,7 +64,10 @@ def create_color_picker(page, color_state, on_change_callback, color_key="backgr
                 # Validate it's a valid hex color
                 int(hex_value, 16)
                 color_hex = f"#{hex_value}"
-                color_state.update(color_key, color_hex)
+                if isinstance(color_state, dict):
+                    color_state[color_key] = color_hex
+                else:
+                    color_state.update(color_key, color_hex)
                 
                 # Update preview
                 if current_preview_ref.current:
@@ -76,7 +85,10 @@ def create_color_picker(page, color_state, on_change_callback, color_key="backgr
     
     def on_color_select(color_hex):
         """Handle color swatch selection"""
-        color_state.update(color_key, color_hex)
+        if isinstance(color_state, dict):
+            color_state[color_key] = color_hex
+        else:
+            color_state.update(color_key, color_hex)
         hex_input_ref.current.value = color_hex.replace("#", "")
         
         # Update preview

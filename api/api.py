@@ -12,17 +12,19 @@ from datetime import datetime, timezone
 import sys
 from pathlib import Path
 import mysql.connector
+from fastapi.templating import Jinja2Templates
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import configs
 from database.db_manager import DatabaseManager
 from api.models import (
-    PassCreate, PassUpdate, ClassCreate, ClassUpdate, ClassResponse,
-    PassStatusUpdate, PassResponse, ApplePassCreate,
+    HealthResponse, MessageResponse, NotificationRequest, AppleRegistrationRequest,
+    ClassCreate, ClassUpdate, ClassResponse,
     AppleTemplateCreate, AppleTemplateUpdate, AppleTemplateResponse,
-    ApplePassResponse, ApplePassUpdate,
-    HealthResponse, MessageResponse, NotificationRequest, AppleRegistrationRequest
+    PassCreate, PassUpdate, PassResponse, PassStatusUpdate,
+    ApplePassCreate, ApplePassUpdate, ApplePassResponse,
+    QRCampaignCreate, QRCampaignUpdate, QRCampaignResponse
 )
 
 # Import service layer and wallet client
@@ -86,6 +88,38 @@ db = DatabaseManager()
 static_dir = Path(__file__).parent.parent / "static"
 static_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+# Setup Jinja2 templates for landing pages
+templates_path = Path(__file__).parent.parent / "templates"
+templates_path.mkdir(parents=True, exist_ok=True)
+templates = Jinja2Templates(directory=str(templates_path))
+
+# ========================================================================
+# Caching Strategy
+# ========================================================================
+# slug -> (campaign_data, timestamp)
+CAMPAIGN_CACHE: Dict[str, Any] = {}
+CACHE_TTL = 300 # 5 minutes (300 seconds)
+
+def get_cached_campaign(slug: str):
+    import time
+    now = time.time()
+    if slug in CAMPAIGN_CACHE:
+        data, ts = CAMPAIGN_CACHE[slug]
+        if now - ts < CACHE_TTL:
+            return data
+    
+    # Not in cache or expired
+    campaign = db.get_campaign(slug)
+    if campaign:
+        CAMPAIGN_CACHE[slug] = (campaign, now)
+    return campaign
+
+def invalidate_campaign_cache(slug: str = None):
+    if slug:
+        CAMPAIGN_CACHE.pop(slug, None)
+    else:
+        CAMPAIGN_CACHE.clear()
 
 
 # ========================================================================
@@ -207,7 +241,8 @@ async def create_class(class_data: ClassCreate):
             base_color=class_data.base_color,
             logo_url=class_data.logo_url,
             hero_image_url=class_data.hero_image_url,
-            header_text=class_data.header_text,
+            header=class_data.header,
+            subheader=class_data.subheader,
             card_title=class_data.card_title,
             event_name=class_data.event_name,
             venue_name=class_data.venue_name,
@@ -216,6 +251,7 @@ async def create_class(class_data: ClassCreate):
             program_name=class_data.program_name,
             transit_type=class_data.transit_type,
             transit_operator_name=class_data.transit_operator_name,
+            text_module_rows=class_data.text_module_rows,
             class_json=class_data.class_json
         )
         
@@ -1928,12 +1964,191 @@ async def get_updated_apple_pass(
                 "Content-Disposition": f'attachment; filename="pass.pkpass"'
             }
         )
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Error generating pass for update: {e}")
         import traceback; traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================================================================
+# QR Campaign Endpoints
+# ========================================================================
+
+@app.post("/campaigns/", response_model=MessageResponse, status_code=201, tags=["Campaigns"])
+async def create_campaign(campaign_data: QRCampaignCreate):
+    """Create a new QR Campaign"""
+    try:
+        success = db.create_campaign(
+            campaign_name=campaign_data.campaign_name,
+            slug=campaign_data.slug,
+            google_class_id=campaign_data.google_class_id,
+            apple_template_id=campaign_data.apple_template_id,
+            landing_title=campaign_data.landing_title,
+            landing_subtitle=campaign_data.landing_subtitle
+        )
+        if success:
+            invalidate_campaign_cache(campaign_data.slug)
+            return MessageResponse(message=f"Campaign '{campaign_data.campaign_name}' created", success=True)
+        raise HTTPException(status_code=400, detail="Failed to create campaign")
+    except Exception as e:
+        if "Duplicate entry" in str(e):
+             raise HTTPException(status_code=409, detail=f"Slug '{campaign_data.slug}' already exists")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/campaigns/", response_model=List[QRCampaignResponse], tags=["Campaigns"])
+async def get_all_campaigns():
+    """List all campaigns"""
+    return db.get_all_campaigns()
+
+@app.get("/campaigns/{slug_or_id}", response_model=QRCampaignResponse, tags=["Campaigns"])
+async def get_campaign(slug_or_id: str):
+    """Get a specific campaign"""
+    c = get_cached_campaign(slug_or_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return c
+
+@app.put("/campaigns/{campaign_id}", response_model=MessageResponse, tags=["Campaigns"])
+async def update_campaign(campaign_id: int, campaign_data: QRCampaignUpdate):
+    """Update a campaign"""
+    update_dict = campaign_data.model_dump(exclude_unset=True)
+    success = db.update_campaign(campaign_id, **update_dict)
+    if success:
+        invalidate_campaign_cache() # Clear all to be safe or find specific slug
+        return MessageResponse(message="Campaign updated", success=True)
+    raise HTTPException(status_code=404, detail="Campaign not found")
+
+@app.delete("/campaigns/{campaign_id}", response_model=MessageResponse, tags=["Campaigns"])
+async def delete_campaign(campaign_id: int):
+    """Delete a campaign"""
+    success = db.delete_campaign(campaign_id)
+    if success:
+        invalidate_campaign_cache()
+        return MessageResponse(message="Campaign deleted", success=True)
+    raise HTTPException(status_code=404, detail="Campaign not found")
+
+
+# ========================================================================
+# Public Scanning & Pass Generation
+# ========================================================================
+
+@app.get("/c/{slug}", tags=["Public"])
+async def campaign_landing(request: Request, slug: str):
+    """Public landing page for a QR scan"""
+    campaign = get_cached_campaign(slug)
+    if not campaign or not campaign.get('is_active'):
+        raise HTTPException(status_code=404, detail="Campaign not found or inactive")
+    
+    # Get template/class info for branding
+    google_class = db.get_class(campaign['google_class_id']) if campaign['google_class_id'] else None
+    apple_template = db.get_apple_template(campaign['apple_template_id']) if campaign['apple_template_id'] else None
+    
+    # Determine which branding to show if both exist (favor Apple images usually)
+    logo_url = (apple_template or {}).get('logo_url') or (google_class or {}).get('logo_url')
+    hero_url = (google_class or {}).get('hero_image_url') or (apple_template or {}).get('background_image_url')
+    
+    return templates.TemplateResponse("scan_landing.html", {
+        "request": request,
+        "campaign": campaign,
+        "logo_url": logo_url,
+        "hero_url": hero_url,
+        "slug": slug
+    })
+
+@app.post("/c/{slug}", tags=["Public"])
+async def generate_campaign_pass(request: Request, slug: str):
+    """Process landing page form and return wallet link/pass"""
+    form_data = await request.form()
+    holder_name = form_data.get("name")
+    holder_email = form_data.get("email")
+    
+    if not holder_name or not holder_email:
+        raise HTTPException(status_code=400, detail="Name and Email are required")
+        
+    campaign = get_cached_campaign(slug)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    user_agent = request.headers.get("User-Agent", "").lower()
+    is_ios = "iphone" in user_agent or "ipad" in user_agent or "macintosh" in user_agent
+    
+    # 1. GENERATE APPLE PASS
+    if is_ios:
+        if not campaign.get('apple_template_id'):
+            # Fallback to Google if no Apple template defined
+            return await _generate_google_link(campaign, holder_name, holder_email)
+            
+        import uuid
+        serial_number = f"c_{slug}_{uuid.uuid4().hex[:8]}"
+        auth_token = uuid.uuid4().hex
+        
+        # Create in DB
+        success = db.create_apple_pass(
+            serial_number=serial_number,
+            template_id=campaign['apple_template_id'],
+            holder_name=holder_name,
+            holder_email=holder_email,
+            auth_token=auth_token,
+            visual_data=db.get_apple_template(campaign['apple_template_id'])
+        )
+        
+        if success:
+            # Generate .pkpass
+            from services.apple_wallet_service import AppleWalletService
+            apple_service = AppleWalletService()
+            
+            # Re-fetch for full data
+            pass_data = db.get_apple_pass(serial_number)
+            template_data = db.get_apple_template(campaign['apple_template_id'])
+            
+            apple_service.create_pass(
+                class_data={
+                    "class_type": template_data.get("pass_style", "storeCard"),
+                    "template_id": campaign['apple_template_id']
+                },
+                pass_data=pass_data,
+                object_id=serial_number
+            )
+            
+            # Redirect to download
+            return Response(
+                headers={"Location": f"/passes/apple/{serial_number}/download"},
+                status_code=303
+            )
+            
+    # 2. GENERATE GOOGLE LINK (Android or fallback)
+    return await _generate_google_link(campaign, holder_name, holder_email)
+
+async def _generate_google_link(campaign, name, email):
+    if not campaign.get('google_class_id'):
+        raise HTTPException(status_code=500, detail="No Google Class linked to this campaign")
+        
+    import uuid
+    object_id = f"{configs.ISSUER_ID}.g_{campaign['slug']}_{uuid.uuid4().hex[:8]}"
+    
+    # Create in DB
+    success = db.create_pass(
+        object_id=object_id,
+        class_id=campaign['google_class_id'],
+        holder_name=name,
+        holder_email=email,
+        pass_data={} # Add default metadata from class if needed
+    )
+    
+    if success:
+        if wallet_client:
+             # Fetch the synthesized class_json logic is usually in db_manager
+             pass_data = db.get_pass(object_id)
+             google_link = wallet_client.generate_save_link(
+                 class_id=campaign['google_class_id'],
+                 object_id=object_id,
+                 holder_name=name,
+                 holder_email=email,
+                 pass_data=pass_data.get('pass_data', {})
+             )
+             return Response(headers={"Location": google_link}, status_code=303)
+    
+    raise HTTPException(status_code=500, detail="Failed to generate Google Wallet link")
 
 
 

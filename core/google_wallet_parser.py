@@ -17,7 +17,8 @@ def parse_google_wallet_class(class_json):
         'logo_url': None,
         'hero_image_url': None,
         # Generic child fields
-        'header_text': None,
+        'header': None,
+        'subheader': None,
         'card_title': None,
         # EventTicket child fields
         'event_name': None,
@@ -71,7 +72,7 @@ def parse_google_wallet_class(class_json):
     # ---- Type-specific fields ----
     # Generic
     if 'header' in class_json:
-        metadata['header_text'] = class_json['header'].get('defaultValue', {}).get('value')
+        metadata['header'] = class_json['header'].get('defaultValue', {}).get('value')
     if 'cardTitle' in class_json:
         metadata['card_title'] = class_json['cardTitle'].get('defaultValue', {}).get('value')
 

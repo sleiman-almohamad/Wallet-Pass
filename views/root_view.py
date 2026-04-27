@@ -16,6 +16,7 @@ from views.apple_manage_templates_view import build_apple_manage_templates_view
 from views.google_manage_passes_view import build_google_manage_passes_view
 from views.apple_manage_passes_view import build_apple_manage_passes_view
 from views.send_notification_view import build_send_notification_view
+from views.campaign_management_view import build_campaign_management_view
 from utils.db_backup_tool import DatabaseBackupTool
 
 
@@ -64,6 +65,8 @@ def build_root_view(page: ft.Page, state) -> list:
             v = build_apple_manage_passes_view(page, state, api_client, preview)
         elif key == "notifications":
             v = build_send_notification_view(page, state, api_client)
+        elif key == "qr_campaigns":
+            v = build_campaign_management_view(page, state, api_client)
         elif key == "settings":
             v = _build_settings_view()
         else:

@@ -218,7 +218,42 @@ class JSONTemplateManager:
             "id": class_id,
         }
 
+        # Add branding to the Class so it reflects in the Google Wallet Console
+        bg_color = kwargs.get("background_color")
+        if bg_color:
+            template["hexBackgroundColor"] = bg_color if bg_color.startswith("#") else f"#{bg_color}"
+
+        logo_url = kwargs.get("logo_url") or kwargs.get("program_logo_url")
+        if logo_url:
+            template["logo"] = {
+                "sourceUri": {"uri": str(logo_url)},
+                "contentDescription": {"defaultValue": {"language": "en-US", "value": "Logo"}}
+            }
+
+        hero_url = kwargs.get("hero_image_url")
+        if hero_url:
+            template["heroImage"] = {
+                "sourceUri": {"uri": str(hero_url)},
+                "contentDescription": {"defaultValue": {"language": "en-US", "value": "Hero Image"}}
+            }
+
         text_module_rows = kwargs.get("text_module_rows", [])
+        
+        # Build class-level textModulesData for default values
+        if text_module_rows:
+            class_text_modules = []
+            for r_idx, row in enumerate(text_module_rows):
+                for pos in ["left", "middle", "right"]:
+                    hdr = row.get(f"{pos}_header")
+                    bdy = row.get(f"{pos}_body")
+                    if hdr or bdy:
+                        class_text_modules.append({
+                            "id": f"row_{r_idx}_{pos}",
+                            "header": hdr or "",
+                            "body": bdy or ""
+                        })
+            if class_text_modules:
+                template["textModulesData"] = class_text_modules
         if text_module_rows:
             card_row_template_infos = []
             # Only the first 2 rows are shown on the front of the pass.

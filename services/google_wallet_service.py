@@ -803,25 +803,21 @@ class WalletClient:
                 existing_messages = []
 
             # 3. Build the NEW pass data using appropriate builder
+            # Use keyword arguments to avoid positional mismatch (e.g. status vs color)
             if class_type == "EventTicket":
                 object_data = self.build_event_ticket_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, 
+                    status=status, message_type=None
                 )
             elif class_type == "LoyaltyCard":
                 object_data = self.build_loyalty_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, 
+                    status=status, message_type=None
                 )
-            elif class_type == "GiftCard":
+            else:  # Generic, GiftCard, Transit
                 object_data = self.build_generic_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
-                )
-            elif class_type == "TransitPass":
-                object_data = self.build_generic_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
-                )
-            else:  # Generic
-                object_data = self.build_generic_object(
-                    full_object_id, full_class_id, holder_name, holder_email, pass_data, status=status, message_type=None
+                    full_object_id, full_class_id, holder_name, holder_email, pass_data, 
+                    status=status, message_type=None
                 )
 
             # Resolve Header for the notification
@@ -998,11 +994,35 @@ class WalletClient:
             "id": object_id,
             "classId": class_id,
             "state": gw_state,
-            "ticketHolderName": custom_ticket_holder,
+            "ticketHolderName": {"defaultValue": {"language": "en-US", "value": custom_ticket_holder}},
             "reservationInfo": {
                 "confirmationCode": custom_conf_code
             }
         }
+
+        # Add Branding (Color/CardTitle/Header)
+        branding_bg = custom_color or pd.get("hexBackgroundColor") or pd.get("background_color") or pd.get("base_color")
+        if isinstance(branding_bg, str) and branding_bg.strip():
+            branding_bg = branding_bg.strip()
+            if not branding_bg.startswith("#") and len(branding_bg) in [3, 6]:
+                branding_bg = f"#{branding_bg}"
+        else:
+            branding_bg = None
+
+        if branding_bg:
+            obj["hexBackgroundColor"] = branding_bg
+            
+        card_title = pd.get("card_title") or pd.get("cardTitle") or pd.get("issuer_name")
+        if card_title:
+            obj["cardTitle"] = {"defaultValue": {"language": "en-US", "value": str(card_title)}}
+            
+        header_val = pd.get("header_value") or pd.get("header")
+        if header_val:
+            obj["header"] = {"defaultValue": {"language": "en-US", "value": str(header_val)}}
+            
+        subheader_val = pd.get("subheader_value") or pd.get("subheader")
+        if subheader_val:
+            obj["subheader"] = {"defaultValue": {"language": "en-US", "value": str(subheader_val)}}
 
         # Add Branding (Logo/Hero) if in pass_data
         branding_logo_url = pd.get("logo_url") or pd.get("logoUrl")
@@ -1017,10 +1037,6 @@ class WalletClient:
                 "sourceUri": {"uri": str(branding_hero_url)},
                 "contentDescription": {"defaultValue": {"language": "en-US", "value": "Hero Image"}}
             }
-        
-        # Add custom background color if provided
-        if custom_color:
-            obj["hexBackgroundColor"] = custom_color
         
         # Add message with specified messageType
         if message_type:
@@ -1162,8 +1178,17 @@ class WalletClient:
             "accountId": holder_email
         }
         
-        if custom_color:
-            obj["hexBackgroundColor"] = custom_color
+        pd = pass_data or {}
+        branding_bg = custom_color or pd.get("hexBackgroundColor") or pd.get("background_color") or pd.get("base_color")
+        if isinstance(branding_bg, str) and branding_bg.strip():
+            branding_bg = branding_bg.strip()
+            if not branding_bg.startswith("#") and len(branding_bg) in [3, 6]:
+                branding_bg = f"#{branding_bg}"
+        else:
+            branding_bg = None
+
+        if branding_bg:
+            obj["hexBackgroundColor"] = branding_bg
         
         # Add message with specified messageType
         if message_type:
@@ -1268,7 +1293,12 @@ class WalletClient:
         branding_logo_url = pd.get("logo_url") or pd.get("logoUrl")
         branding_hero_url = pd.get("hero_image_url") or pd.get("heroImageUrl") or pd.get("hero_url")
         branding_bg = custom_color or pd.get("hexBackgroundColor") or pd.get("hex_background_color") or pd.get("background_color") or pd.get("base_color")
-        branding_bg = branding_bg if isinstance(branding_bg, str) and branding_bg.strip() else None
+        if isinstance(branding_bg, str) and branding_bg.strip():
+            branding_bg = branding_bg.strip()
+            if not branding_bg.startswith("#") and len(branding_bg) in [3, 6]:
+                branding_bg = f"#{branding_bg}"
+        else:
+            branding_bg = None
         
         # Map local status to Google Wallet state
         gw_state = "ACTIVE"

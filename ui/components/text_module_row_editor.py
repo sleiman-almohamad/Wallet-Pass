@@ -143,6 +143,20 @@ class TextModuleRowEditor(ft.Container):
                 self.update()
             self._trigger_change()
 
+    def move_row(self, index: int, delta: int):
+        """Move row up (delta=-1) or down (delta=1)"""
+        new_index = index + delta
+        if 0 <= new_index < len(self.rows):
+            # Swap rows
+            self.rows[index], self.rows[new_index] = self.rows[new_index], self.rows[index]
+            # Update row_indices
+            for i, r in enumerate(self.rows):
+                r['row_index'] = i
+            
+            self.content = self._build_content()
+            self.update()
+            self._trigger_change()
+
     def build_row_ui(self, row_data: Dict, index: int):
         def make_field(col_prefix, label_postfix):
             field_name = f"{col_prefix}_{label_postfix.lower()}"
@@ -159,7 +173,7 @@ class TextModuleRowEditor(ft.Container):
             return ft.TextField(
                 label=label,
                 value=row_data.get(field_name, ""),
-                width=160 if self.mode == "class" else 120,
+                expand=True,
                 text_size=11,
                 height=45,
                 content_padding=5,
@@ -174,25 +188,27 @@ class TextModuleRowEditor(ft.Container):
                     ft.dropdown.Option("text", "Text"),
                     ft.dropdown.Option("link", "Link"),
                 ],
-                width=80 if self.mode == "class" else 70,
+                width=75,
                 text_size=10,
                 content_padding=5,
+                border_radius=8,
                 on_change=lambda e: self.update_field(index, f"{prefix}_type", e.control.value)
             )
             
-            if self.mode == "class":
-                # In class mode, we usually only define the header (blueprint)
-                return ft.Column([
-                    ft.Row([ft.Text(prefix.upper(), size=9, weight="bold"), type_picker], spacing=5),
-                    make_field(prefix, "Header")
-                ], spacing=5)
-            else:
-                # In pass mode, we provide values for header and body
-                return ft.Column([
-                    ft.Row([ft.Text(prefix.upper(), size=9, weight="bold"), type_picker], spacing=5),
-                    make_field(prefix, "Header"),
-                    make_field(prefix, "Body")
-                ], spacing=3)
+            header_field = make_field(prefix, "Header")
+            header_field.expand = True
+            
+            # Show prefix as a small badge or label
+            prefix_label = ft.Text(prefix[:1].upper(), size=9, weight="bold", color="grey400")
+
+            return ft.Column([
+                ft.Row([
+                    prefix_label,
+                    header_field,
+                    type_picker
+                ], spacing=5, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                make_field(prefix, "Body")
+            ], spacing=3, expand=1)
 
         return ft.Container(
             border=ft.border.all(1, "grey300"),
@@ -203,12 +219,29 @@ class TextModuleRowEditor(ft.Container):
             content=ft.Column([
                 ft.Row([
                     ft.Text(f"ROW {index + 1}", weight=ft.FontWeight.W_600, size=12),
-                    ft.IconButton(
-                        icon=ft.Icons.DELETE_OUTLINE,
-                        icon_color="red400",
-                        icon_size=18,
-                        on_click=lambda e, i=index: self.remove_row(i)
-                    )
+                    ft.Row([
+                        ft.IconButton(
+                            icon=ft.Icons.ARROW_UPWARD,
+                            icon_size=16,
+                            tooltip="Move Up",
+                            on_click=lambda e, i=index: self.move_row(i, -1),
+                            disabled=(index == 0)
+                        ),
+                        ft.IconButton(
+                            icon=ft.Icons.ARROW_DOWNWARD,
+                            icon_size=16,
+                            tooltip="Move Down",
+                            on_click=lambda e, i=index: self.move_row(i, 1),
+                            disabled=(index == len(self.rows) - 1)
+                        ),
+                        ft.IconButton(
+                            icon=ft.Icons.DELETE_OUTLINE,
+                            icon_color="red400",
+                            icon_size=18,
+                            tooltip="Delete Row",
+                            on_click=lambda e, i=index: self.remove_row(i)
+                        )
+                    ], spacing=0)
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Row([
                     build_col("left"),

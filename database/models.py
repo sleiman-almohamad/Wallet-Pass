@@ -84,6 +84,7 @@ class GenericClassFields(Base):
         primary_key=True,
     )
     header = Column(String(255))
+    subheader = Column(String(255))
     card_title = Column(String(255))
 
     parent = relationship("ClassesTable", back_populates="generic_fields")
@@ -309,6 +310,19 @@ class ApplePassesTemplate(Base):
     pass_type_identifier = Column(String(255), nullable=False)
     team_identifier = Column(String(255), nullable=False)
 
+    # Branding & Visual Defaults
+    background_color = Column(String(50))
+    foreground_color = Column(String(50))
+    label_color = Column(String(50))
+    logo_text = Column(String(255))
+    organization_name = Column(String(255))
+
+    logo_url = Column(String(512))
+    icon_url = Column(String(512))
+    strip_url = Column(String(512))
+    background_image_url = Column(String(512))
+    thumbnail_url = Column(String(512))
+
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
@@ -395,3 +409,31 @@ class AppleDeviceRegistrations(Base):
     __table_args__ = (
         UniqueConstraint("device_library_id", "serial_number", name="unique_device_pass"),
     )
+
+
+# ============================================================================
+# QR Campaigns
+# ============================================================================
+
+class QRCampaigns(Base):
+    """
+    Links a unique slug (QR code endpoint) to a pair of Google and Apple blueprints.
+    """
+    __tablename__ = "QR_Campaigns"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    campaign_name = Column(String(255), nullable=False)
+    slug = Column(String(100), nullable=False, unique=True, index=True)
+
+    # Blueprint links
+    google_class_id = Column(String(255, collation='utf8mb4_unicode_ci'), ForeignKey("Classes_Table.class_id", ondelete="SET NULL"), nullable=True)
+    apple_template_id = Column(String(255, collation='utf8mb4_uca1400_ai_ci'), ForeignKey("Apple_Pass_Templates.template_id", ondelete="SET NULL"), nullable=True)
+
+    # Public Landing Page Metadata
+    landing_title = Column(String(255))
+    landing_subtitle = Column(Text)
+
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())

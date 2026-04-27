@@ -45,7 +45,8 @@ class APIClient:
                     base_color: Optional[str] = None, 
                     logo_url: Optional[str] = None,
                     hero_image_url: Optional[str] = None,
-                    header_text: Optional[str] = None,
+                    header: Optional[str] = None,
+                    subheader: Optional[str] = None,
                     card_title: Optional[str] = None,
                     event_name: Optional[str] = None,
                     venue_name: Optional[str] = None,
@@ -68,7 +69,8 @@ class APIClient:
             "base_color": base_color,
             "logo_url": logo_url,
             "hero_image_url": hero_image_url,
-            "header_text": header_text,
+            "header": header,
+            "subheader": subheader,
             "card_title": card_title,
             "event_name": event_name,
             "venue_name": venue_name,
@@ -110,7 +112,8 @@ class APIClient:
                     base_color: Optional[str] = None, 
                     logo_url: Optional[str] = None,
                     hero_image_url: Optional[str] = None,
-                    header_text: Optional[str] = None,
+                    header: Optional[str] = None,
+                    subheader: Optional[str] = None,
                     card_title: Optional[str] = None,
                     event_name: Optional[str] = None,
                     venue_name: Optional[str] = None,
@@ -132,8 +135,8 @@ class APIClient:
         for field_name, field_val in [
             ("class_type", class_type), ("issuer_name", issuer_name),
             ("base_color", base_color), ("logo_url", logo_url),
-            ("hero_image_url", hero_image_url), ("header_text", header_text),
-            ("card_title", card_title), ("event_name", event_name),
+            ("hero_image_url", hero_image_url), ("header", header),
+            ("subheader", subheader), ("card_title", card_title),
             ("venue_name", venue_name), ("venue_address", venue_address),
             ("event_start", event_start), ("program_name", program_name),
             ("transit_type", transit_type), ("transit_operator_name", transit_operator_name),
@@ -532,14 +535,15 @@ class APIClient:
 
     def create_apple_template(self, template_id: str, template_name: str, 
                              pass_style: str, pass_type_identifier: str, 
-                             team_identifier: str) -> Dict[str, Any]:
+                             team_identifier: str, **kwargs) -> Dict[str, Any]:
         """Create a new Apple Wallet template"""
         data = {
             "template_id": template_id,
             "template_name": template_name,
             "pass_style": pass_style,
             "pass_type_identifier": pass_type_identifier,
-            "team_identifier": team_identifier
+            "team_identifier": team_identifier,
+            **kwargs
         }
         try:
             response = requests.post(f"{self.base_url}/templates/apple/", json=data)
@@ -610,4 +614,77 @@ class APIClient:
             raise APIClientHTTPError(f"Error updating Apple pass: {error_detail}") from e
         except Exception as e:
             raise APIClientError(f"Error updating Apple pass: {e}") from e
+
+
+    # ========================================================================
+    # QR Campaign Endpoints
+    # ========================================================================
+
+    def get_campaigns(self) -> List[Dict[str, Any]]:
+        """Fetch all QR campaigns"""
+        try:
+            response = requests.get(f"{self.base_url}/campaigns/")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching campaigns: {e}")
+            return []
+
+    def get_campaign(self, slug_or_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch a specific campaign"""
+        try:
+            response = requests.get(f"{self.base_url}/campaigns/{slug_or_id}")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching campaign '{slug_or_id}': {e}")
+            return None
+
+    def create_campaign(self, campaign_name: str, slug: str, 
+                        google_class_id: Optional[str] = None,
+                        apple_template_id: Optional[str] = None,
+                        landing_title: Optional[str] = None,
+                        landing_subtitle: Optional[str] = None) -> Dict[str, Any]:
+        """Create a new QR campaign"""
+        data = {
+            "campaign_name": campaign_name,
+            "slug": slug,
+            "google_class_id": google_class_id,
+            "apple_template_id": apple_template_id,
+            "landing_title": landing_title,
+            "landing_subtitle": landing_subtitle
+        }
+        try:
+            response = requests.post(f"{self.base_url}/campaigns/", json=data)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(f"Error creating campaign: {error_detail}") from e
+        except Exception as e:
+            raise APIClientError(f"Error creating campaign: {e}") from e
+
+    def update_campaign(self, campaign_id: int, **kwargs) -> Dict[str, Any]:
+        """Update an existing QR campaign"""
+        try:
+            response = requests.put(f"{self.base_url}/campaigns/{campaign_id}", json=kwargs)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(f"Error updating campaign: {error_detail}") from e
+        except Exception as e:
+            raise APIClientError(f"Error updating campaign: {e}") from e
+
+    def delete_campaign(self, campaign_id: int) -> Dict[str, Any]:
+        """Delete a QR campaign"""
+        try:
+            response = requests.delete(f"{self.base_url}/campaigns/{campaign_id}")
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            raise APIClientHTTPError(f"Error deleting campaign: {error_detail}") from e
+        except Exception as e:
+            raise APIClientError(f"Error deleting campaign: {e}") from e
 

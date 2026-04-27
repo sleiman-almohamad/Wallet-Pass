@@ -35,6 +35,13 @@ NAV_STRUCTURE = [
         ],
     },
     {
+        "category": "DISTRIBUTION",
+        "icon": ft.Icons.QR_CODE_SCANNER,
+        "items": [
+            {"key": "qr_campaigns", "label": "QR Campaigns", "icon": ft.Icons.QR_CODE_2},
+        ],
+    },
+    {
         "category": "NOTIFICATIONS",
         "icon": ft.Icons.MARK_EMAIL_UNREAD_OUTLINED,
         "items": [

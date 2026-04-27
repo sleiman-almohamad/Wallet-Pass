@@ -2,6 +2,7 @@ import flet as ft
 from ui.components.color_picker import create_color_picker
 from ui.components.mobile_mockup import MobileMockupPreview
 from ui.components.apple_field_editor import AppleFieldEditor
+import configs
 
 def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: MobileMockupPreview):
     """
@@ -337,6 +338,14 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                         ft.Text("  1. Updated in the database", size=12, color="green"),
                         ft.Text("  2. .pkpass file regenerated", size=12, color="green"),
                         ft.Text("  3. Push notification sent to device", size=12, color="green"),
+                        ft.Container(height=10),
+                        ft.ElevatedButton(
+                            text="Download .pkpass",
+                            icon=ft.Icons.DOWNLOAD,
+                            on_click=lambda e: page.launch_url(f"{configs.PUBLIC_URL}/passes/apple/{serial_number}/download"),
+                            style=ft.ButtonStyle(bgcolor="blue", color="white"),
+                            width=250,
+                        ),
                         ft.Container(height=5),
                         ft.Text(result_msg, size=11, color="grey", italic=True),
                     ], tight=True, spacing=4),

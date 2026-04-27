@@ -1704,3 +1704,270 @@ APPLE WALLET LOGS
 ================================
 
 [2026-04-20 18:39:26.326769] AUTH CHECK: Serial=pass_1776702923_riccardo_fumiento, IncomingToken=1ac8e116ad83bc6a80944c9d70eb622c, DBToken=1ac8e116ad83bc6a80944c9d70eb622c
+[2026-04-23 12:15:43.464246] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+[2026-04-23 12:15:43.765712] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:15:43 +0200] Register task (for device cd4e149dea0830d708be45a8fcb65543, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:15:43.879853] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:15:43 +0200] Register task (for device cd4e149dea0830d708be45a8fcb65543, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:15:43 +0200] Register task (for device cd4e149dea0830d708be45a8fcb65543, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:16:16.518562] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:16:16 +0200] Register task (for device cd4e149dea0830d708be45a8fcb65543, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:17:20.291765] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:17:20 +0200] Register task (for device cd4e149dea0830d708be45a8fcb65543, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:18:21.194411] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:18:21 +0200] Register task (for device cd4e149dea0830d708be45a8fcb65543, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:19:15.825401] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:19:15 +0200] Unregister task (for device cd4e149dea0830d708be45a8fcb65543, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:19:15.968399] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+[2026-04-23 12:19:16.084023] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:19:15 +0200] Unregister task (for device cd4e149dea0830d708be45a8fcb65543, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:19:16 +0200] Unregister task (for device cd4e149dea0830d708be45a8fcb65543, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:19:37.313589] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:19:37 +0200] Register task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:19:37.479009] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:19:37 +0200] Register task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:19:37.598161] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:19:37 +0200] Register task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:20:30.125947] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:20:30 +0200] Register task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:21:30.685642] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:21:30 +0200] Register task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:22:33.350638] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:22:33 +0200] Register task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:27:54.994973] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:27:55 +0200] Register task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:28:11.683634] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:28:11 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:28:11.863814] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:28:11 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:28:12.008142] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:28:12 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:28:22.267806] AUTH CHECK: Serial=pass_1776940015_reinhard, IncomingToken=feb6dc765cad71e129c061caca2b1275, DBToken=feb6dc765cad71e129c061caca2b1275
+[2026-04-23 12:28:22.749451] AUTH CHECK: Serial=pass_1776940015_reinhard, IncomingToken=feb6dc765cad71e129c061caca2b1275, DBToken=feb6dc765cad71e129c061caca2b1275
+[2026-04-23 12:28:56.123517] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:28:56 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:29:34.421058] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:29:34 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:29:34.631945] AUTH CHECK: Serial=pass_1776940015_reinhard, IncomingToken=feb6dc765cad71e129c061caca2b1275, DBToken=feb6dc765cad71e129c061caca2b1275
+[2026-04-23 12:31:03.717281] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:31:03 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:31:03.935374] AUTH CHECK: Serial=pass_1776940015_reinhard, IncomingToken=feb6dc765cad71e129c061caca2b1275, DBToken=feb6dc765cad71e129c061caca2b1275
+[2026-04-23 12:32:17.112615] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:32:17 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:33:10.100307] AUTH CHECK: Serial=pass_1776940015_reinhard, IncomingToken=feb6dc765cad71e129c061caca2b1275, DBToken=feb6dc765cad71e129c061caca2b1275
+[2026-04-23 12:37:53.021345] AUTH CHECK: Serial=pass_1776940015_reinhard, IncomingToken=feb6dc765cad71e129c061caca2b1275, DBToken=feb6dc765cad71e129c061caca2b1275
+[2026-04-23 12:37:53.727531] AUTH CHECK: Serial=pass_1776940015_reinhard, IncomingToken=feb6dc765cad71e129c061caca2b1275, DBToken=feb6dc765cad71e129c061caca2b1275
+[2026-04-23 12:46:57.489843] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:46:57 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 12:47:34.858319] AUTH CHECK: Serial=pass_1776941169_sleiman, IncomingToken=38544362e2d7d9782c7289be73d49001, DBToken=38544362e2d7d9782c7289be73d49001
+[2026-04-23 12:47:35.173889] AUTH CHECK: Serial=pass_1776941169_sleiman, IncomingToken=38544362e2d7d9782c7289be73d49001, DBToken=38544362e2d7d9782c7289be73d49001
+[2026-04-23 12:52:48.056361] AUTH CHECK: Serial=pass_1776940015_reinhard, IncomingToken=feb6dc765cad71e129c061caca2b1275, DBToken=feb6dc765cad71e129c061caca2b1275
+[2026-04-23 12:52:57.014279] AUTH CHECK: Serial=pass_1776941169_sleiman, IncomingToken=38544362e2d7d9782c7289be73d49001, DBToken=38544362e2d7d9782c7289be73d49001
+[2026-04-23 12:56:58.191834] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 12:56:58 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 13:42:47.223846] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 13:42:47 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 14:42:21.367534] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 14:42:21 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 15:47:46.612482] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 15:47:46 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 16:52:58.046467] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 16:52:58 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 18:39:59.358985] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 18:39:59 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 19:41:39.835788] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 19:41:39 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-23 21:24:57.805442] AUTH CHECK: Serial=pass_1776938895_reinhard_v%C3%B6lcker, IncomingToken=788a4b7ce28c085fca9659a78692fe3a, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-23 21:24:57 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
+================================
+

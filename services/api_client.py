@@ -5,14 +5,20 @@ Provides functions to interact with the FastAPI backend
 
 import requests
 from typing import List, Dict, Any, Optional
+import configs
 from exceptions import APIClientHTTPError, APIClientError
 
 
 class APIClient:
     """Client for interacting with Wallet Passes API"""
     
-    def __init__(self, base_url: str = "http://localhost:8000"):
-        self.base_url = base_url
+    def __init__(self, base_url: Optional[str] = None):
+        if base_url is None:
+            # Use local address for default connections, but on the correct port
+            port = getattr(configs, "API_PORT", 8100)
+            self.base_url = f"http://localhost:{port}"
+        else:
+            self.base_url = base_url
     
     def get_classes(self) -> List[Dict[str, Any]]:
         """Fetch all available classes"""

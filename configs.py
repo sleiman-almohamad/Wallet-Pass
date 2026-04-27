@@ -22,6 +22,10 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME", "wallet_passes")
 
+# API Configuration
+API_HOST = os.getenv("API_HOST", "0.0.0.0")
+API_PORT = int(os.getenv("API_PORT", "8100"))
+
 # ---------------------------------------------------------------------------
 # Sync controls
 # ---------------------------------------------------------------------------
@@ -42,9 +46,7 @@ APPLE_CERT_PATH = os.getenv("APPLE_CERT_PATH", "certs/pass_certificate.pem")
 APPLE_KEY_PATH = os.getenv("APPLE_KEY_PATH", "certs/pass_key.pem")
 APPLE_WWDR_PATH = os.getenv("APPLE_WWDR_PATH", "certs/wwdr.pem")
 APPLE_KEY_PASSWORD = os.getenv("APPLE_KEY_PASSWORD", "")
-# My ngrok url
-APPLE_WEB_SERVICE_URL = "https://breeding-caddy-fondly.ngrok-free.dev"
-#APPLE_WEB_SERVICE_URL = "https://cleaners-org-therapist-buy.trycloudflare.com"
-#APPLE_WEB_SERVICE_URL = "https://f14cd5316b7e4c.lhr.life"
+# My ngrok/cloudflare url (Backend)
+APPLE_WEB_SERVICE_URL = os.getenv("APPLE_WEB_SERVICE_URL", "https://breeding-caddy-fondly.ngrok-free.dev")
 # Public URL for Google Wallet images and callbacks
 PUBLIC_URL = os.getenv("PUBLIC_URL", APPLE_WEB_SERVICE_URL)

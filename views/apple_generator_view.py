@@ -55,17 +55,36 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
     
     def on_file_picked(e: ft.FilePickerResultEvent):
         if e.files and current_picker_target[0]:
-            file_path = e.files[0].path
+            file = e.files[0]
             target = current_picker_target[0]
-            if target in dynamic_field_refs and dynamic_field_refs[target].current:
-                dynamic_field_refs[target].current.value = file_path
-                dynamic_field_refs[target].current.update()
+            
+            # Upload the file to the backend
+            try:
+                import httpx
+                # Use local address since Flet runs on the server
+                api_url = getattr(configs, "API_BASE_URL", f"http://localhost:{configs.API_PORT}")
+                upload_endpoint = f"{api_url}/upload/image"
                 
-                # Check logic or sync preview
-                if target in ["apple_strip_url", "apple_background_image_url", "apple_thumbnail_url"]:
-                    check_image_fields_logic()
+                with open(file.path, "rb") as f:
+                    files = {"file": (file.name, f)}
+                    response = httpx.post(upload_endpoint, files=files)
+                
+                if response.status_code == 200:
+                    public_url = response.json().get("url")
+                    if target in dynamic_field_refs and dynamic_field_refs[target].current:
+                        dynamic_field_refs[target].current.value = public_url
+                        dynamic_field_refs[target].current.update()
+                        
+                        # Check logic or sync preview
+                        if target in ["apple_strip_url", "apple_background_image_url", "apple_thumbnail_url"]:
+                            check_image_fields_logic()
+                        else:
+                            _sync_preview()
                 else:
-                    _sync_preview()
+                    print(f"Upload failed: {response.text}")
+            except Exception as ex:
+                print(f"File picker upload error: {ex}")
+            
             page.update()
             
     file_picker.on_result = on_file_picked
@@ -299,6 +318,14 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                     ft.Container(height=10),
                     ft.Text(f"Saved at: {apple_pass_path}", size=11, color="grey", selectable=True),
                     ft.Container(height=10),
+                    ft.ElevatedButton(
+                        text="Download .pkpass",
+                        icon=ft.Icons.DOWNLOAD,
+                        on_click=lambda e: page.launch_url(f"{configs.PUBLIC_URL}/passes/apple/{object_id}/download"),
+                        style=ft.ButtonStyle(bgcolor="blue", color="white"),
+                        width=250,
+                    ),
+                    ft.Container(height=5),
                     ft.ElevatedButton(
                         text=state.t("btn.open_apple_folder"),
                         icon=ft.Icons.FOLDER_OPEN,

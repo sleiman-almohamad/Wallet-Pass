@@ -329,13 +329,13 @@ class AppleWalletService:
         # 1. Initial value: "Der Event Pass „{org_name}“ wurde hinzugefügt" (if no message set)
         admin_msg_val = pass_data.get("admin_message")
         if not admin_msg_val:
-            admin_msg_val = f"Der Event Pass „{org_name}“ wurde hinzugefügt"
+            admin_msg_val = f"Der Pass „{org_name}“ wurde hinzugefügt"
 
         # 2. Notification: "{org_name} : %@"
         # 3. Label: "WEITERE INFOS ZUM SCHÜTZENFEST MIT KLICK AUF ↗️ (…)" (fixed)
         notif_field = {
             "key": "admin_message",
-            "label": "WEITERE INFOS ZUM SCHÜTZENFEST MIT KLICK AUF ↗️ (…)",
+            "label": f"WEITERE INFOS ZUM {org_name} MIT KLICK AUF ↗️ (…)",
             "value": admin_msg_val,
             "changeMessage": f"{org_name} : %@" 
         }

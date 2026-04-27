@@ -482,6 +482,16 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             status_ref.current.value = state.t("msg.pls_enter_email")
             status_ref.current.color = "red"; page.update(); return
 
+        # Ensure card_title (Issuer Name) is set for Generic passes
+        class_id = template_dropdown_ref.current.value
+        class_type = current_class_data.get("class_type", "Generic")
+        if class_type == "Generic":
+             card_title = dynamic_field_refs.get("card_title")
+             if card_title and not card_title.current.value:
+                 # Auto-fill with a fallback if empty to prevent Google API error
+                 card_title.current.value = class_id or "Pass"
+                 card_title.current.update()
+
         if status_ref.current:
             status_ref.current.value = "⏳ Generating pass..."
             status_ref.current.color = "blue"
@@ -562,7 +572,15 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                 print(f"Warning: Could not save to local database: {db_error}")
 
             qr_filename = f"pass_qr_{int(time.time())}"
-            qr_image_path = generate_qr_code(save_link, qr_filename)
+            # Save to static directory so it's accessible via public URL
+            static_qr_dir = os.path.join(os.getcwd(), "static", "qrcodes")
+            os.makedirs(static_qr_dir, exist_ok=True)
+            
+            # Generate QR code
+            qr_image_path = generate_qr_code(save_link, qr_filename, assets_dir=static_qr_dir)
+            
+            # Public URL for the image
+            public_qr_url = f"{configs.PUBLIC_URL}/static/qrcodes/{qr_filename}.png"
 
             # --- Success Dialog ---
             def dialog_dismissed(e):
@@ -578,7 +596,7 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                     ft.Text("Scan the QR code or click the link below to add the pass to Google Wallet.", size=13),
                     ft.Container(height=10),
                     ft.Container(
-                        content=ft.Image(src=qr_image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
+                        content=ft.Image(src=public_qr_url, width=200, height=200, fit=ft.ImageFit.CONTAIN),
                         alignment=ft.alignment.center, bgcolor="white", border_radius=10, padding=10,
                     ),
                     ft.Container(height=10),

@@ -43,8 +43,8 @@ echo "📊 phpMyAdmin:  http://localhost:8080"
 echo "   Username: root"
 echo "   Password: 123456789"
 echo ""
-echo "🚀 FastAPI:     http://localhost:8000"
-echo "   Docs:       http://localhost:8000/docs"
+echo "🚀 FastAPI:     http://localhost:8100"
+echo "   Docs:       http://localhost:8100/docs"
 echo ""
 echo "🗄️  MariaDB:     localhost:3306"
 echo "   Database:   wallet_passes"
@@ -54,7 +54,7 @@ echo ""
 
 # Start the FastAPI server in the background
 echo "🚀 Starting FastAPI server in background..."
-uv run python -m uvicorn api.api:app --host 0.0.0.0 --port 8000 --reload > /tmp/api.log 2>&1 &
+uv run python -m uvicorn api.api:app --host 0.0.0.0 --port 8100 --reload > /tmp/api.log 2>&1 &
 API_PID=$!
 echo "   API PID: $API_PID"
 echo "   API logs: /tmp/api.log"
@@ -62,7 +62,7 @@ echo "   API logs: /tmp/api.log"
 # Wait for API to be ready (up to 30 seconds)
 echo "⏳ Waiting for FastAPI server to be ready..."
 for i in $(seq 1 30); do
-    if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+    if curl -s http://localhost:8100/health > /dev/null 2>&1; then
         echo "✅ FastAPI server is ready!"
         break
     fi

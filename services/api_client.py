@@ -34,6 +34,8 @@ class APIClient:
         """Fetch a specific class by ID"""
         try:
             response = requests.get(f"{self.base_url}/classes/{class_id}")
+            if response.status_code == 404:
+                return None
             response.raise_for_status()
             return response.json()
         except Exception as e:

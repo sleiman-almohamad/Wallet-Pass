@@ -13,13 +13,11 @@ from exceptions import DatabaseError, ValidationError
 from sqlalchemy.orm import Session
 
 from database.models import (
-    SessionLocal,
-    ClassesTable, GenericClassFields, GenericClassTextModuleRows, EventTicketClassFields,
+    SessionLocal, ClassesTable, GenericClassFields, GenericClassTextModuleRows, EventTicketClassFields,
     LoyaltyClassFields, TransitClassFields,
     PassesTable, EventTicketFields, GenericFields,
     PassTextModules, PassMessages,
-    NotificationsTable,
-    ApplePassesTemplate, ApplePassesData, ApplePassFields,
+    NotificationsTable, AppleTemplateFields, ApplePassesTemplate, ApplePassesData, ApplePassFields,
     AppleNotificationsTable, AppleDeviceRegistrations,
     QRCampaigns
 )
@@ -379,18 +377,31 @@ class DatabaseManager:
                 gd = pd.get('generic_data', pd)
                 session.add(GenericFields(
                     object_id=object_id,
-                    header_value=gd.get('header_value', gd.get('header')),
-                    subheader_value=gd.get('subheader_value'),
-                    card_title=gd.get('card_title'),
-                    logo_url=gd.get('logo_url'),
-                    hero_image_url=gd.get('hero_image_url'),
-                    hex_background_color=gd.get('hex_background_color', gd.get('hexBackgroundColor')),
-                    barcode_type=gd.get('barcode_type', gd.get('barcodeType')),
-                    barcode_value=gd.get('barcode_value', gd.get('barcodeValue')),
+                    header_value=gd.get('header_value', gd.get('header')) or class_info.get('header'),
+                    subheader_value=gd.get('subheader_value') or class_info.get('subheader'),
+                    card_title=gd.get('card_title') or class_info.get('card_title'),
+                    logo_url=gd.get('logo_url') or class_info.get('logo_url'),
+                    hero_image_url=gd.get('hero_image_url') or class_info.get('hero_image_url'),
+                    hex_background_color=gd.get('hex_background_color', gd.get('hexBackgroundColor')) or class_info.get('base_color'),
+                    barcode_type=gd.get('barcode_type', gd.get('barcodeValue')) or 'qrCode',
+                    barcode_value=gd.get('barcode_value', gd.get('barcodeValue')) or object_id,
                 ))
 
             # 3. Text modules
-            text_modules = pd.get('textModulesData', pd.get('text_modules', []))
+            text_modules = pd.get('textModulesData', pd.get('text_modules'))
+            if not text_modules and class_info.get('text_module_rows'):
+                # Inherit from class rows (convert row-based storage to flat list)
+                text_modules = []
+                for row in class_info['text_module_rows']:
+                    for col in ['left', 'middle', 'right']:
+                        if row.get(f'{col}_header') or row.get(f'{col}_body'):
+                            text_modules.append({
+                                'id': f"row_{row.get('row_index', 0)}_{col}",
+                                'header': row.get(f'{col}_header'),
+                                'body': row.get(f'{col}_body', ''),
+                                'type': row.get(f'{col}_type', 'text')
+                            })
+
             if isinstance(text_modules, list):
                 for idx, mod in enumerate(text_modules):
                         session.add(PassTextModules(
@@ -419,6 +430,17 @@ class DatabaseManager:
                     ))
 
             return True
+
+    def find_pass_by_email(self, class_id: str, email: str) -> Optional[dict]:
+        """Find an existing pass by class ID and holder email."""
+        with self.get_session() as session:
+            p = session.query(PassesTable).filter(
+                PassesTable.class_id == class_id,
+                PassesTable.holder_email == email
+            ).first()
+            if p:
+                return self._apple_pass_to_dict(p) if hasattr(p, 'pass_id') else self._construct_pass_dictionary(p, session)
+            return None
 
     def _construct_pass_dictionary(self, p: PassesTable, session: Session) -> dict:
         """Helper to build the combined pass dict from ORM relationships."""
@@ -776,6 +798,19 @@ class DatabaseManager:
                             value=str(f.get("value", ""))
                         )
                         session.add(field_obj)
+                else:
+                    # Automatically inherit fields from template if they exist
+                    template = session.get(ApplePassesTemplate, template_id)
+                    if template and template.fields:
+                        for tf in template.fields:
+                            field_obj = ApplePassFields(
+                                pass_id=serial_number,
+                                field_type=tf.field_type,
+                                field_key=tf.field_key,
+                                label=tf.label,
+                                value=tf.value
+                            )
+                            session.add(field_obj)
                 
                 return True
 
@@ -813,7 +848,7 @@ class DatabaseManager:
         if p.fields:
             result["fields"] = [
                 {
-                    "type": f.field_type,
+                    "field_type": f.field_type,
                     "key": f.field_key,
                     "label": f.label,
                     "value": f.value
@@ -998,7 +1033,7 @@ class DatabaseManager:
     # Apple Template Operations
     # ========================================================================
 
-    def create_apple_template(self, template_id: str, template_name: str, pass_style: str, pass_type_identifier: str, team_identifier: str) -> bool:
+    def create_apple_template(self, template_id: str, template_name: str, pass_style: str, pass_type_identifier: str, team_identifier: str, fields: list = None, **kwargs) -> bool:
         with self.get_session() as session:
             template = ApplePassesTemplate(
                 template_id=template_id,
@@ -1007,7 +1042,24 @@ class DatabaseManager:
                 pass_type_identifier=pass_type_identifier,
                 team_identifier=team_identifier
             )
+            
+            # Apply additional branding fields from kwargs
+            for k, v in kwargs.items():
+                if hasattr(template, k):
+                    setattr(template, k, v)
+            
             session.add(template)
+            session.flush()
+
+            if fields:
+                for f in fields:
+                    template.fields.append(AppleTemplateFields(
+                        template_id=template_id,
+                        field_type=f.get("type"),
+                        field_key=f.get("key"),
+                        label=f.get("label"),
+                        value=str(f.get("value", ""))
+                    ))
             return True
 
     def _apple_template_to_dict(self, t: ApplePassesTemplate) -> Dict[str, Any]:
@@ -1028,7 +1080,16 @@ class DatabaseManager:
             "icon_url": t.icon_url,
             "strip_url": t.strip_url,
             "background_image_url": t.background_image_url,
-            "thumbnail_url": t.thumbnail_url
+            "thumbnail_url": t.thumbnail_url,
+            "fields": [
+                {
+                    "field_type": f.field_type,
+                    "key": f.field_key,
+                    "label": f.label,
+                    "value": f.value
+                }
+                for f in t.fields
+            ]
         }
 
     def get_apple_template(self, template_id: str) -> Optional[Dict[str, Any]]:
@@ -1048,9 +1109,25 @@ class DatabaseManager:
             t = session.get(ApplePassesTemplate, template_id)
             if not t:
                 return False
+
+            # Update scalar fields
             for k, v in kwargs.items():
-                if hasattr(t, k):
+                if k != "fields" and hasattr(t, k):
                     setattr(t, k, v)
+            
+            # Update fields relationship (replace-all)
+            if "fields" in kwargs:
+                t.fields.clear()
+                session.flush()
+                for f in kwargs["fields"]:
+                    t.fields.append(AppleTemplateFields(
+                        template_id=template_id,
+                        field_type=f.get("type"),
+                        field_key=f.get("key"),
+                        label=f.get("label"),
+                        value=str(f.get("value", ""))
+                    ))
+
             return True
 
     def delete_apple_template(self, template_id: str) -> bool:
@@ -1072,6 +1149,16 @@ class DatabaseManager:
                 }
                 for p in rows
             ]
+
+    def find_duplicate_apple_pass(self, template_id: str, name: str, email: str) -> Optional[str]:
+        """Check if an Apple pass already exists for this Template + Name + Email."""
+        with self.get_session() as session:
+            existing = (
+                session.query(ApplePassesData)
+                .filter_by(template_id=template_id, holder_name=name, holder_email=email)
+                .first()
+            )
+            return existing.pass_id if existing else None
 
     # ========================================================================
     # QR Campaign Operations

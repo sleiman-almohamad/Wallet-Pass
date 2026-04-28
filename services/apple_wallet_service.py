@@ -179,103 +179,104 @@ class AppleWalletService:
 
     def _build_pass_json(self, class_data: dict, pass_data: dict, object_id: str) -> dict:
         """Construct the Apple-format pass.json dictionary."""
-        # Organisation / description — check both UI keys and DB column names
-        org_name = (pass_data.get("apple_org_name")
+        # Organisation / description 
+        # Priority: Template > Pass (Usually template is the brand owner)
+        org_name = (class_data.get("organization_name")
+                    or pass_data.get("apple_org_name")
                     or pass_data.get("organization_name")
-                    or pass_data.get("organizationName")
                     or "My Business")
         description = org_name
 
-        logo_text = (pass_data.get("apple_logo_text")
+        logo_text = (class_data.get("logo_text")
+                     or pass_data.get("apple_logo_text")
                      or pass_data.get("logo_text")
-                     or pass_data.get("logoText")
                      or org_name)
 
-        # Colours
+        # Colours - Priority: Template > Pass
         bg = _hex_to_rgb(
             class_data.get("background_color")
             or class_data.get("hexBackgroundColor")
-            or class_data.get("base_color")
             or pass_data.get("background_color")
-            or pass_data.get("hexBackgroundColor")
+            or "#FFFFFF"
         )
         fg = _hex_to_rgb(
             class_data.get("foreground_color")
             or class_data.get("hexForegroundColor")
             or pass_data.get("foreground_color")
-            or "#FFFFFF"
+            or "#000000"
         )
         label_color = _hex_to_rgb(
             class_data.get("label_color")
             or class_data.get("hexLabelColor")
             or pass_data.get("label_color")
-            or "#BBBBBB"
+            or "#666666"
         )
 
-        # Build fields for StoreCard
+        # Merge Fields Logic:
+        # Template provides the structure (Labels, Types, Keys).
+        # Pass provides the data (Values).
+        # If Pass has a field with same key, it overrides the value.
+        # If Template has a new field, it is added.
+        
+        template_fields_list = class_data.get("fields", [])
+        pass_fields_list = pass_data.get("fields") or pass_data.get("dynamic_fields", [])
+        
+        # key -> {label, value, type}
+        merged_fields_map = {}
+        
+        # 1. Start with Template fields
+        for f in template_fields_list:
+            ftype = f.get("field_type") or f.get("type")
+            if not ftype: continue
+            key = f.get("key") or f"{ftype}_{len(merged_fields_map)}"
+            merged_fields_map[key] = {
+                "key": key,
+                "label": f.get("label", ""),
+                "value": f.get("value", ""),
+                "type": ftype
+            }
+            
+        # 2. Overlay Pass fields (preserve template labels, use pass values)
+        for f in pass_fields_list:
+            ftype = f.get("field_type") or f.get("type")
+            key = f.get("key")
+            if not key: continue
+            
+            if key in merged_fields_map:
+                # Use Template's label but Pass's value
+                merged_fields_map[key]["value"] = f.get("value", "")
+            else:
+                # Add unique pass fields (like 'holder_name' if added manually)
+                merged_fields_map[key] = {
+                    "key": key,
+                    "label": f.get("label", ""),
+                    "value": f.get("value", ""),
+                    "type": ftype or "back"
+                }
+
         header_fields = []
         primary_fields = []
         secondary_fields = []
         auxiliary_fields = []
         back_fields = []
 
-        fields_source = pass_data.get("fields") or pass_data.get("dynamic_fields", [])
-        
-        if fields_source:
-            for i, field in enumerate(fields_source):
-                ftype = field.get("type") or field.get("field_type")
-                if not ftype: continue
+        for f_key, f in merged_fields_map.items():
+            ftype = f["type"]
+            field_dict = {
+                "key": f["key"],
+                "label": f["label"],
+                "value": f["value"]
+            }
+            if ftype == "header": header_fields.append(field_dict)
+            elif ftype == "primary": primary_fields.append(field_dict)
+            elif ftype == "secondary": secondary_fields.append(field_dict)
+            elif ftype == "auxiliary": auxiliary_fields.append(field_dict)
+            elif ftype == "back": back_fields.append(field_dict)
 
-                field_dict = {
-                    "key": field.get("key") or f"{ftype}_{i}",
-                    "label": field.get("label", ""),
-                    "value": field.get("value", "")
-                }
-                if ftype == "header":
-                    header_fields.append(field_dict)
-                elif ftype == "primary":
-                    primary_fields.append(field_dict)
-                elif ftype == "secondary":
-                    secondary_fields.append(field_dict)
-                elif ftype == "auxiliary":
-                    auxiliary_fields.append(field_dict)
-                elif ftype == "back":
-                    back_fields.append(field_dict)
-        else:
-            if pass_data.get("apple_header_label") or pass_data.get("apple_header_value"):
-                header_fields.append({
-                    "key": "header_1",
-                    "label": pass_data.get("apple_header_label", ""),
-                    "value": pass_data.get("apple_header_value", "")
-                })
-
-            if pass_data.get("apple_primary_label") or pass_data.get("apple_primary_value"):
-                primary_fields.append({
-                    "key": "primary_1",
-                    "label": pass_data.get("apple_primary_label", ""),
-                    "value": pass_data.get("apple_primary_value", "")
-                })
-
-            if pass_data.get("apple_sec_label") or pass_data.get("apple_sec_value"):
-                secondary_fields.append({
-                    "key": "secondary_1",
-                    "label": pass_data.get("apple_sec_label", ""),
-                    "value": pass_data.get("apple_sec_value", "")
-                })
-
-            if pass_data.get("apple_aux_label") or pass_data.get("apple_aux_value"):
-                auxiliary_fields.append({
-                    "key": "auxiliary_1",
-                    "label": pass_data.get("apple_aux_label", ""),
-                    "value": pass_data.get("apple_aux_value", "")
-                })
-
-            if pass_data.get("apple_back_label") or pass_data.get("apple_back_value"):
-                back_fields.append({
-                    "key": "back_1",
-                    "label": pass_data.get("apple_back_label", ""),
-                    "value": pass_data.get("apple_back_value", "")
-                })
+        # User request: first secondary field label gets holder name
+        holder_name = pass_data.get("holder_name")
+        if holder_name and secondary_fields:
+            secondary_fields[0]["label"] = holder_name
 
         # Barcode
         barcode = {
@@ -326,20 +327,27 @@ class AppleWalletService:
         if secondary_fields: pass_dict[style]["secondaryFields"] = secondary_fields
         
         # Inject Admin Message (Notification Channel) into auxiliaryFields
-        # 1. Initial value: "Der Event Pass „{org_name}“ wurde hinzugefügt" (if no message set)
+        # ONLY if there is a specific admin message set in the pass data
         admin_msg_val = pass_data.get("admin_message")
-        if not admin_msg_val:
-            admin_msg_val = f"Der Pass „{org_name}“ wurde hinzugefügt"
+        
+        if admin_msg_val and admin_msg_val.strip():
+            # Explicitly format the message: "Organization name : message value"
+            formatted_message = f"{org_name} : {admin_msg_val}"
 
-        # 2. Notification: "{org_name} : %@"
-        # 3. Label: "WEITERE INFOS ZUM SCHÜTZENFEST MIT KLICK AUF ↗️ (…)" (fixed)
-        notif_field = {
-            "key": "admin_message",
-            "label": f"WEITERE INFOS ZUM {org_name} MIT KLICK AUF ↗️ (…)",
-            "value": admin_msg_val,
-            "changeMessage": f"{org_name} : %@" 
-        }
-        auxiliary_fields.append(notif_field)
+            # Notification
+            if auxiliary_fields:
+                # Replace the value of the first auxiliary field
+                auxiliary_fields[0]["value"] = formatted_message
+                # Using "%@" ensures the notification matches the value exactly
+                auxiliary_fields[0]["changeMessage"] = "%@" 
+            else:
+                notif_field = {
+                    "key": "admin_message",
+                    "label": " ",
+                    "value": formatted_message,
+                    "changeMessage": "%@" 
+                }
+                auxiliary_fields.append(notif_field)
         
         if auxiliary_fields: pass_dict[style]["auxiliaryFields"] = auxiliary_fields
         if back_fields: pass_dict[style]["backFields"] = back_fields
@@ -353,8 +361,11 @@ class AppleWalletService:
     @staticmethod
     def _collect_images(class_data: dict, pass_data: dict, build_dir: str, files: dict):
         """Download remote images and add their bytes to *files*."""
-        # Logo
-        logo_url = pass_data.get("apple_logo_url") or pass_data.get("logo_url") or class_data.get("logo_url")
+        # Logo - Priority: Template > Pass
+        logo_url = (class_data.get("logo_url") 
+                    or pass_data.get("apple_logo_url") 
+                    or pass_data.get("logo_url"))
+        
         if logo_url:
             try:
                 dl = _download_image(logo_url, os.path.join(build_dir, "logo_src.png"))
@@ -379,12 +390,11 @@ class AppleWalletService:
             except ValueError as exc:
                 print(f"Warning: Could not attach logo: {exc}")
 
-        # Mandatory icon
+        # Mandatory icon backup
         icon_path = os.path.join("assets", "icon.png")
         icon_2x_path = os.path.join("assets", "icon@2x.png")
         b2f_path = os.path.join("assets", "B2F.png")
         
-        # Fallback to B2F.png if icons are missing
         if not os.path.exists(icon_path) and os.path.exists(b2f_path):
             icon_path = b2f_path
         if not os.path.exists(icon_2x_path) and os.path.exists(b2f_path):
@@ -395,8 +405,12 @@ class AppleWalletService:
         if "icon@2x.png" not in files and os.path.exists(icon_2x_path):
             files["icon@2x.png"] = open(icon_2x_path, "rb").read()
 
-        # Hero -> strip
-        strip_url = pass_data.get("apple_strip_url") or pass_data.get("strip_url") or class_data.get("hero_image_url")
+        # Hero -> strip - Priority: Template > Pass
+        strip_url = (class_data.get("strip_url") 
+                     or class_data.get("hero_image_url")
+                     or pass_data.get("apple_strip_url") 
+                     or pass_data.get("strip_url"))
+        
         if strip_url:
             try:
                 dl = _download_image(strip_url, os.path.join(build_dir, "strip_src.png"))
@@ -406,8 +420,11 @@ class AppleWalletService:
             except ValueError as exc:
                 print(f"Warning: Could not attach hero/strip image: {exc}")
                 
-        # Background
-        bg_url = pass_data.get("apple_background_image_url") or pass_data.get("background_image_url")
+        # Background - Priority: Template > Pass
+        bg_url = (class_data.get("background_image_url")
+                  or pass_data.get("apple_background_image_url") 
+                  or pass_data.get("background_image_url"))
+        
         if bg_url:
             try:
                 dl = _download_image(bg_url, os.path.join(build_dir, "background_src.png"))
@@ -417,8 +434,11 @@ class AppleWalletService:
             except ValueError as exc:
                 print(f"Warning: Could not attach background image: {exc}")
 
-        # Thumbnail
-        thumb_url = pass_data.get("apple_thumbnail_url") or pass_data.get("thumbnail_url")
+        # Thumbnail - Priority: Template > Pass
+        thumb_url = (class_data.get("thumbnail_url")
+                     or pass_data.get("apple_thumbnail_url") 
+                     or pass_data.get("thumbnail_url"))
+        
         if thumb_url:
             try:
                 dl = _download_image(thumb_url, os.path.join(build_dir, "thumbnail_src.png"))
@@ -556,6 +576,9 @@ class AppleWalletService:
         
         results = {"status": "success", "sent": 0, "failed": 0}
         for p in passes:
+            # Clear any specific admin_message so the pass shows the latest template field values
+            db.update_apple_pass_message(p['serial_number'], "")
+            
             res = self.send_push_notification(p['serial_number'])
             if res.get("status") == "success":
                 results["sent"] += res.get("sent", 0)

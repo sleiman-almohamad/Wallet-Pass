@@ -1,3 +1,4 @@
+import copy
 import json 
 import os
 from google.oauth2 import service_account
@@ -397,6 +398,13 @@ class WalletClient:
             if class_type == "Generic" and isinstance(class_data, dict):
                 allowed_generic_keys = {
                     "id",
+                    "issuerName",
+                    "reviewStatus",
+                    "hexBackgroundColor",
+                    "logo",
+                    "heroImage",
+                    "header",
+                    "cardTitle",
                     "textModulesData",
                     "linksModuleData",
                     "imageModulesData",
@@ -483,13 +491,15 @@ class WalletClient:
                 ) from e
     
     
-    def generate_save_link(self, object_id, class_type="EventTicket", class_id=None):
+    def generate_save_link(self, object_id, class_type="EventTicket", class_id=None, object_payload=None):
         """
         Generate a "Save to Google Wallet" link with JWT token
         
         Args:
             object_id: The pass object ID
             class_type: Type of pass
+            class_id: The class ID
+            object_payload: Optional full object payload to include in JWT
             
         Returns:
             URL that can be used to add pass to Google Wallet
@@ -508,10 +518,16 @@ class WalletClient:
         # Ensure proper prefix (Issuer ID must be present for the link to work)
         object_id = self._prepare_ids_to_try(object_id)[0]
         
-        obj_payload = {"id": object_id}
-        if class_id:
-            class_id = self._prepare_ids_to_try(class_id)[0]
-            obj_payload["classId"] = class_id
+        if object_payload:
+            obj_payload = copy.deepcopy(object_payload)
+            obj_payload["id"] = object_id
+            if class_id:
+                obj_payload["classId"] = self._prepare_ids_to_try(class_id)[0]
+        else:
+            obj_payload = {"id": object_id}
+            if class_id:
+                class_id = self._prepare_ids_to_try(class_id)[0]
+                obj_payload["classId"] = class_id
 
         # Create JWT claims
         claims = {
@@ -1429,6 +1445,9 @@ class WalletClient:
                     text_mods.append(text_mod)
 
             if text_mods:
+                # User request: first row left header gets holder name
+                if holder_name and len(text_mods) > 0:
+                    text_mods[0]["header"] = holder_name
                 obj["textModulesData"] = text_mods
             if link_mods:
                 obj["linksModuleData"] = {"uris": link_mods}

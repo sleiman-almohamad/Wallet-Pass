@@ -1,6 +1,7 @@
 import flet as ft
 from ui.theme import card, section_title, PRIMARY, TEXT_PRIMARY, TEXT_SECONDARY, BG_COLOR, BORDER_COLOR
 from ui.components.color_picker import create_color_picker
+from ui.components.apple_field_editor import AppleFieldEditor
 import configs
 import httpx
 
@@ -42,6 +43,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
     }
     
     color_pickers_col = ft.Column(spacing=20)
+    field_editor = AppleFieldEditor(state)
     
     # ── File Picker Logic ──
     current_picker_target = None
@@ -114,6 +116,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             colors["bg"] = template.get("background_color") or "#FFFFFF"
             colors["fg"] = template.get("foreground_color") or "#000000"
             colors["label"] = template.get("label_color") or "#666666"
+            field_editor.load_fields(template.get("fields", []))
         else:
             template_name_tf.value = "New Template"
             pass_style_dd.value = "generic"
@@ -124,6 +127,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             colors["bg"] = "#FFFFFF"
             colors["fg"] = "#000000"
             colors["label"] = "#666666"
+            field_editor.load_fields([])
 
         # Initialize color pickers
         color_pickers_col.controls = [
@@ -148,6 +152,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                 "logo_url": logo_url_tf.value,
                 "icon_url": icon_url_tf.value,
                 "strip_url": strip_url_tf.value,
+                "dynamic_fields": field_editor.get_fields()
             }
             
             if editing_template:
@@ -183,7 +188,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                     ft.Text(t['template_name'], size=14, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
                     ft.Text(f"ID: {t['template_id']} | Style: {t['pass_style']}", size=11, color=TEXT_SECONDARY),
                 ], spacing=2, expand=True),
-                ft.IconButton(ft.Icons.EDIT_OUTLINE, on_click=lambda _: show_editor(t), tooltip="Edit Blueprint"),
+                ft.IconButton(ft.Icons.EDIT_OUTLINED, on_click=lambda _: show_editor(t), tooltip="Edit Blueprint"),
                 ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color="red700", on_click=lambda _: delete_template(t['template_id']))
             ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
             padding=15, border=ft.border.all(1, BORDER_COLOR), border_radius=8, bgcolor="white"
@@ -230,6 +235,11 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                             color_pickers_col
                         ], vertical_alignment=ft.CrossAxisAlignment.START, spacing=20)
                     ])),
+
+                    card(ft.Column([
+                        section_title("Card Fields (Template Defaults)", ft.Icons.DASHBOARD_CUSTOMIZE),
+                        field_editor.build()
+                    ], spacing=10)),
 
                     ft.Container(
                         content=ft.ElevatedButton(

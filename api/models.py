@@ -119,6 +119,18 @@ class ClassResponse(BaseModel):
 # Apple Template Models
 # ========================================================================
 
+class ApplePassFieldResponse(BaseModel):
+    """Model for relational fields inside an Apple Pass"""
+    field_type: str
+    key: str
+    label: Optional[str] = None
+    value: str
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
 class AppleTemplateCreate(BaseModel):
     """Model for creating a new Apple Wallet template"""
     template_id: str = Field(..., description="Unique identifier for the template")
@@ -137,6 +149,8 @@ class AppleTemplateCreate(BaseModel):
     strip_url: Optional[str] = None
     background_image_url: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    fields: Optional[list[ApplePassFieldResponse]] = None
+    dynamic_fields: Optional[list[dict]] = None
 
 class AppleTemplateUpdate(BaseModel):
     """Model for updating an Apple Wallet template"""
@@ -154,6 +168,8 @@ class AppleTemplateUpdate(BaseModel):
     strip_url: Optional[str] = None
     background_image_url: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    fields: Optional[list[ApplePassFieldResponse]] = None
+    dynamic_fields: Optional[list[dict]] = None
 
 class AppleTemplateResponse(BaseModel):
     """Model for Apple Template response"""
@@ -172,6 +188,7 @@ class AppleTemplateResponse(BaseModel):
     strip_url: Optional[str] = None
     background_image_url: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    fields: list[ApplePassFieldResponse] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
@@ -310,14 +327,6 @@ class ApplePassCreate(BaseModel):
     auth_token: str = Field(..., description="Authentication token for the pass")
     pass_data: Optional[Dict[str, Any]] = Field(None, description="Pass-specific data fields")
     store_card_data: Optional[Dict[str, Any]] = Field(None, description="Visual data for the pass")
-
-
-class ApplePassFieldResponse(BaseModel):
-    """Model for relational fields inside an Apple Pass"""
-    type: str
-    key: str
-    label: Optional[str] = None
-    value: str
 
 
 class ApplePassResponse(BaseModel):

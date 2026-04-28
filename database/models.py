@@ -328,6 +328,23 @@ class ApplePassesTemplate(Base):
 
     # Relationships
     passes = relationship("ApplePassesData", back_populates="template", cascade="all, delete-orphan", passive_deletes=True)
+    fields = relationship("AppleTemplateFields", back_populates="template", cascade="all, delete-orphan", passive_deletes=True)
+
+
+class AppleTemplateFields(Base):
+    """Stores default anatomical fields (header, primary, secondary, etc.) for an Apple Template."""
+    __tablename__ = "Apple_Template_Fields"
+
+    field_id = Column(Integer, primary_key=True, autoincrement=True)
+    template_id = Column(String(255), ForeignKey("Apple_Pass_Templates.template_id", ondelete="CASCADE"), nullable=False, index=True)
+
+    field_type = Column(Enum("header", "primary", "secondary", "auxiliary", "back", name="apple_field_type"), nullable=False)
+    field_key = Column(String(100), nullable=False)
+    label = Column(String(255))
+    value = Column(Text, nullable=False)
+
+    # Relationships
+    template = relationship("ApplePassesTemplate", back_populates="fields")
 
 
 class ApplePassesData(Base):

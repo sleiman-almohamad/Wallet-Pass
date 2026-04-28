@@ -1971,3 +1971,336 @@ APPLE WALLET LOGS
 [0] [2026-04-23 21:24:57 +0200] Unregister task (for device d7395955f6f575d4a3aa25da12a976b2, pass type pass.com.mfo.wallet, serial number pass_1776938895_reinhard_völcker; with web service url https://bigger-bob-receives-golden.trycloudflare.com) encountered error: Authentication failure
 ================================
 
+[2026-04-28 10:50:16.356109] AUTH CHECK: Serial=c_qrtest_f45cc15a, IncomingToken=55fbb30964464cfa83bdf30f103deff8, DBToken=55fbb30964464cfa83bdf30f103deff8
+[2026-04-28 10:50:16.849656] AUTH CHECK: Serial=c_qrtest_f45cc15a, IncomingToken=55fbb30964464cfa83bdf30f103deff8, DBToken=55fbb30964464cfa83bdf30f103deff8
+[2026-04-28 10:50:49.233985] AUTH CHECK: Serial=c_qrtest_f45cc15a, IncomingToken=55fbb30964464cfa83bdf30f103deff8, DBToken=55fbb30964464cfa83bdf30f103deff8
+[2026-04-28 11:09:22.389014] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=15f29c62375547829a8c46a7d1c82e22
+[2026-04-28 11:09:22.837376] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=15f29c62375547829a8c46a7d1c82e22
+[2026-04-28 11:12:56.146745] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=15f29c62375547829a8c46a7d1c82e22
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 11:12:56 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 09:09:23 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_765a3c57'.
+================================
+
+[2026-04-28 11:35:29.581907] AUTH CHECK: Serial=c_qrtest_c043b055, IncomingToken=d8ea3169645545149ea17452193ad7a5, DBToken=d8ea3169645545149ea17452193ad7a5
+[2026-04-28 11:35:29.732008] AUTH CHECK: Serial=c_qrtest_c043b055, IncomingToken=d8ea3169645545149ea17452193ad7a5, DBToken=d8ea3169645545149ea17452193ad7a5
+[2026-04-28 11:35:54.054495] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+[2026-04-28 11:35:54.291096] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 11:35:54 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 11:35:54 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 11:35:54.468033] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 11:35:54 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 11:36:11.287744] AUTH CHECK: Serial=c_qrtest_c043b055, IncomingToken=d8ea3169645545149ea17452193ad7a5, DBToken=d8ea3169645545149ea17452193ad7a5
+[2026-04-28 11:36:26.515615] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 11:36:26 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 11:37:11.779536] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 11:37:11 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 11:46:22.869483] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 11:46:22 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 11:46:50.123814] AUTH CHECK: Serial=c_qrtest_a4c3c1a6, IncomingToken=9f3daddf867c4b32981ab279222d83af, DBToken=9f3daddf867c4b32981ab279222d83af
+[2026-04-28 11:46:50.700498] AUTH CHECK: Serial=c_qrtest_a4c3c1a6, IncomingToken=9f3daddf867c4b32981ab279222d83af, DBToken=9f3daddf867c4b32981ab279222d83af
+[2026-04-28 11:47:23.514097] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 11:47:23 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 11:57:25.011250] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 11:57:24 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:00:25.679138] AUTH CHECK: Serial=c_qrtest_a4c3c1a6, IncomingToken=9f3daddf867c4b32981ab279222d83af, DBToken=9f3daddf867c4b32981ab279222d83af
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:00:26 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 09:46:51 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_a4c3c1a6'.
+================================
+
+[2026-04-28 12:00:33.938534] AUTH CHECK: Serial=c_qrtest_a4c3c1a6, IncomingToken=9f3daddf867c4b32981ab279222d83af, DBToken=9f3daddf867c4b32981ab279222d83af
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:00:34 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 10:00:26 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_a4c3c1a6'.
+================================
+
+[2026-04-28 12:00:50.886876] AUTH CHECK: Serial=c_qrtest_a4c3c1a6, IncomingToken=9f3daddf867c4b32981ab279222d83af, DBToken=9f3daddf867c4b32981ab279222d83af
+[2026-04-28 12:01:01.190775] AUTH CHECK: Serial=c_qrtest_a4c3c1a6, IncomingToken=9f3daddf867c4b32981ab279222d83af, DBToken=9f3daddf867c4b32981ab279222d83af
+[2026-04-28 12:07:39.643331] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:07:39 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:09:17.446798] AUTH CHECK: Serial=c_qrtest_a4c3c1a6, IncomingToken=9f3daddf867c4b32981ab279222d83af, DBToken=9f3daddf867c4b32981ab279222d83af
+[2026-04-28 12:09:40.704404] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=90609c200e354b378f46d8901d8790df
+[2026-04-28 12:09:41.169264] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=90609c200e354b378f46d8901d8790df
+[2026-04-28 12:12:28.905981] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+[2026-04-28 12:12:29.220240] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:12:28 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:12:29 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:12:29.396838] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:12:29 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:13:29.634714] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:13:29 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:17:10.413312] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:17:10 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:17:28.384477] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:17:28.948258] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:17:45.680061] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:17:45 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:17:51.651308] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:18:05.563639] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:18:05 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:18:05.775490] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:18:17.759154] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:18:37.206931] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:18:52.231933] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:18:52 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 10:18:37 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_0ddc7a62'.
+================================
+
+[2026-04-28 12:19:23.765104] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:19:23 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:19:42.799460] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:21:43.152179] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:24:56.708361] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:25:11.695155] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:25:12 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 10:24:57 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_0ddc7a62'.
+================================
+
+[2026-04-28 12:25:39.195270] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:28:07.195789] AUTH CHECK: Serial=c_qrtest_0ddc7a62, IncomingToken=e4b411e64bb14af1a914dc2ec98a3423, DBToken=e4b411e64bb14af1a914dc2ec98a3423
+[2026-04-28 12:30:08.553869] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:30:08 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:37:17.840481] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:37:18.353380] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:37:46.814881] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:40:13.561607] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:40:13 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:41:52.143788] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:42:59.866937] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:43:00 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 10:41:52 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_4384e4df'.
+================================
+
+[2026-04-28 12:44:43.565503] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:44:44 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 10:43:00 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_4384e4df'.
+================================
+
+[2026-04-28 12:46:33.209674] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:46:50.854561] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:47:05.524522] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:47:34.885969] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:47:36.346426] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:47:36 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:47:56.357849] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:47:57 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 10:47:35 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_4384e4df'.
+================================
+
+[2026-04-28 12:48:20.447799] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:50:28.637668] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:50:28 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 12:50:28.978398] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:53:05.402682] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 12:53:07 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 10:50:29 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_4384e4df'.
+================================
+
+[2026-04-28 12:56:48.519037] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 12:59:09.491120] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:01:10.575473] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:02:06.731700] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:02:26.903968] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:05:57.377973] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:06:23.974919] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 13:06:24 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 11:05:58 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_4384e4df'.
+================================
+
+[2026-04-28 13:08:04.779428] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:10:22.923394] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:10:59.442047] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 13:11:00 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 11:10:23 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_4384e4df'.
+================================
+
+[2026-04-28 13:12:26.765590] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:13:45.387650] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 13:13:46 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 11:12:27 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_4384e4df'.
+================================
+
+[2026-04-28 13:16:16.243947] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:16:37.337192] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:16:57.909844] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:17:37.234140] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 13:17:37 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 13:17:37.535353] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:20:47.776045] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 13:20:47 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 13:22:35.321818] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:41:01.184800] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:41:20.739548] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:41:21.106183] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d

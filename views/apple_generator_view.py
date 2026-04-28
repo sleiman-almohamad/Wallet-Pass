@@ -533,6 +533,59 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
     def on_template_change(e):
         if template_dropdown.value:
             form_controls_column.visible = True
+            
+            # Fetch template details to pre-populate
+            try:
+                t_id = template_dropdown.value
+                t_data = api_client.get_apple_template(t_id)
+                if t_data:
+                    # Pre-populate static fields
+                    if dynamic_field_refs["apple_org_name"].current:
+                        dynamic_field_refs["apple_org_name"].current.value = t_data.get("organization_name", "")
+                    if dynamic_field_refs["apple_logo_text"].current:
+                        dynamic_field_refs["apple_logo_text"].current.value = t_data.get("logo_text", "")
+                    if dynamic_field_refs["apple_logo_url"].current:
+                        dynamic_field_refs["apple_logo_url"].current.value = t_data.get("logo_url", "")
+                    if dynamic_field_refs["apple_strip_url"].current:
+                        dynamic_field_refs["apple_strip_url"].current.value = t_data.get("strip_url", "")
+                    if dynamic_field_refs["apple_background_image_url"].current:
+                        dynamic_field_refs["apple_background_image_url"].current.value = t_data.get("background_image_url", "")
+                    if dynamic_field_refs["apple_thumbnail_url"].current:
+                        dynamic_field_refs["apple_thumbnail_url"].current.value = t_data.get("thumbnail_url", "")
+                    
+                    # Colors
+                    custom_color_state["background_color"] = t_data.get("background_color") or "#1a1a2e"
+                    custom_color_state["foreground_color"] = t_data.get("foreground_color") or "#ffffff"
+                    custom_color_state["label_color"] = t_data.get("label_color") or "#bbbbbb"
+                    
+                    # Rebuild color pickers to reflect new colors
+                    bg_color_picker_container.content = create_color_picker(
+                        page, color_state_obj, _on_color, "background_color", "Background Color"
+                    )
+                    fg_color_picker_container.content = create_color_picker(
+                        page, color_state_obj, _on_color, "foreground_color", "Foreground Color"
+                    )
+                    lbl_color_picker_container.content = create_color_picker(
+                        page, color_state_obj, _on_color, "label_color", "Label Color"
+                    )
+                    
+                    # Dynamic fields
+                    if "fields" in t_data:
+                        # Map API fields to editor format
+                        mapped = []
+                        for f in t_data["fields"]:
+                            mapped.append({
+                                "field_type": f.get("type"),
+                                "label": f.get("label", ""),
+                                "value": f.get("value", "")
+                            })
+                        apple_field_editor.load_fields(mapped)
+                    
+                    check_image_fields_logic()
+                    _sync_preview()
+                    
+            except Exception as ex:
+                print(f"Error pre-populating from template: {ex}")
         else:
             form_controls_column.visible = False
         page.update()

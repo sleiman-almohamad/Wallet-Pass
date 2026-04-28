@@ -113,15 +113,72 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
             status_text.color = "red"
             page.update()
 
+    def generate_styled_qr(data, label):
+        """Generate a QR code with the campaign name styled below it."""
+        from PIL import Image, ImageDraw, ImageFont
+        try:
+            # 1. Create QR
+            qr = qrcode.QRCode(version=1, box_size=10, border=2)
+            qr.add_data(data)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+            
+            # 2. Add Label
+            width, height = qr_img.size
+            padding = 40
+            new_height = height + padding
+            
+            # Create a new white canvas
+            canvas = Image.new("RGB", (width, new_height), "white")
+            canvas.paste(qr_img, (0, 0))
+            
+            # Draw text
+            draw = ImageDraw.Draw(canvas)
+            # Try to get a decent font
+            try:
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+            except:
+                font = ImageFont.load_default()
+                
+            # Center text
+            text_box = draw.textbbox((0, 0), label, font=font)
+            text_width = text_box[2] - text_box[0]
+            text_x = (width - text_width) // 2
+            text_y = height - 5
+            
+            draw.text((text_x, text_y), label, fill=PRIMARY, font=font)
+            
+            # 3. Export to Base64
+            buffered = BytesIO()
+            canvas.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            return img_str
+        except Exception as e:
+            print(f"QR Gen Error: {e}")
+            return None
+
     def create_campaign_card(c):
-        # Generate a small QR preview if possible
+        # Generate URL
         public_url = getattr(configs, "PUBLIC_URL", "http://localhost:8100")
         campaign_url = f"{public_url}/c/{c['slug']}"
+        
+        # Generate QR
+        qr_b64 = generate_styled_qr(campaign_url, c['campaign_name'])
         
         return ft.Container(
             content=ft.Column([
                 ft.Row([
-                    ft.Icon(ft.Icons.QR_CODE_2, color=PRIMARY, size=32),
+                    ft.Container(
+                        content=ft.Image(
+                            src_base64=qr_b64,
+                            width=80,
+                            height=90,
+                            fit=ft.ImageFit.CONTAIN,
+                            tooltip="Right click to save"
+                        ) if qr_b64 else ft.Icon(ft.Icons.QR_CODE_2, color=PRIMARY, size=32),
+                        on_click=lambda _: page.launch_url(f"{getattr(configs, 'PUBLIC_URL', 'http://localhost:8100')}/api/campaigns/{c['id']}/qr"),
+                        tooltip="Download QR Code"
+                    ),
                     ft.Column([
                         ft.Text(c['campaign_name'], size=16, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
                         ft.Text(f"Slug: /{c['slug']}", size=12, color=PRIMARY, weight=ft.FontWeight.W_600),
@@ -129,7 +186,7 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
                     ft.Row([
                         ft.IconButton(ft.Icons.COPY_ALL, tooltip="Copy Link", on_click=lambda _: page.set_clipboard(campaign_url)),
                         ft.IconButton(ft.Icons.OPEN_IN_NEW, tooltip="Open Landing Page", on_click=lambda _: page.launch_url(campaign_url)),
-                        ft.IconButton(ft.Icons.EDIT_OUTLINE, on_click=lambda _: show_editor(c), tooltip="Edit Campaign"),
+                        ft.IconButton(ft.Icons.EDIT_OUTLINED, on_click=lambda _: show_editor(c), tooltip="Edit Campaign"),
                         ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color="red700", on_click=lambda _: delete_campaign(c['id']))
                     ])
                 ]),
@@ -185,6 +242,32 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
                         landing_title_tf,
                         landing_subtitle_tf,
                     ], spacing=15)),
+
+                    # QR Code Preview & Download
+                    card(ft.Column([
+                        section_title("Distribution QR Code", ft.Icons.QR_CODE_2),
+                        ft.Text("Download this branded QR code to distribute the campaign.", size=12, color=TEXT_SECONDARY),
+                        ft.Row([
+                            ft.Container(
+                                content=ft.Column([
+                                    ft.Image(
+                                        src_base64=generate_styled_qr(
+                                            (getattr(configs, 'PUBLIC_URL', 'http://localhost:8100') + '/c/' + slug_tf.value) if slug_tf.value else "https://yourlink.com", 
+                                            campaign_name_tf.value or "Campaign"
+                                        ),
+                                        width=150, height=180, fit=ft.ImageFit.CONTAIN,
+                                        tooltip="Right click to save"
+                                    ),
+                                    ft.ElevatedButton(
+                                        "Download QR", icon=ft.Icons.DOWNLOAD,
+                                        on_click=lambda _: page.launch_url(f"{getattr(configs, 'PUBLIC_URL', 'http://localhost:8100')}/api/campaigns/{editing_campaign['id']}/qr")
+                                    )
+                                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                                padding=10, border=ft.border.all(1, BORDER_COLOR), border_radius=8,
+                                alignment=ft.alignment.center
+                            )
+                        ], alignment=ft.MainAxisAlignment.CENTER)
+                    ], spacing=15)) if editing_campaign else ft.Container(),
 
                     ft.Container(
                         content=ft.ElevatedButton(

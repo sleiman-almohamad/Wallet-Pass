@@ -224,7 +224,8 @@ async def create_class(class_data: ClassCreate):
             if class_data.base_color is None: class_data.base_color = parsed_metadata.get('base_color')
             if class_data.logo_url is None: class_data.logo_url = parsed_metadata.get('logo_url')
             if class_data.hero_image_url is None: class_data.hero_image_url = parsed_metadata.get('hero_image_url')
-            if class_data.header_text is None: class_data.header_text = parsed_metadata.get('header_text')
+            if class_data.header is None: class_data.header = parsed_metadata.get('header')
+            if class_data.subheader is None: class_data.subheader = parsed_metadata.get('subheader')
             if class_data.card_title is None: class_data.card_title = parsed_metadata.get('card_title')
             if class_data.event_name is None: class_data.event_name = parsed_metadata.get('event_name')
             if class_data.venue_name is None: class_data.venue_name = parsed_metadata.get('venue_name')
@@ -562,7 +563,8 @@ async def sync_classes_from_google():
                         "base_color": metadata.get("base_color"),
                         "logo_url": metadata.get("logo_url"),
                         "hero_image_url": metadata.get("hero_image_url"),
-                        "header_text": metadata.get("header_text"),
+                        "header": metadata.get("header"),
+                        "subheader": metadata.get("subheader"),
                         "card_title": metadata.get("card_title"),
                         "event_name": metadata.get("event_name"),
                         "venue_name": metadata.get("venue_name"),
@@ -587,7 +589,8 @@ async def sync_classes_from_google():
                         base_color=metadata.get('base_color'),
                         logo_url=metadata.get('logo_url'),
                         hero_image_url=metadata.get('hero_image_url'),
-                        header_text=metadata.get('header_text'),
+                        header=metadata.get('header'),
+                        subheader=metadata.get('subheader'),
                         card_title=metadata.get('card_title'),
                         event_name=metadata.get('event_name'),
                         venue_name=metadata.get('venue_name'),
@@ -654,16 +657,49 @@ async def delete_class(class_id: str):
 async def create_apple_template(template_data: AppleTemplateCreate):
     """Create a new Apple Wallet template"""
     try:
+        # Extract all fields from model
+        data = template_data.model_dump(exclude_unset=True)
+        
+        # Map dynamic fields or regular fields
+        fields = []
+        source_fields = data.get("dynamic_fields") or data.get("fields")
+        
+        if source_fields:
+            for i, f in enumerate(source_fields):
+                # Handle both dict (from dynamic_fields) and model (from fields)
+                if hasattr(f, "model_dump"): # It's a Pydantic model
+                    f = f.model_dump()
+                
+                fields.append({
+                    "type": f.get("field_type") or f.get("type"),
+                    "key": f.get("key", f"{f.get('field_type', 'field')}_{i}"),
+                    "label": f.get("label", ""),
+                    "value": f.get("value", "")
+                })
+        
+        # Remove original fields from data to pass as kwargs
+        if "fields" in data: data.pop("fields")
+        if "dynamic_fields" in data: data.pop("dynamic_fields")
+        
+        # Pull out required positional args
+        tid = data.pop("template_id")
+        tname = data.pop("template_name")
+        pstyle = data.pop("pass_style")
+        p_type_id = data.pop("pass_type_identifier")
+        team_id = data.pop("team_identifier")
+
         success = db.create_apple_template(
-            template_id=template_data.template_id,
-            template_name=template_data.template_name,
-            pass_style=template_data.pass_style,
-            pass_type_identifier=template_data.pass_type_identifier,
-            team_identifier=template_data.team_identifier
+            template_id=tid,
+            template_name=tname,
+            pass_style=pstyle,
+            pass_type_identifier=p_type_id,
+            team_identifier=team_id,
+            fields=fields,
+            **data
         )
         if success:
             return MessageResponse(
-                message=f"Apple Template '{template_data.template_id}' created successfully",
+                message=f"Apple Template '{tid}' created successfully",
                 success=True
             )
         else:
@@ -703,6 +739,24 @@ async def update_apple_template(template_id: str, template_data: AppleTemplateUp
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
         
+        # Map dynamic fields or regular fields to DB 'fields' list
+        source_fields = update_data.get("dynamic_fields") or update_data.get("fields")
+        
+        if source_fields is not None:
+            fields = []
+            for i, f in enumerate(source_fields):
+                if hasattr(f, "model_dump"): # It's a Pydantic model
+                    f = f.model_dump()
+
+                fields.append({
+                    "type": f.get("field_type") or f.get("type"),
+                    "key": f.get("key", f"{f.get('field_type', 'field')}_{i}"),
+                    "label": f.get("label", ""),
+                    "value": f.get("value", "")
+                })
+            update_data["fields"] = fields
+            if "dynamic_fields" in update_data: update_data.pop("dynamic_fields")
+
         success = db.update_apple_template(template_id, **update_data)
         if success:
             # Trigger push for all passes using this template
@@ -791,10 +845,10 @@ async def update_apple_pass(serial_number: str, pass_data: ApplePassUpdate):
             template_id = updated_pass.get("template_id", "")
             template_data = db.get_apple_template(template_id)
             
-            class_data = {
+            class_data = template_data or {
                 "class_type": "Generic",
                 "template_id": template_id,
-                "pass_style": template_data.get("pass_style", "eventTicket") if template_data else "eventTicket",
+                "pass_style": "eventTicket",
             }
             
             apple_service.create_pass(
@@ -835,9 +889,10 @@ async def download_apple_pass(serial_number: str):
         from services.apple_wallet_service import AppleWalletService
         apple_service = AppleWalletService()
         
-        class_data_for_service = {
+        class_data_for_service = template_data or {
             "class_type": "Generic",
             "template_id": pass_data.get('template_id', ''),
+            "pass_style": "eventTicket",
         }
         
         # Construct payload with pass data
@@ -948,6 +1003,18 @@ async def create_apple_pass(pass_data: ApplePassCreate):
                     "label": m.get("header", ""),
                     "value": m.get("body", "")
                 })
+
+        # DUPLICATE PREVENTION: Check if pass already exists for Template + Name + Email
+        existing_serial = db.find_duplicate_apple_pass(
+            template_id=pass_data.template_id,
+            name=pass_data.holder_name,
+            email=pass_data.holder_email
+        )
+        if existing_serial:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"An Apple pass for this holder and template already exists ({existing_serial})"
+            )
 
         success = db.create_apple_pass(
             serial_number=pass_data.serial_number,
@@ -1703,10 +1770,10 @@ async def send_apple_template_notification(template_id: str, request: Notificati
             
             # 2. Regenerate the pass
             template_info = db.get_apple_template(template_id)
-            class_data = {
+            class_data = template_info or {
                 "class_type": "Generic",
                 "template_id": template_id,
-                "pass_style": template_info.get("pass_style", "eventTicket") if template_info else "eventTicket",
+                "pass_style": "eventTicket",
             }
             updated_p = db.get_apple_pass(serial)
             apple_service.create_pass(class_data=class_data, pass_data=updated_p, object_id=serial)
@@ -1931,10 +1998,10 @@ async def get_updated_apple_pass(
         from services.apple_wallet_service import AppleWalletService
         apple_service = AppleWalletService()
         
-        class_data_for_service = {
+        class_data_for_service = template_data or {
             "class_type": "Generic",
             "template_id": pass_data.get('template_id', ''),
-            "pass_style": template_data.get("pass_style", "eventTicket") if template_data else "eventTicket",
+            "pass_style": "eventTicket",
         }
         
         pass_payload = pass_data.get("visual_data", {})
@@ -2078,19 +2145,30 @@ async def generate_campaign_pass(request: Request, slug: str):
             # Fallback to Google if no Apple template defined
             return await _generate_google_link(campaign, holder_name, holder_email)
             
-        import uuid
-        serial_number = f"c_{slug}_{uuid.uuid4().hex[:8]}"
-        auth_token = uuid.uuid4().hex
-        
-        # Create in DB
-        success = db.create_apple_pass(
-            serial_number=serial_number,
+        # Check for existing pass (Duplicate Prevention)
+        existing_serial = db.find_duplicate_apple_pass(
             template_id=campaign['apple_template_id'],
-            holder_name=holder_name,
-            holder_email=holder_email,
-            auth_token=auth_token,
-            visual_data=db.get_apple_template(campaign['apple_template_id'])
+            name=holder_name,
+            email=holder_email
         )
+        
+        if existing_serial:
+            serial_number = existing_serial
+            success = True
+            print(f"♻️ [QR] Reusing existing Apple Pass: {serial_number}")
+        else:
+            serial_number = f"c_{slug}_{uuid.uuid4().hex[:8]}"
+            auth_token = uuid.uuid4().hex
+            
+            # Create in DB
+            success = db.create_apple_pass(
+                serial_number=serial_number,
+                template_id=campaign['apple_template_id'],
+                holder_name=holder_name,
+                holder_email=holder_email,
+                auth_token=auth_token,
+                visual_data=db.get_apple_template(campaign['apple_template_id'])
+            )
         
         if success:
             # Generate .pkpass
@@ -2102,9 +2180,10 @@ async def generate_campaign_pass(request: Request, slug: str):
             template_data = db.get_apple_template(campaign['apple_template_id'])
             
             apple_service.create_pass(
-                class_data={
-                    "class_type": template_data.get("pass_style", "storeCard"),
-                    "template_id": campaign['apple_template_id']
+                class_data=template_data or {
+                    "class_type": "Generic",
+                    "template_id": campaign['apple_template_id'],
+                    "pass_style": "eventTicket",
                 },
                 pass_data=pass_data,
                 object_id=serial_number
@@ -2127,32 +2206,107 @@ async def _generate_google_link(campaign, name, email):
     object_id = f"{configs.ISSUER_ID}.g_{campaign['slug']}_{uuid.uuid4().hex[:8]}"
     
     # Create in DB
-    success = db.create_pass(
-        object_id=object_id,
-        class_id=campaign['google_class_id'],
-        holder_name=name,
-        holder_email=email,
-        pass_data={} # Add default metadata from class if needed
-    )
+    try:
+        from exceptions import DuplicateRecordError
+        success = db.create_pass(
+            object_id=object_id,
+            class_id=campaign['google_class_id'],
+            holder_name=name,
+            holder_email=email,
+            pass_data={} # Add default metadata from class if needed
+        )
+    except Exception as e:
+        # Check if it's a duplicate
+        if "Duplicate entry" in str(e) or "already exists" in str(e).lower():
+            existing = db.find_pass_by_email(campaign['google_class_id'], email)
+            if existing:
+                object_id = existing['object_id']
+                success = True
+            else:
+                raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        else:
+            raise HTTPException(status_code=500, detail=f"Failed to create pass: {str(e)}")
     
     if success:
         if wallet_client:
-             # Fetch the synthesized class_json logic is usually in db_manager
-             pass_data = db.get_pass(object_id)
+             # Fetch the synthesized pass data from DB
+             pass_data_raw = db.get_pass(object_id)
+             
+             # Prepare the full object payload for the JWT
+             # This ensures all required fields (like card_title) are included in the link
+             object_payload = None
+             c_type = pass_data_raw.get('class_type', 'Generic')
+             
+             if c_type == 'Generic':
+                 object_payload = wallet_client.build_generic_object(
+                     object_id=object_id,
+                     class_id=campaign['google_class_id'],
+                     holder_name=name,
+                     holder_email=email,
+                     pass_data=pass_data_raw.get('pass_data', {}),
+                     status=pass_data_raw.get('status')
+                 )
+             
+             # Use the correct arguments for generate_save_link
              google_link = wallet_client.generate_save_link(
-                 class_id=campaign['google_class_id'],
                  object_id=object_id,
-                 holder_name=name,
-                 holder_email=email,
-                 pass_data=pass_data.get('pass_data', {})
+                 class_id=campaign['google_class_id'],
+                 class_type=c_type,
+                 object_payload=object_payload
              )
              return Response(headers={"Location": google_link}, status_code=303)
     
     raise HTTPException(status_code=500, detail="Failed to generate Google Wallet link")
 
+@app.get("/api/campaigns/{slug_or_id}/qr", tags=["Campaigns"])
+async def get_campaign_qr(slug_or_id: str):
+    """Generate and return the branded QR code for a campaign."""
+    from fastapi.responses import StreamingResponse
+    import qrcode
+    from io import BytesIO
+    from PIL import Image, ImageDraw, ImageFont
+    
+    campaign = db.get_campaign(slug_or_id)
+    if not campaign:
+         raise HTTPException(404, "Campaign not found")
+    
+    public_url = getattr(configs, 'PUBLIC_URL', 'http://localhost:8100')
+    campaign_url = f"{public_url}/c/{campaign['slug']}"
+    label = campaign.get('campaign_name', 'Campaign')
+    
+    # 1. Create QR
+    qr = qrcode.QRCode(version=1, box_size=10, border=2)
+    qr.add_data(campaign_url)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+    
+    # 2. Add Label
+    width, height = qr_img.size
+    padding = 40
+    canvas = Image.new("RGB", (width, height + padding), "white")
+    canvas.paste(qr_img, (0, 0))
+    draw = ImageDraw.Draw(canvas)
+    
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+    except:
+        font = ImageFont.load_default()
+    
+    text_box = draw.textbbox((0, 0), label, font=font)
+    text_width = text_box[2] - text_box[0]
+    draw.text(((width - text_width) // 2, height - 5), label, fill="#6200EE", font=font)
+    
+    # 3. Stream
+    buf = BytesIO()
+    canvas.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png", headers={
+        "Content-Disposition": f"attachment; filename=qr_{campaign['slug']}.png"
+    })
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api.api:app", host="0.0.0.0", port=8000, reload=True)
+    import configs
+    uvicorn.run("api.api:app", host=configs.API_HOST, port=configs.API_PORT, reload=True)
 

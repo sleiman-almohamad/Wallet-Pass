@@ -237,6 +237,18 @@ class JSONTemplateManager:
                 "contentDescription": {"defaultValue": {"language": "en-US", "value": "Hero Image"}}
             }
 
+        card_title = kwargs.get("card_title")
+        if card_title:
+            template["cardTitle"] = {"defaultValue": {"language": "en-US", "value": str(card_title)}}
+
+        header_text = kwargs.get("header_text")
+        if header_text:
+            template["header"] = {"defaultValue": {"language": "en-US", "value": str(header_text)}}
+
+        issuer_name = kwargs.get("issuer_name")
+        if issuer_name:
+            template["issuerName"] = str(issuer_name)
+
         text_module_rows = kwargs.get("text_module_rows", [])
         
         # Build class-level textModulesData for default values

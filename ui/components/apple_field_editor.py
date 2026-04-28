@@ -128,6 +128,7 @@ class AppleFieldEditor:
             "auxiliary": [],
             "back": [],
         }
+        self.main_column = None
 
         # UI Containers for each section
         self.sections_ui = {
@@ -171,7 +172,7 @@ class AppleFieldEditor:
 
     def _update_add_buttons(self, main_column=None):
         col = main_column or self.main_column
-        if not col: return
+        if not col or not hasattr(col, "controls"): return
         
         for i, category in enumerate(["header", "primary", "secondary", "auxiliary", "back"]):
             # Each cat_container is at index `i` in main_column
@@ -270,6 +271,10 @@ class AppleFieldEditor:
                     })
         return result
 
+    def get_fields(self):
+        """Alias for get_fields_data() for compatibility."""
+        return self.get_fields_data()
+
     def set_fields_data(self, fields_list):
         """Populates the UI from a list of dicts."""
         # Clear existing
@@ -287,6 +292,10 @@ class AppleFieldEditor:
                     self._add_field(cat, field.get("label", ""), field.get("value", ""))
                     
         self._update_add_buttons()
+
+    def load_fields(self, fields_list):
+        """Alias for set_fields_data() for compatibility."""
+        self.set_fields_data(fields_list)
         # Don't trigger change on initial load to avoid redundant triggers
 
     def reset(self):

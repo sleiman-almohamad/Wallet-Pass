@@ -2304,3 +2304,45 @@ APPLE WALLET LOGS
 [2026-04-28 13:41:01.184800] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
 [2026-04-28 13:41:20.739548] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
 [2026-04-28 13:41:21.106183] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:49:53.464345] AUTH CHECK: Serial=c_qrtest_765a3c57, IncomingToken=15f29c62375547829a8c46a7d1c82e22, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 13:49:53 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 13:51:05.943791] AUTH CHECK: Serial=c_qrtest_6d303098, IncomingToken=90609c200e354b378f46d8901d8790df, DBToken=None
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 13:51:05 +0200] Unregister task (for device 48ae3e7bf7725a7e89d29442cfe167d1, pass type pass.com.mfo.wallet, serial number c_qrtest_6d303098; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
+================================
+
+[2026-04-28 13:52:06.487085] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:52:14.472669] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 13:52:15 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 11:52:06 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_4384e4df'.
+================================
+
+[2026-04-28 13:52:32.050386] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:52:50.209952] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:53:06.799182] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:53:23.206748] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:54:31.796035] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-28 13:54:33 +0200] Web service error for pass.com.mfo.wallet (https://pubs-friendly-shed-triangle.trycloudflare.com): Server ignored the 'if-modified-since' header (Tue, 28 Apr 2026 11:53:23 GMT) and returned the full unchanged pass data for serial number 'c_qrtest_4384e4df'.
+================================
+
+[2026-04-28 13:56:36.435739] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 13:57:20.858235] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 14:01:53.364682] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 14:02:23.205350] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d
+[2026-04-28 14:02:43.508714] AUTH CHECK: Serial=c_qrtest_4384e4df, IncomingToken=b603a1687ee8457581a1a49dbb21c82d, DBToken=b603a1687ee8457581a1a49dbb21c82d

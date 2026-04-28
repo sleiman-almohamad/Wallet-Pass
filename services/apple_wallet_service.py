@@ -260,12 +260,27 @@ class AppleWalletService:
         auxiliary_fields = []
         back_fields = []
 
+        import re
         for f_key, f in merged_fields_map.items():
             ftype = f["type"]
+            f_val = f["value"]
+            f_label = f["label"]
+
+            # Process links ONLY for backFields as Apple doesn't support HTML elsewhere
+            if ftype == "back" and isinstance(f_val, str):
+                # 1. Markdown style: [Click Here](https://link.com) -> <a href="...">Click Here</a>
+                f_val = re.sub(r'\[([^\]]+)\]\((https?://[^\s\)]+)\)', r'<a href="\2">\1</a>', f_val)
+                
+                # 2. Check for manual/auto-hyperlink (Single raw URL)
+                # If the value is ONLY a URL, wrap it with the field label for a cleaner look
+                if f_val.strip().startswith(("http://", "https://")) and "<a href" not in f_val:
+                    display_text = f_label if f_label and f_label.strip() else "Open Link"
+                    f_val = f'<a href="{f_val.strip()}">{display_text}</a>'
+
             field_dict = {
                 "key": f["key"],
-                "label": f["label"],
-                "value": f["value"]
+                "label": f_label,
+                "value": f_val
             }
             if ftype == "header": header_fields.append(field_dict)
             elif ftype == "primary": primary_fields.append(field_dict)

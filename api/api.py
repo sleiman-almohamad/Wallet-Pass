@@ -10,6 +10,7 @@ import copy
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import sys
+import uuid
 from pathlib import Path
 import mysql.connector
 from fastapi.templating import Jinja2Templates

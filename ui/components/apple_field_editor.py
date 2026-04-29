@@ -16,7 +16,6 @@ class EmojiPicker:
             with open(emoji_path, "r", encoding="utf-8") as f:
                 raw_cats = json.load(f)
              
-            # Map Github gemoji categories to nicer Tab names
             name_map = {
                 "Smileys & Emotion": "😀 Smileys",
                 "People & Body": "👋 People",
@@ -96,7 +95,7 @@ class AppleFieldEditor:
     """
     Dynamic Field Editor for Apple Wallet Passes.
     Supports primary (max 1), secondary (max 4), auxiliary (max 4), and back (unlimited) fields.
-    Each field has a Label and a Value.
+    Now includes relocation arrows for reordering items.
     """
 
     LIMITS = {
@@ -120,7 +119,6 @@ class AppleFieldEditor:
         self.on_change = on_change
         self.emoji_picker = EmojiPicker(self.page) if self.page else None
         
-        # Structure: dict of category -> list of Dicts {"label": TextField, "value": TextField, "row": ft.Row}
         self.fields = {
             "header": [],
             "primary": [],
@@ -130,7 +128,6 @@ class AppleFieldEditor:
         }
         self.main_column = None
 
-        # UI Containers for each section
         self.sections_ui = {
             "header": ft.Column(spacing=8),
             "primary": ft.Column(spacing=8),
@@ -152,8 +149,6 @@ class AppleFieldEditor:
                 style=ft.ButtonStyle(color="blue")
             )
             
-            # Store button ref in the category dict if needed, or update dynamically
-            # Here we just wrap them in a Column
             cat_container = ft.Column([
                 ft.Row([title_text, add_button], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 self.sections_ui[category],
@@ -175,7 +170,6 @@ class AppleFieldEditor:
         if not col or not hasattr(col, "controls"): return
         
         for i, category in enumerate(["header", "primary", "secondary", "auxiliary", "back"]):
-            # Each cat_container is at index `i` in main_column
             cat_container = col.controls[i]
             row_header = cat_container.controls[0]
             add_button = row_header.controls[1]
@@ -187,6 +181,64 @@ class AppleFieldEditor:
             
         if hasattr(self, 'main_column') and self.main_column and self.main_column.page:
             self.main_column.update()
+
+    def _render_category(self, category):
+        self.sections_ui[category].controls.clear()
+        
+        is_back = (category == "back")
+        fields_list = self.fields[category]
+        
+        for index, field in enumerate(fields_list):
+            lbl_tf = field["label_tf"]
+            val_tf = field["value_tf"]
+            
+            up_btn = ft.IconButton(
+                icon=ft.Icons.ARROW_UPWARD,
+                icon_size=16,
+                tooltip="Move Up",
+                on_click=lambda e, idx=index, cat=category: self._move_field(cat, idx, -1),
+                disabled=(index == 0)
+            )
+            down_btn = ft.IconButton(
+                icon=ft.Icons.ARROW_DOWNWARD,
+                icon_size=16,
+                tooltip="Move Down",
+                on_click=lambda e, idx=index, cat=category: self._move_field(cat, idx, 1),
+                disabled=(index == len(fields_list) - 1)
+            )
+            
+            remove_btn = ft.IconButton(
+                icon=ft.Icons.DELETE_OUTLINE,
+                icon_color="red400",
+                tooltip="Remove Field",
+                on_click=lambda e, idx=index, cat=category: self._remove_field(cat, idx)
+            )
+            
+            row = ft.Row(
+                [lbl_tf, val_tf, up_btn, down_btn, remove_btn], 
+                spacing=8, 
+                vertical_alignment=ft.CrossAxisAlignment.START if is_back else ft.CrossAxisAlignment.CENTER
+            )
+            
+            field["row"] = row
+            self.sections_ui[category].controls.append(row)
+            
+        self._update_add_buttons()
+        if hasattr(self, 'main_column') and self.main_column and self.main_column.page:
+            self.sections_ui[category].update()
+
+    def _move_field(self, category, index, delta):
+        new_index = index + delta
+        if 0 <= new_index < len(self.fields[category]):
+            self.fields[category][index], self.fields[category][new_index] = self.fields[category][new_index], self.fields[category][index]
+            self._render_category(category)
+            self._trigger_change()
+
+    def _remove_field(self, category, index):
+        if 0 <= index < len(self.fields[category]):
+            self.fields[category].pop(index)
+            self._render_category(category)
+            self._trigger_change()
 
     def _add_field(self, category, label_val="", value_val=""):
         if len(self.fields[category]) >= self.LIMITS[category]:
@@ -201,13 +253,14 @@ class AppleFieldEditor:
             hint_text=f"{self.TITLES[category]} Label",
             expand=1, border_radius=8, text_size=13,
             on_change=on_text_change,
-            suffix=ft.IconButton(
-                icon=ft.Icons.EMOJI_EMOTIONS,
-                icon_size=16,
-                tooltip="Add Emoji",
-                on_click=lambda e: self.emoji_picker.open(lbl_tf, on_text_change) if self.emoji_picker else None
-            )
         )
+        lbl_tf.suffix = ft.IconButton(
+            icon=ft.Icons.EMOJI_EMOTIONS,
+            icon_size=16,
+            tooltip="Add Emoji",
+            on_click=lambda e: self.emoji_picker.open(lbl_tf, on_text_change) if self.emoji_picker else None
+        )
+
         is_back = (category == "back")
 
         val_tf = ft.TextField(
@@ -219,42 +272,70 @@ class AppleFieldEditor:
             multiline=is_back,
             min_lines=3 if is_back else 1,
             max_lines=10 if is_back else 1,
-            suffix=ft.IconButton(
-                icon=ft.Icons.EMOJI_EMOTIONS,
-                icon_size=16,
-                tooltip="Add Emoji",
-                on_click=lambda e: self.emoji_picker.open(val_tf, on_text_change) if self.emoji_picker else None
-            )
+        )
+        val_tf.suffix = ft.IconButton(
+            icon=ft.Icons.EMOJI_EMOTIONS,
+            icon_size=16,
+            tooltip="Add Emoji",
+            on_click=lambda e: self.emoji_picker.open(val_tf, on_text_change) if self.emoji_picker else None
         )
 
-        remove_btn = ft.IconButton(
-            icon=ft.Icons.DELETE_OUTLINE,
-            icon_color="red400",
-            tooltip="Remove Field"
-        )
-        
-        row = ft.Row([lbl_tf, val_tf, remove_btn], spacing=12, vertical_alignment=ft.CrossAxisAlignment.START if is_back else ft.CrossAxisAlignment.CENTER)
-
-        
         field_obj = {
             "label_tf": lbl_tf,
             "value_tf": val_tf,
-            "row": row
+            "row": None
         }
         
-        def remove_row(e, f_obj=field_obj, cat=category):
-            self.fields[cat].remove(f_obj)
-            self.sections_ui[cat].controls.remove(f_obj["row"])
-            self._update_add_buttons()
+        self.fields[category].append(field_obj)
+        self._render_category(category)
+        self._trigger_change()
+
+    def _add_field_no_render(self, category, label_val="", value_val=""):
+        if len(self.fields[category]) >= self.LIMITS[category]:
+            return
+
+        def on_text_change(e):
             self._trigger_change()
 
-        remove_btn.on_click = remove_row
+        lbl_tf = ft.TextField(
+            label="Label", 
+            value=label_val, 
+            hint_text=f"{self.TITLES[category]} Label",
+            expand=1, border_radius=8, text_size=13,
+            on_change=on_text_change,
+        )
+        lbl_tf.suffix = ft.IconButton(
+            icon=ft.Icons.EMOJI_EMOTIONS,
+            icon_size=16,
+            tooltip="Add Emoji",
+            on_click=lambda e: self.emoji_picker.open(lbl_tf, on_text_change) if self.emoji_picker else None
+        )
 
+        is_back = (category == "back")
+
+        val_tf = ft.TextField(
+            label="Value", 
+            value=value_val, 
+            hint_text=f"{self.TITLES[category]} Value",
+            expand=1, border_radius=8, text_size=13,
+            on_change=on_text_change,
+            multiline=is_back,
+            min_lines=3 if is_back else 1,
+            max_lines=10 if is_back else 1,
+        )
+        val_tf.suffix = ft.IconButton(
+            icon=ft.Icons.EMOJI_EMOTIONS,
+            icon_size=16,
+            tooltip="Add Emoji",
+            on_click=lambda e: self.emoji_picker.open(val_tf, on_text_change) if self.emoji_picker else None
+        )
+
+        field_obj = {
+            "label_tf": lbl_tf,
+            "value_tf": val_tf,
+            "row": None
+        }
         self.fields[category].append(field_obj)
-        self.sections_ui[category].controls.append(row)
-        
-        self._update_add_buttons()
-        self._trigger_change()
 
     def get_fields_data(self):
         """Returns a list of dicts: [{'field_type': str, 'label': str, 'value': str}]"""
@@ -263,7 +344,7 @@ class AppleFieldEditor:
             for field in self.fields[category]:
                 lbl = field["label_tf"].value
                 val = field["value_tf"].value
-                if lbl or val:  # Only add if at least one is not empty
+                if lbl or val:
                     result.append({
                         "field_type": category,
                         "label": lbl or "",
@@ -272,34 +353,28 @@ class AppleFieldEditor:
         return result
 
     def get_fields(self):
-        """Alias for get_fields_data() for compatibility."""
         return self.get_fields_data()
 
     def set_fields_data(self, fields_list):
-        """Populates the UI from a list of dicts."""
-        # Clear existing
         for cat in self.fields:
             self.fields[cat].clear()
             self.sections_ui[cat].controls.clear()
             
-        if not fields_list:
-            # Initialize with one empty row for each category for better UX (or just let user click Add)
-            pass
-        else:
+        if fields_list:
             for field in fields_list:
                 cat = field.get("field_type")
                 if cat in self.fields:
-                    self._add_field(cat, field.get("label", ""), field.get("value", ""))
+                    self._add_field_no_render(cat, field.get("label", ""), field.get("value", ""))
+                    
+        for cat in self.fields:
+            self._render_category(cat)
                     
         self._update_add_buttons()
 
     def load_fields(self, fields_list):
-        """Alias for set_fields_data() for compatibility."""
         self.set_fields_data(fields_list)
-        # Don't trigger change on initial load to avoid redundant triggers
 
     def reset(self):
-        """Clear all dynamic fields and reset internal lists."""
         for cat in self.fields:
             self.fields[cat].clear()
             self.sections_ui[cat].controls.clear()

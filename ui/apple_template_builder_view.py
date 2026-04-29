@@ -1,6 +1,7 @@
 """
 Apple Template Builder View
-Allows users to create and manage Apple Wallet (.pkpass) templates.
+Allows users to create custom Apple Wallet (.pkpass) template blueprints.
+Visually aligned to the Google Wallet builder for total workflow harmony.
 """
 
 import flet as ft
@@ -11,26 +12,43 @@ from database.models import SessionLocal, ApplePassesTemplate
 
 def create_apple_template_builder(page: ft.Page, state, api_client=None):
     """
-    Create the Apple Template Builder interface.
+    Create the redesigned Apple Template Builder interface.
     """
     
     # UI References
-    template_name_ref = ft.Ref[ft.TextField]()
-    pass_style_ref = ft.Ref[ft.Dropdown]()
-    status_text_ref = ft.Ref[ft.Text]()
+    template_name_tf = ft.TextField(
+        label="Template Name *",
+        hint_text="e.g., Coffee Rewards Template",
+        width=380, border_radius=8, text_size=13
+    )
+    
+    pass_style_dd = ft.Dropdown(
+        label="Pass Style",
+        value="generic",
+        width=380, border_radius=8, text_size=13,
+        options=[
+            ft.dropdown.Option("generic", "Generic"),
+            ft.dropdown.Option("storecard", "Store Card"),
+            ft.dropdown.Option("boardingpass", "Boarding Pass"),
+            ft.dropdown.Option("coupon", "Coupon"),
+            ft.dropdown.Option("eventticket", "Event Ticket"),
+        ]
+    )
+    
+    status_text = ft.Text("", size=12)
 
     def on_save_click(e):
-        tname = template_name_ref.current.value
-        pstyle = pass_style_ref.current.value
+        tname = template_name_tf.value.strip()
+        pstyle = pass_style_dd.value
 
-        if not all([tname, pstyle]):
-            status_text_ref.current.value = "⚠️ Please fill all required fields."
-            status_text_ref.current.color = "orange"
+        if not tname:
+            status_text.value = "⚠️ Please provide a Template Name."
+            status_text.color = "orange"
             page.update()
             return
 
-        status_text_ref.current.value = "⏳ Saving template..."
-        status_text_ref.current.color = "blue"
+        status_text.value = "⏳ Saving template..."
+        status_text.color = "blue"
         page.update()
 
         try:
@@ -50,17 +68,16 @@ def create_apple_template_builder(page: ft.Page, state, api_client=None):
                 db_session.commit()
             
             # --- Success Dialog ---
-            def dialog_dismissed(e):
+            def dialog_dismissed(evt):
                 on_reset_click(None)
-                page.update()
 
-            def close_dlg(e):
+            def close_dlg(evt):
                 page.close(succ_dlg)
 
             succ_dlg = ft.AlertDialog(
                 modal=False,
-                title=ft.Text("✅ Template Created", weight=ft.FontWeight.BOLD),
-                content=ft.Text(f"Apple Pass template '{tname}' has been created successfully.", size=13),
+                title=ft.Text("✅ Success", weight=ft.FontWeight.BOLD),
+                content=ft.Text(f"Apple Pass template blueprint '{tname}' successfully deployed.", size=13),
                 on_dismiss=dialog_dismissed,
                 actions=[
                     ft.TextButton("Close", on_click=close_dlg),
@@ -68,25 +85,20 @@ def create_apple_template_builder(page: ft.Page, state, api_client=None):
             )
             page.open(succ_dlg)
             
-            status_text_ref.current.value = ""
-            
-            # Clear form
-            template_name_ref.current.value = ""
-            pass_style_ref.current.value = "generic"
-            
-            # Refresh UI lists
+            # Refresh other views
             if state:
                 state.refresh_ui("apple_templates_list")
+                state.refresh_ui("apple_manage_templates_list")
         except Exception as ex:
-            status_text_ref.current.value = f"❌ Error: {str(ex)}"
-            status_text_ref.current.color = "red"
+            status_text.value = f"❌ Error: {str(ex)}"
+            status_text.color = "red"
         
         page.update()
 
     def on_reset_click(e):
-        template_name_ref.current.value = ""
-        pass_style_ref.current.value = "generic"
-        status_text_ref.current.value = ""
+        template_name_tf.value = ""
+        pass_style_dd.value = "generic"
+        status_text.value = ""
         page.update()
 
     # Layout
@@ -95,57 +107,32 @@ def create_apple_template_builder(page: ft.Page, state, api_client=None):
         padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
         bgcolor=BG_COLOR,
         content=ft.Column([
-            ft.Text("Apple Template Builder", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-            ft.Text("Configure your Apple Wallet pass templates and certificates.", color=TEXT_SECONDARY, size=13),
-            ft.Container(height=10),
+            ft.Text("Create New Template (Apple Wallet)", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+            ft.Text("Fill out core parameters to begin crafting your digital wallet blueprint.", color=TEXT_SECONDARY, size=13),
+            ft.Container(height=8),
             
             card(ft.Column([
-                section_title("Template Metadata", ft.Icons.SETTINGS_OUTLINED),
-                ft.Text("Basic identifiers and branding name for this template.", size=12, color=TEXT_SECONDARY),
-                ft.Row([
-                    ft.TextField(
-                        ref=template_name_ref,
-                        label="Template Name *",
-                        hint_text="e.g., My Store Loyalty",
-                        expand=True, border_radius=8, text_size=13,
-                    ),
-                ], spacing=15),
-                
-                ft.Container(height=5),
-                
-                section_title("Apple Certificates & Style", ft.Icons.VERIFIED_OUTLINED),
-                ft.Text("Style must match your Pass Type ID and Certificate capabilities. Technical identifiers are auto-fetched.", size=12, color=TEXT_SECONDARY),
-                ft.Dropdown(
-                    ref=pass_style_ref,
-                    label="Pass Style *",
-                    value="generic",
-                    border_radius=8, text_size=13,
-                    options=[
-                        ft.dropdown.Option("generic", "Generic"),
-                        ft.dropdown.Option("storeCard", "Store Card"),
-                        ft.dropdown.Option("boardingPass", "Boarding Pass"),
-                        ft.dropdown.Option("coupon", "Coupon"),
-                        ft.dropdown.Option("eventTicket", "Event Ticket"),
-                    ]
-                ),
+                section_title("Template Configuration", ft.Icons.STYLE),
+                template_name_tf,
+                pass_style_dd,
                 
                 ft.Container(height=15),
                 ft.Row([
                     ft.ElevatedButton(
-                        "Save Apple Template",
-                        icon=ft.Icons.SAVE_ALT_OUTLINED,
+                        "Save Blueprint",
+                        icon=ft.Icons.SAVE,
                         on_click=on_save_click,
-                        bgcolor=PRIMARY, color="white", height=45,
+                        bgcolor=PRIMARY, color="white", height=45, width=200,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
                     ),
                     ft.OutlinedButton(
-                        "Reset Form", 
+                        "Reset", 
                         icon=ft.Icons.REFRESH, 
                         on_click=on_reset_click,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
                     )
                 ], spacing=12),
-                ft.Text(ref=status_text_ref, value="", size=12),
+                status_text,
             ], spacing=15)),
             
         ], spacing=15, scroll=ft.ScrollMode.AUTO, expand=True)

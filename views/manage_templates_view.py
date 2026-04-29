@@ -172,7 +172,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             if class_type == "Generic":
                 # For Generic, dynamic form only handles Text Modules Blueprint
                 initial_rows = class_data.get("text_module_rows", [])
-                manage_row_editor = TextModuleRowEditor(initial_rows, state=state, mode="class")
+                manage_row_editor = TextModuleRowEditor(initial_rows, state=state, mode="class", page=page)
                 manage_dynamic_form = DynamicForm(
                     field_mappings={}, 
                     initial_json={}, 

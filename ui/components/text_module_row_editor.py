@@ -8,18 +8,15 @@ import flet as ft
 from typing import List, Dict, Callable
 
 class TextModuleRowEditor(ft.Container):
-    def __init__(self, initial_rows: List[Dict] = None, on_change: Callable[[List[Dict]], None] = None, state=None, mode="class"):
-        """
-        initial_rows: list of dictionaries representing rows 
-                     (class mode expects dicts with row_index, left_header, etc.)
-                     (pass mode expects flat list of dicts with id, header, body)
-        on_change: callback when the data changes
-        mode: "class" (outputs TextModuleRowModel style) or "pass" (outputs flat TextModuleData style)
-        """
+    def __init__(self, initial_rows: List[Dict] = None, on_change: Callable[[List[Dict]], None] = None, state=None, mode="class", page: ft.Page = None):
         super().__init__()
         self.mode = mode
         self.state = state
+        self.page = page
         self.on_change_callback = on_change
+        
+        from ui.components.apple_field_editor import EmojiPicker
+        self.emoji_picker = EmojiPicker(self.page) if self.page else None
         
         # Internal state always managed as "rows" of 3 columns
         self.rows = []
@@ -170,7 +167,7 @@ class TextModuleRowEditor(ft.Container):
 
             label = f"{col_prefix.capitalize()} {display_label}"
             
-            return ft.TextField(
+            tf = ft.TextField(
                 label=label,
                 value=row_data.get(field_name, ""),
                 expand=True,
@@ -179,6 +176,13 @@ class TextModuleRowEditor(ft.Container):
                 content_padding=5,
                 on_change=lambda e: self.update_field(index, field_name, e.control.value)
             )
+            tf.suffix = ft.IconButton(
+                icon=ft.Icons.EMOJI_EMOTIONS,
+                icon_size=16,
+                tooltip="Add Emoji",
+                on_click=lambda e: self.emoji_picker.open(tf, lambda evt: self.update_field(index, field_name, tf.value)) if self.emoji_picker else None
+            )
+            return tf
 
         def build_col(prefix):
             col_type = row_data.get(f"{prefix}_type", "text")

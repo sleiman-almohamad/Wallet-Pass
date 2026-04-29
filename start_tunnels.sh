@@ -34,8 +34,8 @@ FRONTEND_PID=$!
 echo "⏳ Waiting for URLs to generate..."
 sleep 5
 
-BACKEND_URL=$(grep -o 'https://[-0-9a-z]*\.trycloudflare.com' /tmp/tunnel_backend.log | head -n 1)
-FRONTEND_URL=$(grep -o 'https://[-0-9a-z]*\.trycloudflare.com' /tmp/tunnel_frontend.log | head -n 1)
+BACKEND_URL=$(grep -a -o 'https://[-0-9a-z]*\.trycloudflare.com' /tmp/tunnel_backend.log | head -n 1)
+FRONTEND_URL=$(grep -a -o 'https://[-0-9a-z]*\.trycloudflare.com' /tmp/tunnel_frontend.log | head -n 1)
 
 echo ""
 echo "=========================================="

@@ -8,15 +8,13 @@ import httpx
 
 def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Container:
     """
-    Build the Apple Manage Templates view.
+    Build the Apple Manage Templates view using a dropdown layout exactly like the Google template editor.
     """
-    
     # ── Local state ──
-    current_view = "list" # "list" or "edit"
     editing_template = None
     
     # Editor Refs
-    template_name_tf = ft.TextField(label="Template Name", expand=1, border_radius=8)
+    template_name_tf = ft.TextField(label="Template Name", expand=1, border_radius=8, text_size=13)
     pass_style_dd = ft.Dropdown(
         label="Pass Style",
         options=[
@@ -26,15 +24,14 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             ft.dropdown.Option("eventticket", "Event Ticket"),
             ft.dropdown.Option("boardingpass", "Boarding Pass"),
         ],
-        expand=1, border_radius=8
+        expand=1, border_radius=8, text_size=13
     )
-    org_name_tf = ft.TextField(label="Organization Name", expand=1, border_radius=8)
-    pass_type_id_tf = ft.TextField(label="Pass Type ID", expand=1, border_radius=8, value=configs.APPLE_PASS_TYPE_ID)
-    team_id_tf = ft.TextField(label="Team ID", expand=1, border_radius=8, value=configs.APPLE_TEAM_ID)
+    org_name_tf = ft.TextField(label="Organization Name", expand=1, border_radius=8, text_size=13)
+    pass_type_id_tf = ft.TextField(label="Pass Type ID", expand=1, border_radius=8, text_size=13, value=configs.APPLE_PASS_TYPE_ID)
+    team_id_tf = ft.TextField(label="Team ID", expand=1, border_radius=8, text_size=13, value=configs.APPLE_TEAM_ID)
     
-    logo_url_tf = ft.TextField(label="Logo URL", expand=1, border_radius=8)
-    icon_url_tf = ft.TextField(label="Icon URL", expand=1, border_radius=8)
-    strip_url_tf = ft.TextField(label="Strip (Hero) URL", expand=1, border_radius=8)
+    logo_icon_url_tf = ft.TextField(label="Logo & Icon URL", expand=1, border_radius=8, text_size=13)
+    strip_url_tf = ft.TextField(label="Strip (Hero) URL", expand=1, border_radius=8, text_size=13)
     
     colors = {
         "bg": "#FFFFFF",
@@ -42,8 +39,11 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
         "label": "#666666"
     }
     
-    color_pickers_col = ft.Column(spacing=20)
-    field_editor = AppleFieldEditor(state)
+    color_picker_container_bg = ft.Container()
+    color_picker_container_fg = ft.Container()
+    color_picker_container_lbl = ft.Container()
+    
+    field_editor = AppleFieldEditor(page=page)
     
     # ── File Picker Logic ──
     current_picker_target = None
@@ -62,11 +62,9 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                     current_picker_target.value = uploaded_url
                     current_picker_target.update()
                 else:
-                    status_text.value = f"❌ Upload failed: {response.text}"
-                    status_text.color = "red"
+                    _set_status(f"❌ Upload failed: {response.text}", "red")
             except Exception as ex:
-                status_text.value = f"❌ File picker error: {ex}"
-                status_text.color = "red"
+                _set_status(f"❌ File picker error: {ex}", "red")
         current_picker_target = None
         page.update()
 
@@ -78,68 +76,102 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
         current_picker_target = target_tf
         file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
 
-    # ── UI Containers ──
-    templates_list_column = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO, expand=True)
-    status_text = ft.Text("", size=12)
-    view_content = ft.Column(expand=True)
+    # ── UI Controls ──
+    apple_templates_dropdown = ft.Dropdown(
+        label="Select Template ID",
+        width=380, border_radius=8, text_size=13,
+        options=[],
+        on_change=lambda e: show_template(e)
+    )
+
+    manage_status = ft.Text("", size=12)
+
+    branding_container = ft.Column(visible=False, spacing=15)
+
+    def _set_status(msg, color="green"):
+        manage_status.value = msg
+        manage_status.color = color
+        page.update()
 
     def load_templates():
-        templates_list_column.controls.clear()
         try:
             templates = api_client.get_apple_templates() if api_client else []
-            if not templates:
-                templates_list_column.controls.append(
-                    ft.Text("No Apple templates found.", color=TEXT_SECONDARY, size=13, italic=True)
-                )
+            if templates and len(templates) > 0:
+                apple_templates_dropdown.options = [
+                    ft.dropdown.Option(key=t["template_id"], text=f"{t['template_name']} ({t.get('pass_style', 'Unknown')})")
+                    for t in templates
+                ]
+                if not apple_templates_dropdown.value or apple_templates_dropdown.value not in [t['template_id'] for t in templates]:
+                    apple_templates_dropdown.value = templates[0]["template_id"]
+                
+                apple_templates_dropdown.hint_text = ""
+                _set_status(f"Loaded {len(templates)} templates")
+                show_template(None)
             else:
-                for t in templates:
-                    templates_list_column.controls.append(create_template_card(t))
+                apple_templates_dropdown.options = []
+                apple_templates_dropdown.value = None
+                apple_templates_dropdown.hint_text = "No Apple templates found"
+                _set_status("No Apple templates found", "blue")
+                branding_container.visible = False
+            page.update()
         except Exception as e:
-            status_text.value = f"❌ Error: {str(e)}"
-            status_text.color = "red"
-        render_view()
+            _set_status(f"❌ Error loading templates: {e}", "red")
 
-    def show_editor(template=None):
-        nonlocal current_view, editing_template
-        current_view = "edit"
-        editing_template = template
-        
-        if template:
+    state.register_refresh_callback("apple_manage_templates_list", load_templates)
+
+    def show_template(e):
+        nonlocal editing_template
+
+        if not apple_templates_dropdown.value:
+            return
+
+        _set_status("Loading template blueprint...", "blue")
+
+        try:
+            tid = apple_templates_dropdown.value
+            templates = api_client.get_apple_templates()
+            template = next((t for t in templates if t["template_id"] == tid), None)
+            
+            if not template:
+                _set_status("❌ Template blueprint not found", "red"); return
+
+            editing_template = template
+            
             template_name_tf.value = template.get("template_name", "")
             pass_style_dd.value = template.get("pass_style", "generic")
             org_name_tf.value = template.get("organization_name", "")
             pass_type_id_tf.value = template.get("pass_type_identifier", configs.APPLE_PASS_TYPE_ID)
             team_id_tf.value = template.get("team_identifier", configs.APPLE_TEAM_ID)
-            logo_url_tf.value = template.get("logo_url", "")
-            icon_url_tf.value = template.get("icon_url", "")
+            
+            logo_icon_url_tf.value = template.get("logo_url") or template.get("icon_url") or ""
             strip_url_tf.value = template.get("strip_url", "")
+            
             colors["bg"] = template.get("background_color") or "#FFFFFF"
             colors["fg"] = template.get("foreground_color") or "#000000"
             colors["label"] = template.get("label_color") or "#666666"
+            
             field_editor.load_fields(template.get("fields", []))
-        else:
-            template_name_tf.value = "New Template"
-            pass_style_dd.value = "generic"
-            org_name_tf.value = ""
-            logo_url_tf.value = ""
-            icon_url_tf.value = ""
-            strip_url_tf.value = ""
-            colors["bg"] = "#FFFFFF"
-            colors["fg"] = "#000000"
-            colors["label"] = "#666666"
-            field_editor.load_fields([])
 
-        # Initialize color pickers
-        color_pickers_col.controls = [
-            create_color_picker(page, colors, lambda: None, "bg", "Background"),
-            create_color_picker(page, colors, lambda: None, "fg", "Foreground (Text)"),
-            create_color_picker(page, colors, lambda: None, "label", "Label Color"),
-        ]
-        
-        render_view()
+            # Rebuild color pickers
+            color_picker_container_bg.content = create_color_picker(page, colors, lambda: None, "bg", "Background")
+            color_picker_container_fg.content = create_color_picker(page, colors, lambda: None, "fg", "Foreground (Text)")
+            color_picker_container_lbl.content = create_color_picker(page, colors, lambda: None, "label", "Label Color")
+            
+            branding_container.visible = True
+            _set_status("Template loaded")
+            
+        except Exception as ex:
+            _set_status(f"❌ Error: {ex}", "red")
+        page.update()
 
-    def save_template(e):
+    def update_and_sync_handler(e):
+        if not apple_templates_dropdown.value:
+            return
+
+        _set_status("⏳ Saving Blueprint Changes...", "blue")
         try:
+            tid = apple_templates_dropdown.value
+            
             data = {
                 "template_name": template_name_tf.value,
                 "pass_style": pass_style_dd.value,
@@ -149,118 +181,106 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                 "background_color": colors["bg"],
                 "foreground_color": colors["fg"],
                 "label_color": colors["label"],
-                "logo_url": logo_url_tf.value,
-                "icon_url": icon_url_tf.value,
+                "logo_url": logo_icon_url_tf.value,
+                "icon_url": logo_icon_url_tf.value,
                 "strip_url": strip_url_tf.value,
                 "dynamic_fields": field_editor.get_fields()
             }
+
+            api_client.update_apple_template(tid, **data)
             
-            if editing_template:
-                api_client.update_apple_template(editing_template["template_id"], **data)
-            else:
-                # generate ID
-                import uuid
-                tid = f"tpl_{str(uuid.uuid4())[:8]}"
-                api_client.create_apple_template(template_id=tid, **data)
-            
-            nonlocal current_view
-            current_view = "list"
+            save_dlg = ft.AlertDialog(
+                title=ft.Text("✅ Template Blueprint Saved"),
+                content=ft.Text("Successfully updated the Apple template locally."),
+                actions=[ft.TextButton("Perfect", on_click=lambda _: page.close(save_dlg))]
+            )
+            page.open(save_dlg)
             load_templates()
+            
         except Exception as ex:
-            status_text.value = f"❌ Save error: {ex}"
-            status_text.color = "red"
-            page.update()
+            _set_status(f"❌ Error: {ex}", "red")
 
-    def delete_template(template_id):
-        try:
-            api_client.delete_apple_template(template_id)
-            load_templates()
-        except Exception as e:
-            status_text.value = f"❌ Delete error: {str(e)}"
-            status_text.color = "red"
-            page.update()
-
-    def create_template_card(t):
-        return ft.Container(
-            content=ft.Row([
-                ft.Icon(ft.Icons.STYLE, color=PRIMARY, size=24),
-                ft.Column([
-                    ft.Text(t['template_name'], size=14, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
-                    ft.Text(f"ID: {t['template_id']} | Style: {t['pass_style']}", size=11, color=TEXT_SECONDARY),
-                ], spacing=2, expand=True),
-                ft.IconButton(ft.Icons.EDIT_OUTLINED, on_click=lambda _: show_editor(t), tooltip="Edit Blueprint"),
-                ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color="red700", on_click=lambda _: delete_template(t['template_id']))
-            ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
-            padding=15, border=ft.border.all(1, BORDER_COLOR), border_radius=8, bgcolor="white"
+    def delete_template_handler(e):
+        if not apple_templates_dropdown.value:
+            return
+            
+        def confirm_delete(_):
+            try:
+                tid = apple_templates_dropdown.value
+                api_client.delete_apple_template(tid)
+                page.close(confirm_dlg)
+                apple_templates_dropdown.value = None
+                load_templates()
+            except Exception as ex:
+                _set_status(f"❌ Delete error: {ex}", "red")
+        
+        confirm_dlg = ft.AlertDialog(
+            title=ft.Text("⚠️ Confirm Deletion"),
+            content=ft.Text(f"Are you sure you want to delete template '{apple_templates_dropdown.value}'? This cannot be undone."),
+            actions=[
+                ft.TextButton("Yes, Delete", icon=ft.Icons.DELETE, icon_color="red", on_click=confirm_delete),
+                ft.TextButton("Cancel", on_click=lambda _: page.close(confirm_dlg))
+            ]
         )
-
-    def render_view():
-        view_content.controls.clear()
-        if current_view == "list":
-            view_content.controls = [
-                ft.Row([
-                    ft.Column([
-                        ft.Text("Apple Templates", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-                        ft.Text("List of all Apple Wallet pass templates.", color=TEXT_SECONDARY, size=13),
-                    ], expand=True),
-                    ft.ElevatedButton("Create New", icon=ft.Icons.ADD, on_click=lambda _: show_editor(), bgcolor=PRIMARY, color="white")
-                ]),
-                ft.Container(height=10),
-                status_text,
-                ft.Container(content=templates_list_column, expand=True)
-            ]
-        else:
-            # Editor View
-            view_content.controls = [
-                ft.Row([
-                    ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda _: back_to_list()),
-                    ft.Text("Template Editor (Apple)", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-                ]),
-                ft.Container(height=10),
-                ft.Column([
-                    card(ft.Column([
-                        section_title("Base Configuration", ft.Icons.SETTINGS),
-                        ft.Row([template_name_tf, pass_style_dd]),
-                        ft.Row([org_name_tf, pass_type_id_tf, team_id_tf]),
-                    ], spacing=15)),
-                    
-                    card(ft.Column([
-                        section_title("Visual Branding", ft.Icons.PALETTE),
-                        ft.Row([
-                            ft.Column([
-                                ft.Row([logo_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(logo_url_tf))]),
-                                ft.Row([icon_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(icon_url_tf))]),
-                                ft.Row([strip_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(strip_url_tf))]),
-                            ], expand=1),
-                            color_pickers_col
-                        ], vertical_alignment=ft.CrossAxisAlignment.START, spacing=20)
-                    ])),
-
-                    card(ft.Column([
-                        section_title("Card Fields (Template Defaults)", ft.Icons.DASHBOARD_CUSTOMIZE),
-                        field_editor.build()
-                    ], spacing=10)),
-
-                    ft.Container(
-                        content=ft.ElevatedButton(
-                            "Save Blueprint", icon=ft.Icons.SAVE, on_click=save_template,
-                            bgcolor=PRIMARY, color="white", height=45, width=200
-                        ),
-                        alignment=ft.alignment.center_right
-                    )
-                ], spacing=15, scroll=ft.ScrollMode.AUTO, expand=True)
-            ]
-        page.update()
-
-    def back_to_list():
-        nonlocal current_view
-        current_view = "list"
-        load_templates()
+        page.open(confirm_dlg)
 
     # Initial load
     load_templates()
 
-    return ft.Container(
-        expand=True, padding=ft.padding.only(left=36, right=36, top=24, bottom=20),
-        bgcolor=BG_COLOR, content=view_content
+    # Layout assembling
+    branding_section = card(ft.Column([
+        section_title("Base & Visual Configuration", ft.Icons.PALETTE),
+        ft.Row([template_name_tf, pass_style_dd]),
+        ft.Row([org_name_tf, pass_type_id_tf, team_id_tf]),
+        ft.Row([
+            ft.Column([
+                ft.Row([logo_icon_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(logo_icon_url_tf))]),
+                ft.Row([strip_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(strip_url_tf))]),
+            ], expand=1),
+            ft.Column([
+                color_picker_container_bg,
+                color_picker_container_fg,
+                color_picker_container_lbl
+            ], spacing=10)
+        ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START),
+    ], spacing=15))
+
+    branding_container.controls = [
+        branding_section,
+        card(ft.Column([
+            section_title("Card Fields (Template Defaults)", ft.Icons.DASHBOARD_CUSTOMIZE),
+            field_editor.build()
+        ], spacing=10)),
+    ]
+
+    main_panel = ft.Container(
+        expand=True,
+        padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
+        bgcolor=BG_COLOR
     )
+
+    main_panel.content = ft.Column([
+        ft.Text("Template Editor (Apple Wallet)", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+        ft.Text("Design the appearance and layout of your passes.", color=TEXT_SECONDARY, size=13),
+        ft.Container(height=8),
+        ft.Row([
+            apple_templates_dropdown,
+            ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color="red700", tooltip="Delete Template", on_click=delete_template_handler)
+        ], alignment=ft.MainAxisAlignment.START),
+        branding_container,
+
+        ft.Container(
+            content=ft.ElevatedButton(
+                "Save Blueprint",
+                icon=ft.Icons.SAVE,
+                on_click=update_and_sync_handler,
+                bgcolor=PRIMARY, color="white", height=45, width=220,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
+            ),
+            padding=ft.padding.only(top=10),
+            alignment=ft.alignment.center_right
+        ),
+        manage_status
+    ], spacing=12, scroll=ft.ScrollMode.AUTO, expand=True)
+
+    return ft.Container(content=main_panel, expand=True, bgcolor=BG_COLOR)

@@ -251,21 +251,39 @@ class JSONTemplateManager:
 
         text_module_rows = kwargs.get("text_module_rows", [])
         
-        # Build class-level textModulesData for default values
-        if text_module_rows:
-            class_text_modules = []
-            for r_idx, row in enumerate(text_module_rows):
-                for pos in ["left", "middle", "right"]:
-                    hdr = row.get(f"{pos}_header")
-                    bdy = row.get(f"{pos}_body")
-                    if hdr or bdy:
+        # Build class-level textModulesData and linksModuleData for default values.
+        # Also build a lookup map from module ID → link array index so we can
+        # reference links by numeric index in detailsTemplateOverride field paths.
+        # Google Wallet requires numeric indexing for linksModuleData
+        # (e.g. "object.linksModuleData[0]"), unlike textModulesData which
+        # supports string ID lookups (e.g. "object.textModulesData['myId']").
+        class_text_modules = []
+        class_link_modules = []
+        link_id_to_index = {}  # e.g. {"row_4_left": 0, "row_5_left": 1, ...}
+        for r_idx, row in enumerate(text_module_rows):
+            for pos in ["left", "middle", "right"]:
+                hdr = row.get(f"{pos}_header")
+                bdy = row.get(f"{pos}_body")
+                m_type = row.get(f"{pos}_type", "text")
+                if hdr or bdy:
+                    m_id = f"row_{r_idx}_{pos}"
+                    if m_type == "link":
+                        if not bdy or not str(bdy).strip():
+                            continue
+                        uri = str(bdy).strip() if str(bdy).strip().startswith(("http://", "https://", "mailto:", "tel:")) else f"https://{str(bdy).strip()}"
+                        link_mod = {"uri": uri}
+                        if hdr: link_mod["description"] = hdr
+                        if m_id: link_mod["id"] = m_id
+                        link_id_to_index[m_id] = len(class_link_modules)
+                        class_link_modules.append(link_mod)
+                    else:
                         class_text_modules.append({
-                            "id": f"row_{r_idx}_{pos}",
+                            "id": m_id,
                             "header": hdr or "",
-                            "body": bdy or ""
+                            "body": str(bdy).strip() if bdy else ""
                         })
-            if class_text_modules:
-                template["textModulesData"] = class_text_modules
+        template["textModulesData"] = class_text_modules
+        template["linksModuleData"] = {"uris": class_link_modules}
         if text_module_rows:
             card_row_template_infos = []
             # Only the first 2 rows are shown on the front of the pass.
@@ -332,15 +350,19 @@ class JSONTemplateManager:
                     for pos in ["left", "middle", "right"]:
                         if back_row.get(f"{pos}_header") or back_row.get(f"{pos}_body"):
                             m_type = back_row.get(f"{pos}_type", "text")
+                            m_id = f"row_{actual_row_idx}_{pos}"
                             if m_type == "link":
-                                field_path = f"object.linksModuleData.uris['row_{actual_row_idx}_{pos}']"
+                                 fields_list = [
+                                     {"fieldPath": f"class.linksModuleData.uris['{m_id}']"},
+                                     {"fieldPath": f"object.linksModuleData.uris['{m_id}']"}
+                                 ]
                             else:
-                                field_path = f"object.textModulesData['row_{actual_row_idx}_{pos}']"
-                                
+                                 fields_list = [{"fieldPath": f"object.textModulesData['{m_id}']"}]
+                                 
                             details_infos.append({
                                 "item": {
                                     "firstValue": {
-                                        "fields": [{"fieldPath": field_path}]
+                                        "fields": fields_list
                                     }
                                 }
                             })

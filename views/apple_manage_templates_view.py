@@ -27,6 +27,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
         expand=1, border_radius=8, text_size=13
     )
     org_name_tf = ft.TextField(label="Organization Name", expand=1, border_radius=8, text_size=13)
+    logo_text_tf = ft.TextField(label="Logo Text", expand=1, border_radius=8, text_size=13)
     pass_type_id_tf = ft.TextField(label="Pass Type ID", expand=1, border_radius=8, text_size=13, value=configs.APPLE_PASS_TYPE_ID)
     team_id_tf = ft.TextField(label="Team ID", expand=1, border_radius=8, text_size=13, value=configs.APPLE_TEAM_ID)
     
@@ -140,6 +141,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             template_name_tf.value = template.get("template_name", "")
             pass_style_dd.value = template.get("pass_style", "generic")
             org_name_tf.value = template.get("organization_name", "")
+            logo_text_tf.value = template.get("logo_text", "")
             pass_type_id_tf.value = template.get("pass_type_identifier", configs.APPLE_PASS_TYPE_ID)
             team_id_tf.value = template.get("team_identifier", configs.APPLE_TEAM_ID)
             
@@ -176,6 +178,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                 "template_name": template_name_tf.value,
                 "pass_style": pass_style_dd.value,
                 "organization_name": org_name_tf.value,
+                "logo_text": logo_text_tf.value,
                 "pass_type_identifier": pass_type_id_tf.value,
                 "team_identifier": team_id_tf.value,
                 "background_color": colors["bg"],
@@ -231,7 +234,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
     branding_section = card(ft.Column([
         section_title("Base & Visual Configuration", ft.Icons.PALETTE),
         ft.Row([template_name_tf, pass_style_dd]),
-        ft.Row([org_name_tf, pass_type_id_tf, team_id_tf]),
+        ft.Row([org_name_tf, logo_text_tf, pass_type_id_tf, team_id_tf]),
         ft.Row([
             ft.Column([
                 ft.Row([logo_icon_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(logo_icon_url_tf))]),

@@ -366,6 +366,7 @@ async def update_class(class_id: str, class_data: ClassUpdate, sync_to_google: b
         if "class_id" in update_data:
             update_data.pop("class_id")
 
+        print("DEBUG update_class text_module_rows:", update_data.get("text_module_rows"))
         # Step 1: Update local database
         success = db.update_class(class_id, **update_data)
         
@@ -1991,6 +1992,29 @@ async def get_updated_apple_pass(
     import os
     try:
         pass_data = _verify_apple_auth(request, serial_number)
+        from email.utils import parsedate_to_datetime
+        
+        # 1. Check If-Modified-Since header
+        if_modified_since = request.headers.get("if-modified-since")
+        pass_updated_at = pass_data.get("updated_at")
+        
+        if if_modified_since and pass_updated_at:
+            try:
+                # pass_updated_at is likely a naive datetime in local time or UTC
+                # Ensure it has timezone info for comparison
+                if pass_updated_at.tzinfo is None:
+                    pass_updated_at = pass_updated_at.replace(tzinfo=timezone.utc)
+                
+                if_mod_dt = parsedate_to_datetime(if_modified_since)
+                
+                # If the pass was updated AT OR BEFORE the if-modified-since time, return 304
+                # We subtract 1 second to account for any rounding in the HTTP date string
+                if pass_updated_at <= if_mod_dt:
+                    logger.info(f"Pass {serial_number} unchanged since {if_modified_since}. Returning 304.")
+                    return Response(status_code=304)
+            except Exception as e:
+                logger.warning(f"Error parsing If-Modified-Since header: {e}")
+
         print(f"🍏 [V1-UPDATE] Device '{request.headers.get('User-Agent')}' is downloading updated pass: {serial_number}")
         logger.info(f"Device requesting updated pass {serial_number}")
         
@@ -2019,9 +2043,10 @@ async def get_updated_apple_pass(
         if not os.path.exists(pkpass_path):
             raise HTTPException(status_code=500, detail="Generated PKPASS file not found on disk")
             
-        modified_time = os.path.getmtime(pkpass_path)
-        # Convert timestamp to true UTC (GMT) for the header
-        last_modified = datetime.fromtimestamp(modified_time, tz=timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')
+        # Use the database updated_at for the Last-Modified header
+        if pass_updated_at.tzinfo is None:
+            pass_updated_at = pass_updated_at.replace(tzinfo=timezone.utc)
+        last_modified = pass_updated_at.strftime('%a, %d %b %Y %H:%M:%S GMT')
         
         return FileResponse(
             path=pkpass_path,

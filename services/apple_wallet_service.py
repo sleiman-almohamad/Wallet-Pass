@@ -268,14 +268,24 @@ class AppleWalletService:
 
             # Process links ONLY for backFields as Apple doesn't support HTML elsewhere
             if ftype == "back" and isinstance(f_val, str):
-                # 1. Markdown style: [Click Here](https://link.com) -> <a href="...">Click Here</a>
-                f_val = re.sub(r'\[([^\]]+)\]\((https?://[^\s\)]+)\)', r'<a href="\2">\1</a>', f_val)
+                # 1. Markdown style: [Click Here](https://link.com) or [Click](link.com) -> <a href="...">Click Here</a>
+                def _md_to_html(match):
+                    text = match.group(1)
+                    url = match.group(2)
+                    if not url.startswith(("http://", "https://")):
+                        url = f"https://{url}"
+                    return f"<a href='{url}'>{text}</a>"
+                
+                f_val = re.sub(r'\[([^\]]+)\]\s*\(\s*([^\s\)]+)\s*\)', _md_to_html, f_val)
                 
                 # 2. Check for manual/auto-hyperlink (Single raw URL)
                 # If the value is ONLY a URL, wrap it with the field label for a cleaner look
-                if f_val.strip().startswith(("http://", "https://")) and "<a href" not in f_val:
+                if f_val.strip().startswith(("http://", "https://", "www.")) and "<a href" not in f_val:
+                    raw_url = f_val.strip()
+                    if raw_url.startswith("www."):
+                        raw_url = f"https://{raw_url}"
                     display_text = f_label if f_label and f_label.strip() else "Open Link"
-                    f_val = f'<a href="{f_val.strip()}">{display_text}</a>'
+                    f_val = f"<a href='{raw_url}'>{display_text}</a>"
 
             field_dict = {
                 "key": f["key"],
@@ -582,20 +592,80 @@ class AppleWalletService:
 
     def send_apple_template_notification(self, template_id: str, message: str = "") -> dict:
         """
-        Send push notifications to all passes using a specific template.
-        Typically triggered when template branding (logo, colors) changes.
+        Propagate template field changes to all child passes, then send
+        push notifications so devices fetch the updated .pkpass.
         """
         from database.db_manager import DatabaseManager
+        import logging
+        log = logging.getLogger(__name__)
+
         db = DatabaseManager()
+
+        # 1. Fetch the latest template data (including updated fields)
+        template = db.get_apple_template(template_id)
+        template_fields = template.get("fields", []) if template else []
+
         passes = db.get_passes_by_apple_template(template_id)
-        
+        log.info(f"APPLE: Propagating template '{template_id}' to {len(passes)} passes "
+                 f"({len(template_fields)} template fields)")
+
         results = {"status": "success", "sent": 0, "failed": 0}
         for p in passes:
-            # Clear any specific admin_message so the pass shows the latest template field values
-            db.update_apple_pass_message(p['serial_number'], "")
-            
-            res = self.send_push_notification(p['serial_number'])
+            serial = p['serial_number']
+
+            # 2. Propagate template fields → pass fields (labels + values)
+            #    Preserve pass-specific fields not present in the template
+            if template_fields:
+                # Get current pass fields so we can preserve pass-only extras
+                full_pass = db.get_apple_pass(serial)
+                pass_fields = full_pass.get("fields", []) if full_pass else []
+
+                # Build a set of template field keys
+                template_keys = set()
+                propagated = []
+                for f in template_fields:
+                    key = f.get("key") or f.get("field_key")
+                    template_keys.add(key)
+                    propagated.append({
+                        "field_type": f.get("field_type") or f.get("type"),
+                        "key": key,
+                        "label": f.get("label", ""),
+                        "value": f.get("value", ""),
+                    })
+
+                # Append pass-only fields (keys not in template) e.g. custom back links
+                for pf in pass_fields:
+                    pf_key = pf.get("key")
+                    if pf_key and pf_key not in template_keys:
+                        propagated.append({
+                            "field_type": pf.get("field_type"),
+                            "key": pf_key,
+                            "label": pf.get("label", ""),
+                            "value": pf.get("value", ""),
+                        })
+
+                db.update_apple_pass(serial, dynamic_fields=propagated)
+                log.info(f"  ↳ Propagated {len(propagated)} fields to pass {serial}")
+
+            # 3. Propagate template-level visual data (colors, images, org name)
+            if template:
+                visual_updates = {}
+                for attr in ["background_color", "foreground_color", "label_color",
+                             "organization_name", "logo_text", "logo_url",
+                             "icon_url", "strip_url"]:
+                    val = template.get(attr)
+                    if val is not None:
+                        visual_updates[attr] = val
+                if visual_updates:
+                    db.update_apple_pass(serial, **visual_updates)
+
+            # 4. Clear any specific admin_message so the pass shows the latest template field values
+            db.update_apple_pass_message(serial, "")
+
+            # 5. Send APNs push so the device fetches the new .pkpass
+            res = self.send_push_notification(serial)
             if res.get("status") == "success":
                 results["sent"] += res.get("sent", 0)
                 results["failed"] += res.get("failed", 0)
+
         return results

@@ -172,7 +172,10 @@ class TextModuleRowEditor(ft.Container):
                 value=row_data.get(field_name, ""),
                 expand=True,
                 text_size=11,
-                height=45,
+                multiline=True,
+                min_lines=2,
+                max_lines=5,
+                height=None,
                 content_padding=5,
                 on_change=lambda e: self.update_field(index, field_name, e.control.value)
             )

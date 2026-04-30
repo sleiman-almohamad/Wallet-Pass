@@ -466,9 +466,12 @@ class WalletClient:
                                 remove_review_status(item)
                     remove_review_status(patch_body)
 
-                    # Use patch instead of update for partial updates (more forgiving)
-                    print(f"Class exists, attempting to patch update...")
-                    return resource.patch(
+                    # Use update instead of patch for full replacement.
+                    # patch() deep-merges nested arrays like detailsItemInfos,
+                    # causing stale items to persist. update() replaces the
+                    # entire resource so the template override is exact.
+                    print(f"Class exists, attempting to update (full replace)...")
+                    return resource.update(
                         resourceId=class_data['id'],
                         body=patch_body
                     ).execute()
@@ -773,25 +776,11 @@ class WalletClient:
     def update_pass_object(self, object_id, class_id, holder_name, holder_email, pass_data, class_type="EventTicket", status=None, notification_message=None, send_notification=True):
         """
         Update an individual pass object in Google Wallet using an ATOMIC patch.
-        
-        This combines data updates and push notifications into ONE request, which
-        is significantly faster and more reliable on Android devices.
-        
-        Args:
-            object_id: Full object ID (with issuer prefix)
-            class_id: Reference class ID (with issuer prefix)
-            holder_name: Name of the pass holder
-            holder_email: Email of the pass holder
-            pass_data: Dictionary with pass-specific data (custom fields)
-            class_type: Type of pass (EventTicket, LoyaltyCard, Generic)
-            status: Optional pass status
-            notification_message: Optional custom notification body message
-            
-        Returns:
-            Updated object from Google Wallet API
         """
         import time as _time
         from datetime import datetime, timedelta
+        import logging
+        log = logging.getLogger(__name__)
 
         try:
             # Ensure IDs have issuer prefix
@@ -893,22 +882,42 @@ class WalletClient:
                     # Generic passes use textModulesData for the front face via cardTemplateOverride.
                     if class_type == "Generic":
                         text_modules = object_data.get("textModulesData", [])
-                        if len(text_modules) >= 2:
-                            # Overwrite the second text module (which appears on the front)
+                        
+                        # SAFETY: If local object_data has no modules but Google HAS modules, 
+                        # preserve them instead of wiping the pass face.
+                        if not text_modules and current_data.get("textModulesData"):
+                            text_modules = current_data.get("textModulesData", [])
+                            object_data["textModulesData"] = text_modules
+                            log.info(f"  ↳ Preserved {len(text_modules)} modules from Google state (local was empty)")
+
+                        # TARGETED UPDATE: User wants Row 2 Left (ID: row_1_left)
+                        target_id = "row_1_left"
+                        target_mod = next((m for m in text_modules if m.get("id") == target_id), None)
+                        
+                        if target_mod:
+                            target_mod["body"] = full_display_message
+                            log.info(f"  ↳ Updated target module '{target_id}' with notification message")
+                        elif len(text_modules) >= 2:
+                            # Fallback to index 1 if specific ID not found
                             text_modules[1]["body"] = full_display_message
-                        elif len(text_modules) == 1:
+                            log.info(f"  ↳ Updated module at index 1 (fallback) with notification message")
+                        else:
+                            # Append if not enough modules
                             text_modules.append({
                                 "header": "Status",
                                 "body": full_display_message,
                                 "id": "status_update"
                             })
+                            log.info(f"  ↳ Appended new status module (no target/fallback found)")
                         
                         # C. Add DEDICATED notification module for the back of the pass
-                        object_data.setdefault("textModulesData", []).append({
-                            "header": "Notification",
-                            "body": msg_body,
-                            "id": "notification_message"
-                        })
+                        # Ensure we don't duplicate it if it already exists
+                        if not any(m.get("id") == "notification_message" for m in text_modules):
+                            object_data.setdefault("textModulesData", []).append({
+                                "header": "Notification",
+                                "body": msg_body,
+                                "id": "notification_message"
+                            })
                 except Exception as e:
                     print(f"Warning: Failed to update pass front fields: {e}")
             # end if send_notification
@@ -954,9 +963,9 @@ class WalletClient:
                 object_data["groupingId"] = f"grp_{uuid.uuid4().hex[:12]}"
             else:
                 # In silent mode, we remove any messages that would trigger a notification
-                # and do NOT rotate groupingId to avoid forcing a device refresh notification.
+                # BUT we still rotate groupingId to force a device refresh so the user sees the edits!
                 object_data.pop("messages", None)
-                object_data.pop("groupingId", None)
+                object_data["groupingId"] = f"grp_{uuid.uuid4().hex[:12]}"
             # endregion
 
 
@@ -1434,7 +1443,14 @@ class WalletClient:
                 m_type = m.get("module_type", m.get("type", "text"))
                 m_body = str(m.get("body", "")).strip()
                 if m_type == "link":
-                    uri = m_body if m_body.startswith(("http://", "https://")) else f"https://{m_body}"
+                    if not m_body:
+                        # Skip empty link, or fallback to text if header exists
+                        if m.get("header"):
+                            text_mod = {"header": m.get("header", ""), "body": ""}
+                            if m.get("id"): text_mod["id"] = m.get("id")
+                            text_mods.append(text_mod)
+                        continue
+                    uri = m_body if m_body.startswith(("http://", "https://", "mailto:", "tel:")) else f"https://{m_body}"
                     link_mod = {"uri": uri}
                     if m.get("header"): link_mod["description"] = m.get("header")
                     if m.get("id"): link_mod["id"] = m.get("id")
@@ -1444,13 +1460,12 @@ class WalletClient:
                     if m.get("id"): text_mod["id"] = m.get("id")
                     text_mods.append(text_mod)
 
-            if text_mods:
-                # User request: first row left header gets holder name
-                if holder_name and len(text_mods) > 0:
-                    text_mods[0]["header"] = holder_name
-                obj["textModulesData"] = text_mods
-            if link_mods:
-                obj["linksModuleData"] = {"uris": link_mods}
+            # Always assign textModulesData and linksModuleData (even if empty) to ensure 
+            # that deletions are properly propagated via PATCH.
+            if holder_name and len(text_mods) > 0:
+                text_mods[0]["header"] = holder_name
+            obj["textModulesData"] = text_mods
+            obj["linksModuleData"] = {"uris": link_mods}
             
             # Add info modules for all other data (non-textModule fields)
             info_label_values = []

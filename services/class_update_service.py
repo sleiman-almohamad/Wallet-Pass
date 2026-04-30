@@ -71,8 +71,61 @@ def propagate_class_update_to_passes(
     }
     
     try:
-        # Fetch all passes for this class
-        passes = db_manager.get_passes_by_class(class_id)
+        # 1. Fetch passes from local DB
+        db_passes = db_manager.get_passes_by_class(class_id)
+        
+        # 2. Fetch passes from Google Wallet
+        google_passes = []
+        try:
+            google_passes = wallet_client.list_class_objects(class_id)
+        except Exception as e:
+            logger.warning(f"Failed to fetch live passes from Google Wallet: {e}")
+
+        # 3. Unify passes by object_id
+        unified_passes_dict = {}
+        
+        # Add DB passes first (trusting their metadata more)
+        for p in db_passes:
+            obj_id = p.get('object_id')
+            unified_passes_dict[obj_id] = {
+                "object_id": obj_id,
+                "holder_name": p.get('holder_name', ''),
+                "holder_email": p.get('holder_email', ''),
+                "pass_data": dict(p.get('pass_data', {}) or {})
+            }
+            
+        # Add Google passes if not already present
+        for item in google_passes:
+            gw_obj = item.get("data", {})
+            if not gw_obj:
+                continue
+                
+            full_object_id = gw_obj.get("id", "")
+            local_object_id = full_object_id.split(".", 1)[1] if "." in full_object_id else full_object_id
+                
+            if local_object_id not in unified_passes_dict and full_object_id not in unified_passes_dict:
+                holder_name = (
+                    gw_obj.get("ticketHolderName")
+                    or gw_obj.get("accountName")
+                    or gw_obj.get("passengerName")
+                    or "Unknown Holder"
+                )
+                holder_email = gw_obj.get("accountId") or f"unknown_{local_object_id}@example.com"
+                
+                # Strip known Google keys out of pass_data
+                p_data = dict(gw_obj)
+                for key in ("id", "classId", "ticketHolderName", "accountName",
+                            "accountId", "passengerName", "state", "textModulesData"):
+                    p_data.pop(key, None)
+                    
+                unified_passes_dict[local_object_id] = {
+                    "object_id": local_object_id,
+                    "holder_name": holder_name,
+                    "holder_email": holder_email,
+                    "pass_data": p_data
+                }
+                
+        passes = list(unified_passes_dict.values())
         result["total_count"] = len(passes)
 
         # region agent log
@@ -84,7 +137,7 @@ def propagate_class_update_to_passes(
                     "id": f"log_{_ts}",
                     "timestamp": _ts,
                     "location": "services/class_update_service.py:propagate_class_update_to_passes:passes_fetched",
-                    "message": "Fetched passes for class",
+                    "message": "Fetched passes for class from DB and Google Wallet",
                     "data": {"class_id": class_id, "total_passes": len(passes)},
                     "runId": "initial",
                     "hypothesisId": "H2"
@@ -98,6 +151,7 @@ def propagate_class_update_to_passes(
             return result
         
         logger.info(f"Found {len(passes)} passes to update for class {class_id}")
+
         
         # Extract class type for pass object updates
         class_type = updated_class.get('class_type', 'EventTicket')

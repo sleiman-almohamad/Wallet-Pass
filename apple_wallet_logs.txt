@@ -2420,3 +2420,400 @@ APPLE WALLET LOGS
 [0] [2026-04-28 18:15:23 +0200] Unregister task (for device a46549aca0b6994d7f831213edcf08dc, pass type pass.com.mfo.wallet, serial number c_qrtest_765a3c57; with web service url https://pubs-friendly-shed-triangle.trycloudflare.com) encountered error: Authentication failure
 ================================
 
+[2026-04-29 13:50:26.369774] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+[2026-04-29 13:50:26.775129] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+[2026-04-29 13:51:24.647001] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:51:26 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:50:27 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 13:51:31.291253] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:51:32 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:51:25 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 13:51:55.862922] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:51:58 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:51:31 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 13:52:00.904360] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:52:02 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:51:56 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 13:54:12.030051] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:54:13 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:52:01 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 13:54:15.736201] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:54:17 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:54:12 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 13:54:24.002739] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:54:25 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:54:16 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 13:56:34.630789] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+[2026-04-29 13:56:46.686395] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+[2026-04-29 13:57:16.451189] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:57:17 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:56:47 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 13:58:18.314111] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:58:19 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:57:17 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 13:58:27.239627] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 13:58:28 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 11:58:18 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:01:02.925457] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+[2026-04-29 14:01:05.865528] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:01:06 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:01:03 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:01:20.317131] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+[2026-04-29 14:01:31.875189] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:01:33 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:01:20 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:01:37.520325] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:01:38 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:01:32 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:01:49.417380] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:01:50 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:01:38 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:01:54.465282] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:01:56 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:01:49 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:02:22.781964] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:02:23 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:01:55 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:03:41.094475] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+[2026-04-29 14:03:45.545521] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:03:46 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:03:41 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:10:42.553476] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:10:44 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server requested update to serial number 'c_schutzenfest-hannover_b063be73', but the pass was unchanged.
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:10:44 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:03:46 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:10:47.894566] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:10:49 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:10:43 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-29 14:11:27.941689] AUTH CHECK: Serial=c_schutzenfest-hannover_b063be73, IncomingToken=db671c8e37c447d581286b10990d2df9, DBToken=db671c8e37c447d581286b10990d2df9
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-29 14:11:30 +0200] Web service error for pass.com.mfo.wallet (https://gave-readings-refused-dayton.trycloudflare.com): Server ignored the 'if-modified-since' header (Wed, 29 Apr 2026 12:10:48 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_b063be73'.
+================================
+
+[2026-04-30 08:39:39.868030] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:39:40.353034] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:40:08.271243] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 08:40:09 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 06:39:40 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 08:40:12.022350] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 08:40:12 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 06:40:08 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 08:40:19.445188] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 08:40:20 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 06:40:12 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 08:40:28.569078] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:40:45.133025] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:40:58.208799] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 08:40:58 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 06:40:45 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 08:41:07.603316] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 08:41:08 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 06:40:58 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 08:41:15.252218] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:41:27.679576] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:42:15.283641] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:43:15.966127] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:48:43.895013] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:48:50.406481] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:48:52.843144] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:49:05.934109] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:49:10.276759] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:49:11.916832] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:49:47.240293] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:50:23.543226] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:54:25.363785] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:54:43.199012] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:54:44.718690] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:55:04.065416] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 08:55:04 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 08:54:23 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 08:55:17.929395] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 08:55:18 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 08:55:02 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 08:55:56.123356] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:56:21.452162] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 08:56:36.994984] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 08:56:37 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 08:56:20 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 08:56:46.087875] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 08:56:46 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 08:56:35 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 08:56:52.888513] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:00:09.740368] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:00:16.190241] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:00:22.621269] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 09:00:22 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 09:00:07 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 09:07:34.686207] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 09:07:34 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server requested update to serial number 'c_schutzenfest-hannover_34be4b26', but the pass was unchanged.
+================================
+
+[2026-04-30 09:07:44.704724] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:07:46.154607] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:07:55.149996] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 09:07:55 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server requested update to serial number 'c_schutzenfest-hannover_34be4b26', but the pass was unchanged.
+================================
+
+[2026-04-30 09:08:59.812081] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 09:08:59 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server requested update to serial number 'c_schutzenfest-hannover_34be4b26', but the pass was unchanged.
+================================
+
+[2026-04-30 09:14:47.462571] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 09:14:47 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server requested update to serial number 'c_schutzenfest-hannover_34be4b26', but the pass was unchanged.
+================================
+
+[2026-04-30 09:14:55.168141] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:15:08.078752] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 09:15:08 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server requested update to serial number 'c_schutzenfest-hannover_34be4b26', but the pass was unchanged.
+================================
+
+[2026-04-30 09:21:30.358441] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:21:37.051321] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:21:45.912693] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:21:54.127412] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:22:29.752776] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:22:43.177008] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:23:08.069802] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:23:41.117267] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:24:01.620107] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:24:37.654125] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:24:54.637092] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:25:03.869882] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:26:04.944802] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:26:08.003062] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:26:53.952277] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:27:38.488703] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:27:42.318110] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:27:44.016191] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:28:09.841460] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:28:26.614721] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:30:41.624691] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:32:13.709346] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:33:28.626575] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:34:56.756764] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:35:40.715672] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:36:20.889392] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:37:19.718495] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:37:36.488332] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:39:19.381253] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:40:14.065439] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:40:36.526382] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 09:57:29.642095] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:00:22.879584] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:03:21.130209] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:03:42.354367] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:04:08.428119] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:04:34.929004] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:04:56.866071] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:05:23.895458] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:06:33.678936] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:12:58.157927] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:16:23.586249] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:16:25.115020] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:16:49.589674] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 10:16:50 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 10:16:21 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 10:18:38.919757] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:18:43.156511] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:18:49.649220] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 10:18:50 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Server ignored the 'if-modified-since' header (Thu, 30 Apr 2026 10:18:31 GMT) and returned the full unchanged pass data for serial number 'c_schutzenfest-hannover_34be4b26'.
+================================
+
+[2026-04-30 10:21:42.868065] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:22:11.232037] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:22:30.741653] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:22:56.368215] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:23:09.498470] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:23:56.078688] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:24:11.757583] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:26:48.391936] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:45:53.895544] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:49:58.020056] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:50:10.451335] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:51:54.555035] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:51:55.071586] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:52:30.932359] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 10:52:44.038765] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25

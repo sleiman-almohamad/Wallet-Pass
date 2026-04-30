@@ -76,20 +76,37 @@ def parse_google_wallet_class(class_json):
     if 'cardTitle' in class_json:
         metadata['card_title'] = class_json['cardTitle'].get('defaultValue', {}).get('value')
 
-    # Generic: textModulesData -> our row-based storage
+    # Generic: textModulesData and linksModuleData -> our row-based storage
     # Google uses a flat list; our UI/DB expects rows with left/middle/right columns.
     # Common IDs created by our app: row_{row_index}_{left|middle|right}
-    text_modules = class_json.get("textModulesData")
-    if isinstance(text_modules, list) and text_modules:
+    text_modules = class_json.get("textModulesData") or []
+    link_uris = class_json.get("linksModuleData", {}).get("uris") or []
+    
+    # Combine both into a unified list to process
+    all_modules = []
+    for mod in text_modules:
+        if isinstance(mod, dict):
+            mod_copy = dict(mod)
+            mod_copy["_type"] = "text"
+            all_modules.append(mod_copy)
+            
+    for mod in link_uris:
+        if isinstance(mod, dict):
+            mod_copy = dict(mod)
+            mod_copy["_type"] = "link"
+            mod_copy["header"] = mod.get("description", "")
+            mod_copy["body"] = mod.get("uri", "")
+            all_modules.append(mod_copy)
+
+    if all_modules:
         rows_by_idx = {}
         fallback_row = 0
 
-        for mod in text_modules:
-            if not isinstance(mod, dict):
-                continue
+        for mod in all_modules:
             mid = mod.get("id") or ""
             header = mod.get("header")
             body = mod.get("body")
+            m_type = mod.get("_type", "text")
 
             # defaults
             row_index = None
@@ -117,6 +134,7 @@ def parse_google_wallet_class(class_json):
             row = rows_by_idx.setdefault(row_index, {"row_index": row_index})
             row[f"{col}_header"] = header
             row[f"{col}_body"] = body
+            row[f"{col}_type"] = m_type
 
         metadata["text_module_rows"] = [rows_by_idx[k] for k in sorted(rows_by_idx.keys())]
     

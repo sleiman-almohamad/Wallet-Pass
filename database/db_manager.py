@@ -71,6 +71,8 @@ class DatabaseManager:
                      transit_operator_name: Optional[str] = None,
                      # Generic-specific extended
                      text_module_rows: Optional[list] = None,
+                    barcode_value: Optional[str] = None,
+                    barcode_alt_text: Optional[str] = None,
                      # Legacy compat (ignored for storage)
                      class_json: Optional[Dict[str, Any]] = None,
                      **extra) -> bool:
@@ -89,6 +91,7 @@ class DatabaseManager:
             if class_type == 'Generic':
                 session.add(GenericClassFields(
                     class_id=class_id, header=header, subheader=subheader, card_title=card_title,
+                    barcode_value=barcode_value, barcode_alt_text=barcode_alt_text,
                 ))
                 session.flush()
                 
@@ -140,6 +143,8 @@ class DatabaseManager:
         if class_type == "Generic":
             args["header_text"] = result.get("header")
             args["card_title"] = result.get("card_title")
+            args["barcode_value"] = result.get("barcode_value")
+            args["barcode_alt_text"] = result.get("barcode_alt_text")
             args["text_module_rows"] = result.get("text_module_rows", [])
         elif class_type == "EventTicket":
             args["event_name"] = result.get("event_name")
@@ -171,6 +176,8 @@ class DatabaseManager:
             d["header"] = cls.generic_fields.header
             d["subheader"] = cls.generic_fields.subheader
             d["card_title"] = cls.generic_fields.card_title
+            d["barcode_value"] = cls.generic_fields.barcode_value
+            d["barcode_alt_text"] = cls.generic_fields.barcode_alt_text
             d["text_module_rows"] = [
                 {
                     "row_index": r.row_index,
@@ -184,6 +191,8 @@ class DatabaseManager:
             d["header"] = None
             d["subheader"] = None
             d["card_title"] = None
+            d["barcode_value"] = None
+            d["barcode_alt_text"] = None
             d["text_module_rows"] = []
 
         if cls.event_ticket_fields:
@@ -246,9 +255,10 @@ class DatabaseManager:
             # 3. Update / upsert child table
             if class_type == 'Generic':
                 child_vals = {
-                    'header': kwargs.get('header'),
                     'subheader': kwargs.get('subheader'),
                     'card_title': kwargs.get('card_title'),
+                    'barcode_value': kwargs.get('barcode_value'),
+                    'barcode_alt_text': kwargs.get('barcode_alt_text'),
                 }
                 child_vals = {k: v for k, v in child_vals.items() if v is not None}
                 if child_vals:
@@ -383,8 +393,9 @@ class DatabaseManager:
                     logo_url=gd.get('logo_url') or class_info.get('logo_url'),
                     hero_image_url=gd.get('hero_image_url') or class_info.get('hero_image_url'),
                     hex_background_color=gd.get('hex_background_color', gd.get('hexBackgroundColor')) or class_info.get('base_color'),
-                    barcode_type=gd.get('barcode_type', gd.get('barcodeValue')) or 'qrCode',
+                    barcode_type=gd.get('barcode_type', gd.get('barcodeType')) or 'qrCode',
                     barcode_value=gd.get('barcode_value', gd.get('barcodeValue')) or object_id,
+                    barcode_alt_text=gd.get('barcode_alt_text', gd.get('barcodeAltText')) or class_info.get('barcode_alt_text'),
                 ))
 
             # 3. Text modules
@@ -482,6 +493,7 @@ class DatabaseManager:
                 'hexBackgroundColor': gf.hex_background_color, # Alias for consistency
                 'barcode_type': gf.barcode_type,
                 'barcode_value': gf.barcode_value,
+                'barcode_alt_text': gf.barcode_alt_text,
             }
 
         # Text modules
@@ -649,6 +661,8 @@ class DatabaseManager:
                             gf.barcode_type = barcode_type
                         if barcode_value is not None:
                             gf.barcode_value = barcode_value
+                        if pd.get('barcode_alt_text') is not None:
+                            gf.barcode_alt_text = pd.get('barcode_alt_text')
                     else:
                         p.generic_fields = GenericFields(
                             object_id=object_id,
@@ -660,6 +674,7 @@ class DatabaseManager:
                             hex_background_color=hex_bg,
                             barcode_type=barcode_type,
                             barcode_value=barcode_value,
+                            barcode_alt_text=pd.get('barcode_alt_text'),
                         )
 
                 # Text modules (replace-all strategy)
@@ -1081,6 +1096,8 @@ class DatabaseManager:
             "strip_url": t.strip_url,
             "background_image_url": t.background_image_url,
             "thumbnail_url": t.thumbnail_url,
+            "barcode_value": t.barcode_value,
+            "barcode_alt_text": t.barcode_alt_text,
             "fields": [
                 {
                     "field_type": f.field_type,

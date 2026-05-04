@@ -41,6 +41,8 @@ class ClassCreate(BaseModel):
     # Transit-specific
     transit_type: Optional[str] = Field(None, description="Transit type (e.g., TRANSIT_TYPE_BUS)")
     transit_operator_name: Optional[str] = Field(None, description="Transit operator name")
+    barcode_value: Optional[str] = Field(None, description="QR Code Link / Payload")
+    barcode_alt_text: Optional[str] = Field(None, description="QR Code Subtext")
     text_module_rows: Optional[list['TextModuleRowModel']] = Field(default_factory=list, description="Array of text module rows")
     # Legacy compat
     class_json: Optional[Dict[str, Any]] = Field(None, description="Complete Google Wallet class JSON configuration")
@@ -79,6 +81,8 @@ class ClassUpdate(BaseModel):
     program_name: Optional[str] = Field(None, description="Loyalty program name")
     transit_type: Optional[str] = Field(None, description="Transit type")
     transit_operator_name: Optional[str] = Field(None, description="Transit operator name")
+    barcode_value: Optional[str] = Field(None, description="QR Code Link / Payload")
+    barcode_alt_text: Optional[str] = Field(None, description="QR Code Subtext")
     text_module_rows: Optional[list['TextModuleRowModel']] = Field(default_factory=list, description="Array of text module rows")
     class_json: Optional[Dict[str, Any]] = Field(None, description="Complete Google Wallet class JSON configuration")
     
@@ -106,6 +110,8 @@ class ClassResponse(BaseModel):
     header: Optional[str] = None
     subheader: Optional[str] = None
     card_title: Optional[str] = None
+    barcode_value: Optional[str] = None
+    barcode_alt_text: Optional[str] = None
     text_module_rows: Optional[list['TextModuleRowModel']] = Field(default_factory=list)
     class_json: Optional[Dict[str, Any]] = None
     created_at: datetime
@@ -149,6 +155,8 @@ class AppleTemplateCreate(BaseModel):
     strip_url: Optional[str] = None
     background_image_url: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    barcode_value: Optional[str] = None
+    barcode_alt_text: Optional[str] = None
     fields: Optional[list[ApplePassFieldResponse]] = None
     dynamic_fields: Optional[list[dict]] = None
 
@@ -168,6 +176,8 @@ class AppleTemplateUpdate(BaseModel):
     strip_url: Optional[str] = None
     background_image_url: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    barcode_value: Optional[str] = None
+    barcode_alt_text: Optional[str] = None
     fields: Optional[list[ApplePassFieldResponse]] = None
     dynamic_fields: Optional[list[dict]] = None
 
@@ -188,6 +198,8 @@ class AppleTemplateResponse(BaseModel):
     strip_url: Optional[str] = None
     background_image_url: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    barcode_value: Optional[str] = None
+    barcode_alt_text: Optional[str] = None
     fields: list[ApplePassFieldResponse] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
@@ -228,6 +240,8 @@ class EventTicketDataModel(BaseModel):
 class GenericDataModel(BaseModel):
     header_value: Optional[str] = None
     subheader_value: Optional[str] = None
+    barcode_value: Optional[str] = None
+    barcode_alt_text: Optional[str] = None
 
 
 class TextModuleRowModel(BaseModel):

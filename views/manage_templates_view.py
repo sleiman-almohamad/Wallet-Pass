@@ -27,6 +27,20 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
     logo_url_tf = ft.TextField(label="Logo URL", expand=1, border_radius=8, text_size=13)
     hero_url_tf = ft.TextField(label="Hero Image URL", expand=1, border_radius=8, text_size=13)
     
+    # QR Code Branding
+    barcode_link_tf = ft.TextField(
+        label="QR Code Link / Payload", 
+        expand=1, border_radius=8, text_size=13,
+        hint_text="https://your-link.com",
+        prefix_icon=ft.Icons.LINK
+    )
+    barcode_text_tf = ft.TextField(
+        label="QR Code Subtext (Flexible Text)", 
+        expand=1, border_radius=8, text_size=13,
+        hint_text="e.g. Scan for more info",
+        prefix_icon=ft.Icons.SHORT_TEXT
+    )
+    
     color_state = {"bg_color": "#4285f4"}
     
     def on_color_change():
@@ -152,6 +166,10 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             # Subheader / Header (Top Row)
             header_text_tf.value = class_data.get("header", "")
             subheader_text_tf.value = class_data.get("subheader", "")
+            
+            # QR Code Fields
+            barcode_link_tf.value = class_data.get("barcode_value", "")
+            barcode_text_tf.value = class_data.get("barcode_alt_text", "")
 
             # Rebuild color picker to show current color
             color_picker_container.content = create_color_picker(
@@ -215,6 +233,8 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 "header": header_text_tf.value,
                 "subheader": subheader_text_tf.value,
                 "card_title": issuer_name_tf.value, # Consistency
+                "barcode_value": barcode_link_tf.value,
+                "barcode_alt_text": barcode_text_tf.value,
             }
 
             if manage_dynamic_form:
@@ -258,9 +278,12 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             ft.Column([
                 ft.Row([logo_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(logo_url_tf))]),
                 ft.Row([hero_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(hero_url_tf))]),
+                ft.Container(height=5),
+                ft.Row([barcode_link_tf, barcode_text_tf], spacing=10)
             ], expand=1),
             color_picker_container
         ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START),
+        ft.Text("The QR code will be displayed on a white square with the subtext below it.", size=11, color=TEXT_SECONDARY, italic=True)
     ], spacing=15))
 
     # Assemble final layout

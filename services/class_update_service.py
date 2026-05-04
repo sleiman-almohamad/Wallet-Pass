@@ -184,6 +184,8 @@ def propagate_class_update_to_passes(
                     "base_color": updated_class.get("base_color"),
                     "hexBackgroundColor": updated_class.get("base_color"),
                     "background_color": updated_class.get("base_color"),
+                    "barcode_value": updated_class.get("barcode_value"),
+                    "barcode_alt_text": updated_class.get("barcode_alt_text"),
                 }
                 for k, v in branding_fields.items():
                     if v:

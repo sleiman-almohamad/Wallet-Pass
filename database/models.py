@@ -86,6 +86,8 @@ class GenericClassFields(Base):
     header = Column(String(255))
     subheader = Column(String(255))
     card_title = Column(String(255))
+    barcode_value = Column(Text, nullable=True)
+    barcode_alt_text = Column(String(255), nullable=True)
 
     parent = relationship("ClassesTable", back_populates="generic_fields")
 
@@ -238,6 +240,7 @@ class GenericFields(Base):
     hex_background_color = Column(String(50), nullable=True)
     barcode_type = Column(String(100), nullable=True)
     barcode_value = Column(Text, nullable=True)
+    barcode_alt_text = Column(String(255), nullable=True)
 
     parent_pass = relationship("PassesTable", back_populates="generic_fields")
 
@@ -322,6 +325,8 @@ class ApplePassesTemplate(Base):
     strip_url = Column(String(512))
     background_image_url = Column(String(512))
     thumbnail_url = Column(String(512))
+    barcode_value = Column(String(512))
+    barcode_alt_text = Column(String(512))
 
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
@@ -372,6 +377,8 @@ class ApplePassesData(Base):
     strip_url = Column(String(512))
     background_image_url = Column(String(512))
     thumbnail_url = Column(String(512))
+    barcode_value = Column(String(512))
+    barcode_alt_text = Column(String(512))
     ticket_layout = Column(String(50), default="strip")
     admin_message = Column(Text, nullable=True) # Lock-screen notification message
 

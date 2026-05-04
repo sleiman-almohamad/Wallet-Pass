@@ -33,6 +33,8 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
     
     logo_icon_url_tf = ft.TextField(label="Logo & Icon URL", expand=1, border_radius=8, text_size=13)
     strip_url_tf = ft.TextField(label="Strip (Hero) URL", expand=1, border_radius=8, text_size=13)
+    barcode_link_tf = ft.TextField(label="QR Code Link / Payload", expand=1, border_radius=8, text_size=13, hint_text="https://...")
+    barcode_text_tf = ft.TextField(label="QR Code Subtext", expand=1, border_radius=8, text_size=13, hint_text="Flexible text")
     
     colors = {
         "bg": "#FFFFFF",
@@ -147,6 +149,8 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             
             logo_icon_url_tf.value = template.get("logo_url") or template.get("icon_url") or ""
             strip_url_tf.value = template.get("strip_url", "")
+            barcode_link_tf.value = template.get("barcode_value", "")
+            barcode_text_tf.value = template.get("barcode_alt_text", "")
             
             colors["bg"] = template.get("background_color") or "#FFFFFF"
             colors["fg"] = template.get("foreground_color") or "#000000"
@@ -187,6 +191,8 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                 "logo_url": logo_icon_url_tf.value,
                 "icon_url": logo_icon_url_tf.value,
                 "strip_url": strip_url_tf.value,
+                "barcode_value": barcode_link_tf.value,
+                "barcode_alt_text": barcode_text_tf.value,
                 "dynamic_fields": field_editor.get_fields()
             }
 
@@ -239,6 +245,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             ft.Column([
                 ft.Row([logo_icon_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(logo_icon_url_tf))]),
                 ft.Row([strip_url_tf, ft.IconButton(ft.Icons.UPLOAD_FILE, on_click=lambda _: pick_image_for(strip_url_tf))]),
+                ft.Row([barcode_link_tf, barcode_text_tf]),
             ], expand=1),
             ft.Column([
                 color_picker_container_bg,

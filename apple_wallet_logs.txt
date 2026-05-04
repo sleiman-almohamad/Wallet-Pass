@@ -2817,3 +2817,19 @@ APPLE WALLET LOGS
 [2026-04-30 10:51:55.071586] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
 [2026-04-30 10:52:30.932359] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
 [2026-04-30 10:52:44.038765] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-04-30 11:01:25 +0200] Web service error for pass.com.mfo.wallet (https://downloads-identifying-dark-helps.trycloudflare.com): Device received spurious push. Request for passesUpdatedSince '2026-04-30T10:52:43.783632' returned no serial numbers. (Device = 335684bd38fdc409c3a483f03f4668a4)
+================================
+
+[2026-04-30 11:39:34.231648] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 11:41:07.868881] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 11:42:35.851043] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 11:42:36.279967] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 12:08:31.360996] AUTH CHECK: Serial=c_schutzenfest-hannover_d8ee8284, IncomingToken=c09cd69c492548379fbde6db945d3b49, DBToken=c09cd69c492548379fbde6db945d3b49
+[2026-04-30 12:08:31.708430] AUTH CHECK: Serial=c_schutzenfest-hannover_d8ee8284, IncomingToken=c09cd69c492548379fbde6db945d3b49, DBToken=c09cd69c492548379fbde6db945d3b49
+[2026-04-30 12:10:29.065780] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
+[2026-04-30 12:11:25.662647] AUTH CHECK: Serial=c_schutzenfest-hannover_f89e901a, IncomingToken=e0eb03dc6fcb4645b8476a2c34616354, DBToken=e0eb03dc6fcb4645b8476a2c34616354
+[2026-04-30 12:11:26.189529] AUTH CHECK: Serial=c_schutzenfest-hannover_f89e901a, IncomingToken=e0eb03dc6fcb4645b8476a2c34616354, DBToken=e0eb03dc6fcb4645b8476a2c34616354

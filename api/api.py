@@ -253,6 +253,8 @@ async def create_class(class_data: ClassCreate):
             program_name=class_data.program_name,
             transit_type=class_data.transit_type,
             transit_operator_name=class_data.transit_operator_name,
+            barcode_value=class_data.barcode_value,
+            barcode_alt_text=class_data.barcode_alt_text,
             text_module_rows=class_data.text_module_rows,
             class_json=class_data.class_json
         )

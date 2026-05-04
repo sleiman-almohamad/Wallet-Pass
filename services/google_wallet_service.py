@@ -405,6 +405,7 @@ class WalletClient:
                     "heroImage",
                     "header",
                     "cardTitle",
+                    "barcode",
                     "textModulesData",
                     "linksModuleData",
                     "imageModulesData",
@@ -970,6 +971,7 @@ class WalletClient:
 
 
             # 5. EXECUTE SINGLE PATCH (Atomic operation)
+            log.info(f"DEBUG: Patching object {full_object_id} with barcode: {object_data.get('barcode')}")
             print(f"DEBUG NOTIFICATION: Sending patch for {full_object_id} with msg_id {msg_id}")
             result = resource.patch(
                 resourceId=full_object_id,
@@ -1185,6 +1187,24 @@ class WalletClient:
                     }]
                 }]
         
+            # Barcode support (minimal: type + value)
+            barcode_obj = None
+            if isinstance(pd.get("barcode"), dict):
+                barcode_obj = pd.get("barcode")
+            else:
+                bc_type = pd.get("barcode_type") or pd.get("barcodeType")
+                bc_value = pd.get("barcode_value") or pd.get("barcodeValue")
+                if (isinstance(bc_type, str) and bc_type.strip()) or (isinstance(bc_value, str) and bc_value.strip()):
+                    barcode_obj = {
+                        "type": bc_type if bc_type else "QR_CODE",
+                        "value": bc_value if bc_value else "",
+                    }
+                    bc_alt = pd.get("barcode_alt_text") or pd.get("barcodeAltText")
+                    if bc_alt:
+                        barcode_obj["alternateText"] = str(bc_alt)
+            if isinstance(barcode_obj, dict) and isinstance(barcode_obj.get("value"), str) and barcode_obj["value"].strip():
+                obj["barcode"] = barcode_obj
+        
         return obj
     
     def build_loyalty_object(self, object_id, class_id, holder_name, holder_email, pass_data, custom_color=None, message_type="TEXT_AND_NOTIFY", status=None):
@@ -1304,6 +1324,24 @@ class WalletClient:
                         "columns": info_label_values
                     }]
                 }]
+            
+            # Barcode support (minimal: type + value)
+            barcode_obj = None
+            if isinstance(pd.get("barcode"), dict):
+                barcode_obj = pd.get("barcode")
+            else:
+                bc_type = pd.get("barcode_type") or pd.get("barcodeType")
+                bc_value = pd.get("barcode_value") or pd.get("barcodeValue")
+                if (isinstance(bc_type, str) and bc_type.strip()) or (isinstance(bc_value, str) and bc_value.strip()):
+                    barcode_obj = {
+                        "type": bc_type if bc_type else "QR_CODE",
+                        "value": bc_value if bc_value else "",
+                    }
+                    bc_alt = pd.get("barcode_alt_text") or pd.get("barcodeAltText")
+                    if bc_alt:
+                        barcode_obj["alternateText"] = str(bc_alt)
+            if isinstance(barcode_obj, dict) and isinstance(barcode_obj.get("value"), str) and barcode_obj["value"].strip():
+                obj["barcode"] = barcode_obj
         
         return obj
     
@@ -1392,6 +1430,9 @@ class WalletClient:
                     "type": bc_type if bc_type else "QR_CODE",
                     "value": bc_value if bc_value else "",
                 }
+                bc_alt = pd.get("barcode_alt_text") or pd.get("barcodeAltText")
+                if bc_alt:
+                    barcode_obj["alternateText"] = str(bc_alt)
         if isinstance(barcode_obj, dict) and isinstance(barcode_obj.get("value"), str) and barcode_obj["value"].strip():
             obj["barcode"] = barcode_obj
 
@@ -1475,7 +1516,7 @@ class WalletClient:
                 "card_title", "cardTitle", "header_value", "header", "subheader", 
                 "subheader_value", "description", "textModulesData", "messages", 
                 "messageType", "message_header", "message_body", "barcode", 
-                "barcode_type", "barcode_value", "logo_url", "logoUrl", 
+                "barcode_type", "barcode_value", "barcode_alt_text", "barcodeAltText", "logo_url", "logoUrl", 
                 "hero_image_url", "heroImageUrl", "hero_url", "hexBackgroundColor", 
                 "hex_background_color", "background_color", "base_color",
             ]

@@ -61,6 +61,8 @@ class APIClient:
                     multiple_devices_allowed: Optional[str] = None,
                     view_unlock_requirement: Optional[str] = None,
                     enable_smart_tap: Optional[bool] = None,
+                    barcode_value: Optional[str] = None,
+                    barcode_alt_text: Optional[str] = None,
                     text_module_rows: Optional[list] = None,
                     **extra) -> Dict[str, Any]:
         """Create a new class"""
@@ -85,6 +87,8 @@ class APIClient:
             "multiple_devices_allowed": multiple_devices_allowed,
             "view_unlock_requirement": view_unlock_requirement,
             "enable_smart_tap": enable_smart_tap,
+            "barcode_value": barcode_value,
+            "barcode_alt_text": barcode_alt_text,
             "text_module_rows": text_module_rows
         }
         # filter out Nones
@@ -128,6 +132,8 @@ class APIClient:
                     multiple_devices_allowed: Optional[str] = None,
                     view_unlock_requirement: Optional[str] = None,
                     enable_smart_tap: Optional[bool] = None,
+                    barcode_value: Optional[str] = None,
+                    barcode_alt_text: Optional[str] = None,
                     text_module_rows: Optional[list] = None,
                     sync_to_google: bool = True,
                     notification_message: Optional[str] = None,
@@ -144,6 +150,7 @@ class APIClient:
             ("transit_type", transit_type), ("transit_operator_name", transit_operator_name),
             ("class_json", class_json), ("multiple_devices_allowed", multiple_devices_allowed),
             ("view_unlock_requirement", view_unlock_requirement), ("enable_smart_tap", enable_smart_tap),
+            ("barcode_value", barcode_value), ("barcode_alt_text", barcode_alt_text),
             ("text_module_rows", text_module_rows)
         ]:
             if field_val is not None:

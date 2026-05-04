@@ -249,6 +249,16 @@ class JSONTemplateManager:
         if issuer_name:
             template["issuerName"] = str(issuer_name)
 
+        # Default Barcode Branding (Template Level)
+        barcode_value = kwargs.get("barcode_value")
+        barcode_alt_text = kwargs.get("barcode_alt_text")
+        if barcode_value:
+            template["barcode"] = {
+                "type": "QR_CODE",
+                "value": str(barcode_value),
+                "alternateText": str(barcode_alt_text) if barcode_alt_text else ""
+            }
+
         text_module_rows = kwargs.get("text_module_rows", [])
         
         # Build class-level textModulesData and linksModuleData for default values.

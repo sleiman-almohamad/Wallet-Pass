@@ -303,12 +303,21 @@ class AppleWalletService:
         if holder_name and secondary_fields:
             secondary_fields[0]["label"] = holder_name
 
-        # Barcode
+        # Barcode - Priority: Pass Overrides > Template Defaults > object_id
+        bc_msg = (pass_data.get("barcode_value") 
+                  or class_data.get("barcode_value") 
+                  or object_id)
+        
+        bc_alt = (pass_data.get("barcode_alt_text") 
+                  or class_data.get("barcode_alt_text"))
+
         barcode = {
             "format": "PKBarcodeFormatQR",
-            "message": object_id,
+            "message": str(bc_msg),
             "messageEncoding": "iso-8859-1",
         }
+        if bc_alt:
+            barcode["altText"] = str(bc_alt)
 
         # ----- Resolve Apple Style Key from Template -----
         # 1. Try class_data (already passed by caller)
@@ -652,7 +661,7 @@ class AppleWalletService:
                 visual_updates = {}
                 for attr in ["background_color", "foreground_color", "label_color",
                              "organization_name", "logo_text", "logo_url",
-                             "icon_url", "strip_url"]:
+                             "icon_url", "strip_url", "barcode_value", "barcode_alt_text"]:
                     val = template.get(attr)
                     if val is not None:
                         visual_updates[attr] = val

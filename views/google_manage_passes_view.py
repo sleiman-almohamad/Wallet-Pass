@@ -82,19 +82,19 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
         _sync_preview()
 
     color_state_obj = SimpleColorState(custom_color_state, _on_color_change)
-    bg_color_picker_container.content = create_color_picker(page, color_state_obj, _on_color_change, "background_color", "Background Color")
+    bg_color_picker_container.content = create_color_picker(page, color_state_obj, _on_color_change, "background_color", state.t("label.background_color"))
 
     # ── UI Selection Controls ──
     class_dropdown = ft.Dropdown(
-        label="Select Template (Class ID)",
-        hint_text="Choose a template...",
+        label=state.t("label.select_template_id"),
+        hint_text=state.t("placeholder.choose_template"),
         width=400, border_radius=8, text_size=13,
         options=[],
     )
 
     pass_dropdown = ft.Dropdown(
-        label="Select Pass",
-        hint_text="Choose a pass...",
+        label=state.t("label.select_pass"),
+        hint_text=state.t("placeholder.choose_pass"),
         width=400, border_radius=8, text_size=13,
         options=[],
         visible=False
@@ -150,19 +150,19 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                     )
                     for cls in classes if cls.get("class_id")
                 ]
-                class_dropdown.hint_text = "Choose a template..."
+                class_dropdown.hint_text = state.t("placeholder.choose_template")
             else:
                 class_dropdown.options = []
-                class_dropdown.hint_text = "No templates found."
+                class_dropdown.hint_text = state.t("msg.no_templates_found")
         except Exception as e:
-            status_text.value = f"❌ Error loading classes: {e}"
+            status_text.value = f"❌ {state.t('msg.api_error', detail=str(e))}"
             status_text.color = "red"
         if class_dropdown.page:
             class_dropdown.update()
 
     def load_passes_for_class(class_id: str):
         try:
-            status_text.value = "⏳ Loading passes..."
+            status_text.value = state.t("msg.loading_passes")
             status_text.color = "blue"
             if status_text.page: status_text.update()
             
@@ -175,12 +175,12 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                     )
                     for p in passes if p.get("object_id")
                 ]
-                pass_dropdown.hint_text = f"Found {len(passes)} passes. Select one."
+                pass_dropdown.hint_text = state.t("placeholder.choose_pass")
                 status_text.value = ""
             else:
                 pass_dropdown.options = []
-                pass_dropdown.hint_text = "No passes found for this template."
-                status_text.value = "No passes found locally."
+                pass_dropdown.hint_text = state.t("msg.no_passes_found")
+                status_text.value = state.t("msg.no_passes_locally")
         except Exception as e:
             status_text.value = f"❌ Error loading passes: {e}"
             status_text.color = "red"
@@ -258,30 +258,30 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
 
         # Holder Info Section
         holder_controls = [
-            section_title("Pass Holder Info", ft.Icons.PERSON),
+            section_title(state.t("label.pass_holder_info"), ft.Icons.PERSON),
             ft.Row([
-                ft.TextField(ref=holder_name_ref, label="Holder Name", value=pass_obj.get("holder_name", ""),
+                ft.TextField(ref=holder_name_ref, label=state.t("label.holder_name"), value=pass_obj.get("holder_name", ""),
                              expand=1, border_radius=8, text_size=13, on_change=lambda e: _sync_preview()),
-                ft.TextField(ref=holder_email_ref, label="Holder Email", value=pass_obj.get("holder_email", ""),
+                ft.TextField(ref=holder_email_ref, label=state.t("label.holder_email"), value=pass_obj.get("holder_email", ""),
                              expand=1, border_radius=8, text_size=13, on_change=lambda e: _sync_preview()),
             ], spacing=12),
             ft.Row([
                 ft.Dropdown(
-                    ref=status_ref, label="Status", value=pass_obj.get("status", "Active"),
+                    ref=status_ref, label=state.t("label.status"), value=pass_obj.get("status", "Active"),
                     expand=1, border_radius=8, text_size=13,
                     options=[
-                        ft.dropdown.Option("Active"),
-                        ft.dropdown.Option("Completed"),
-                        ft.dropdown.Option("Expired"),
+                        ft.dropdown.Option("Active", state.t("label.connected_simple")), # Reuse Connected if suitable or just use status keys
+                        ft.dropdown.Option("Completed"), # To be translated if needed
+                        ft.dropdown.Option("Expired"), # To be translated if needed
                     ]
                 ),
                 ft.Dropdown(
-                    ref=message_type_ref, label="Notification Type", 
+                    ref=message_type_ref, label=state.t("label.notification_type"), 
                     value=pass_obj.get("pass_data", {}).get("messageType", "TEXT_AND_NOTIFY"),
                     expand=1, border_radius=8, text_size=13,
                     options=[
-                        ft.dropdown.Option("TEXT", "No Notification"),
-                        ft.dropdown.Option("TEXT_AND_NOTIFY", "Send Push Notification"),
+                        ft.dropdown.Option("TEXT", state.t("option.no_notification")),
+                        ft.dropdown.Option("TEXT_AND_NOTIFY", state.t("option.send_push")),
                     ]
                 ),
             ], spacing=12),
@@ -289,12 +289,12 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
 
         # Colors Section
         colors_controls = [
-            section_title("Customize Color", ft.Icons.PALETTE),
+            section_title(state.t("label.customize_color"), ft.Icons.PALETTE),
             bg_color_picker_container,
         ]
 
         # Pass Details Section
-        details_controls = [section_title("Pass Details", ft.Icons.DESCRIPTION)]
+        details_controls = [section_title(state.t("label.pass_details"), ft.Icons.DESCRIPTION)]
         pd = pass_obj.get("pass_data", {})
 
         def _add_detail_field(label, key, value, hint="", read_only=False, multiline=False):
@@ -326,17 +326,17 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                 details_controls.append(tf)
 
         if class_type == "Generic":
-             _add_detail_field("Issuer Name", "card_title", pd.get("card_title", pd.get("issuer_name", "")), "e.g., My Studio")
-             _add_detail_field("Header", "header", pd.get("header_value", ""), "e.g., Welcome")
-             _add_detail_field("Subheader", "subheader", pd.get("subheader_value", ""), "e.g., Special Guest")
-             _add_detail_field("Logo URL", "logo_url", pd.get("logo_url", ""), "https://...")
-             _add_detail_field("Hero Image URL", "hero_image", pd.get("hero_image_url",pd.get("heroImage", "")), "https://...")
+             _add_detail_field(state.t("label.issuer_name"), "card_title", pd.get("card_title", pd.get("issuer_name", "")), state.t("placeholder.business_name"))
+             _add_detail_field(state.t("label.header_simple"), "header", pd.get("header_value", ""), state.t("label.header_value"))
+             _add_detail_field(state.t("label.subheader"), "subheader", pd.get("subheader_value", ""), state.t("label.subheader_value"))
+             _add_detail_field(state.t("label.logo_url"), "logo_url", pd.get("logo_url", ""), "https://...")
+             _add_detail_field(state.t("label.hero_image_url"), "hero_image", pd.get("hero_image_url",pd.get("heroImage", "")), "https://...")
         elif class_type == "EventTicket":
-             _add_detail_field("Ticket Holder", "ticketHolderName", pd.get("ticketHolderName", ""), "Name on ticket")
-             _add_detail_field("Confirmation Code", "confirmationCode", pd.get("confirmationCode", ""), "ABC-123")
-             _add_detail_field("Seat", "seatNumber", pd.get("seatNumber", ""), "A-12")
-             _add_detail_field("Section", "section", pd.get("section", ""), "Lower Bowl")
-             _add_detail_field("Gate", "gate", pd.get("gate", ""), "Gate 5")
+             _add_detail_field(state.t("label.holder_name"), "ticketHolderName", pd.get("ticketHolderName", ""), "")
+             _add_detail_field(state.t("label.confirmation_code"), "confirmationCode", pd.get("confirmationCode", ""), "")
+             _add_detail_field(state.t("label.seat"), "seatNumber", pd.get("seatNumber", ""), "")
+             _add_detail_field(state.t("label.section"), "section", pd.get("section", ""), "")
+             _add_detail_field(state.t("label.gate"), "gate", pd.get("gate", ""), "")
 
         # Info Fields (Text Modules)
         info_section = None
@@ -346,7 +346,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
             pass_modules = {m.get("id"): m for m in pass_modules_list} if isinstance(pass_modules_list, list) else {}
 
             if class_rows:
-                info_controls = [section_title("Information Fields", ft.Icons.TABLE_ROWS)]
+                info_controls = [section_title(state.t("header.info_fields"), ft.Icons.TABLE_ROWS)]
                 for i, row in enumerate(class_rows):
                     row_controls = []
                     for pos in ["left", "middle", "right"]:
@@ -364,9 +364,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                             dynamic_text_modules[mid] = fref
                             dynamic_text_modules_types[mid] = curr_type
                             
-                            hint = f"Enter {hdr}"
-                            if curr_type == "link":
-                                hint = f"Enter URL for {hdr}"
+                            hint = state.t("hint.dynamic_value", header=hdr)
                                 
                             row_controls.append(ft.TextField(
                                 ref=fref, label=hdr, value=existing_body,
@@ -385,14 +383,14 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
         action_controls = [
             ft.Container(height=10),
             ft.ElevatedButton(
-                "Update & Sync to Google", icon=ft.Icons.CLOUD_SYNC, height=48,
+                state.t("btn.update_sync_google"), icon=ft.Icons.CLOUD_SYNC, height=48,
                 on_click=save_updates_handler, width=380,
                 style=ft.ButtonStyle(bgcolor=PRIMARY, color="white", 
                                      shape=ft.RoundedRectangleBorder(radius=10)),
             ),
             ft.Container(height=5),
             ft.ElevatedButton(
-                "Generate Save Link", icon=ft.Icons.QR_CODE, height=48,
+                state.t("btn.generate_save_link"), icon=ft.Icons.QR_CODE, height=48,
                 on_click=generate_save_link_handler, width=380,
                 style=ft.ButtonStyle(bgcolor="green", color="white",
                                      shape=ft.RoundedRectangleBorder(radius=10)),
@@ -415,7 +413,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
     def save_updates_handler(e):
         if not pass_dropdown.value: return
         
-        status_text.value = "⏳ Updating..."
+        status_text.value = state.t("msg.updating") # Add this key if missing or use generic one
         status_text.color = "blue"
         page.update()
 
@@ -471,11 +469,11 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
 
             upd_dlg = ft.AlertDialog(
                 modal=False,
-                title=ft.Text("✅ Pass Updated Successfully!", weight=ft.FontWeight.BOLD),
-                content=ft.Text(response.get("message", "The pass has been updated and synced to Google Wallet."), size=13),
+                title=ft.Text(state.t("header.pass_updated"), weight=ft.FontWeight.BOLD),
+                content=ft.Text(state.t("msg.pass_updated_sync"), size=13),
                 on_dismiss=dialog_dismissed,
                 actions=[
-                    ft.TextButton("Close", on_click=close_dlg),
+                    ft.TextButton(state.t("btn.close"), on_click=close_dlg),
                 ],
             )
             page.open(upd_dlg)
@@ -489,7 +487,7 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
 
     def generate_save_link_handler(e):
         if not pass_dropdown.value: return
-        status_text.value = "⏳ Generating link..."
+        status_text.value = state.t("msg.generating") # Add this key if missing or use generic one
         status_text.color = "blue"
         page.update()
         try:
@@ -508,9 +506,9 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
 
             qr_dlg = ft.AlertDialog(
                 modal=False,
-                title=ft.Text("✅ Save Link Generated", weight=ft.FontWeight.BOLD),
+                title=ft.Text(state.t("header.save_link_generated"), weight=ft.FontWeight.BOLD),
                 content=ft.Column([
-                    ft.Text("Scan to Save", weight=ft.FontWeight.BOLD, size=16),
+                    ft.Text(state.t("label.scan_to_save"), weight=ft.FontWeight.BOLD, size=16),
                     ft.Container(
                         content=ft.Image(src=qr_image_path, width=220, height=220),
                         bgcolor="white", padding=10, border_radius=10, alignment=ft.alignment.center
@@ -519,12 +517,12 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
                         ft.TextField(value=save_link, read_only=True, expand=True, text_size=10, border_radius=8),
                         ft.IconButton(icon=ft.Icons.COPY, on_click=lambda ev: page.set_clipboard(save_link))
                     ]),
-                    ft.ElevatedButton("Open Google Wallet", icon=ft.Icons.OPEN_IN_NEW, on_click=lambda ev: page.launch_url(save_link),
+                    ft.ElevatedButton(state.t("btn.open_google_wallet"), icon=ft.Icons.OPEN_IN_NEW, on_click=lambda ev: page.launch_url(save_link),
                                       bgcolor="#4285F4", color="white", width=380, height=45)
                 ], spacing=12, tight=True, width=400, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 on_dismiss=dialog_dismissed,
                 actions=[
-                    ft.TextButton("Close", on_click=close_dlg),
+                    ft.TextButton(state.t("btn.close"), on_click=close_dlg),
                 ],
             )
             page.open(qr_dlg)
@@ -548,8 +546,8 @@ def build_google_manage_passes_view(page: ft.Page, state, api_client, preview: M
         expand=True,
         padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
         content=ft.Column([
-            ft.Text("Manage Google Passes", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-            ft.Text("Select a template then a pass to view and edit details.", color=TEXT_MUTED, size=13),
+            ft.Text(state.t("header.manage_google_passes"), size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+            ft.Text(state.t("subtitle.manage_google_passes"), color=TEXT_MUTED, size=13),
             ft.Container(height=10),
             
             class_dropdown,

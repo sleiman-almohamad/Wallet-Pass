@@ -2833,3 +2833,101 @@ APPLE WALLET LOGS
 [2026-04-30 12:10:29.065780] AUTH CHECK: Serial=c_schutzenfest-hannover_34be4b26, IncomingToken=54b71d2207554792a80bd9a3aead2d25, DBToken=54b71d2207554792a80bd9a3aead2d25
 [2026-04-30 12:11:25.662647] AUTH CHECK: Serial=c_schutzenfest-hannover_f89e901a, IncomingToken=e0eb03dc6fcb4645b8476a2c34616354, DBToken=e0eb03dc6fcb4645b8476a2c34616354
 [2026-04-30 12:11:26.189529] AUTH CHECK: Serial=c_schutzenfest-hannover_f89e901a, IncomingToken=e0eb03dc6fcb4645b8476a2c34616354, DBToken=e0eb03dc6fcb4645b8476a2c34616354
+[2026-05-04 08:56:54.973668] AUTH CHECK: Serial=c_schutzenfesthannover_c374b7e5, IncomingToken=c3058b6a451342f88b4702fe73817bed, DBToken=c3058b6a451342f88b4702fe73817bed
+[2026-05-04 08:56:55.268671] AUTH CHECK: Serial=c_schutzenfesthannover_c374b7e5, IncomingToken=c3058b6a451342f88b4702fe73817bed, DBToken=c3058b6a451342f88b4702fe73817bed
+[2026-05-04 15:05:11.461570] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:05:11.960055] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:08:21.898943] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:10:18.214768] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:10:42.619608] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:11:23.786163] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:11:34.487189] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:14:24.034113] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-05-04 15:14:24 +0200] Web service error for pass.com.mfo.wallet (https://east-greensboro-september-secondary.trycloudflare.com): Server ignored the 'if-modified-since' header (Mon, 04 May 2026 15:11:33 GMT) and returned the full unchanged pass data for serial number 'c_romergut_d0c54acc'.
+================================
+
+[2026-05-04 15:14:27.846206] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:14:30.097443] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:14:39.202401] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:15:02.502954] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:16:25.737551] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:16:37.238332] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:16:47.522814] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:17:07.440542] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:17:27.104817] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:18:24.212849] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:19:12.029940] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:19:53.485995] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:25:26.919979] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:26:46.680970] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:27:17.892368] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:27:44.891291] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:28:08.858967] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:28:53.482517] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:31:03.240157] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:33:21.585971] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:39:30.727902] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:41:11.168327] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:42:55.039741] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:44:14.025257] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:46:42.984508] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:48:15.305222] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:51:11.498589] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:52:44.027805] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:54:31.478501] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:55:00.850579] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 15:57:26.252896] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 15:57:26.421614] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 15:57:27.549070] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:04:08.497782] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:04:09.453298] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-05-04 16:04:09 +0200] Web service error for pass.com.mfo.wallet (https://east-greensboro-september-secondary.trycloudflare.com): Server ignored the 'if-modified-since' header (Mon, 04 May 2026 13:57:20 GMT) and returned the full unchanged pass data for serial number 'c_romergut_3cd48430'.
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-05-04 16:04:10 +0200] Web service error for pass.com.mfo.wallet (https://east-greensboro-september-secondary.trycloudflare.com): Server requested update to serial number 'c_romergut_d0c54acc', but the pass was unchanged.
+================================
+
+
+================================
+APPLE WALLET LOGS
+================================
+[0] [2026-05-04 16:04:10 +0200] Web service error for pass.com.mfo.wallet (https://east-greensboro-september-secondary.trycloudflare.com): Server ignored the 'if-modified-since' header (Mon, 04 May 2026 15:54:59 GMT) and returned the full unchanged pass data for serial number 'c_romergut_d0c54acc'.
+================================
+
+[2026-05-04 16:05:27.438319] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:05:28.559109] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 16:05:33.735346] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 16:08:49.989204] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:08:50.901810] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 16:09:38.148007] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:09:39.031015] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:17:24.579265] AUTH CHECK: Serial=c_romergut_d0c54acc, IncomingToken=d7290159e5f64dc48f599003f1e95f71, DBToken=d7290159e5f64dc48f599003f1e95f71
+[2026-05-04 16:18:06.537361] AUTH CHECK: Serial=c_romergut_e8c480cb, IncomingToken=078d85b9bdbd4efd8953cbd68b347806, DBToken=078d85b9bdbd4efd8953cbd68b347806
+[2026-05-04 16:18:07.117696] AUTH CHECK: Serial=c_romergut_e8c480cb, IncomingToken=078d85b9bdbd4efd8953cbd68b347806, DBToken=078d85b9bdbd4efd8953cbd68b347806
+[2026-05-04 16:22:24.292794] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:30:30.651834] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:30:31.539092] AUTH CHECK: Serial=c_romergut_e8c480cb, IncomingToken=078d85b9bdbd4efd8953cbd68b347806, DBToken=078d85b9bdbd4efd8953cbd68b347806
+[2026-05-04 16:31:34.361282] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:31:35.301716] AUTH CHECK: Serial=c_romergut_e8c480cb, IncomingToken=078d85b9bdbd4efd8953cbd68b347806, DBToken=078d85b9bdbd4efd8953cbd68b347806
+[2026-05-04 16:36:51.529596] AUTH CHECK: Serial=c_romergut_273477a1, IncomingToken=e705f1a5865443939a03ba58cf6be771, DBToken=e705f1a5865443939a03ba58cf6be771
+[2026-05-04 16:36:52.127849] AUTH CHECK: Serial=c_romergut_273477a1, IncomingToken=e705f1a5865443939a03ba58cf6be771, DBToken=e705f1a5865443939a03ba58cf6be771
+[2026-05-04 16:43:58.900466] AUTH CHECK: Serial=c_romergut_273477a1, IncomingToken=e705f1a5865443939a03ba58cf6be771, DBToken=e705f1a5865443939a03ba58cf6be771
+[2026-05-04 16:44:00.099897] AUTH CHECK: Serial=c_romergut_e8c480cb, IncomingToken=078d85b9bdbd4efd8953cbd68b347806, DBToken=078d85b9bdbd4efd8953cbd68b347806
+[2026-05-04 16:44:15.905599] AUTH CHECK: Serial=c_romergut_3cd48430, IncomingToken=6a547080f9c4430b9fe0de5e3d43a89f, DBToken=6a547080f9c4430b9fe0de5e3d43a89f
+[2026-05-04 16:48:21.159889] AUTH CHECK: Serial=c_romergut_273477a1, IncomingToken=e705f1a5865443939a03ba58cf6be771, DBToken=e705f1a5865443939a03ba58cf6be771
+[2026-05-04 16:48:45.453992] AUTH CHECK: Serial=c_romergut_74649f48, IncomingToken=1da58b4493174878be4ad05188ce2a29, DBToken=1da58b4493174878be4ad05188ce2a29
+[2026-05-04 16:48:45.907177] AUTH CHECK: Serial=c_romergut_74649f48, IncomingToken=1da58b4493174878be4ad05188ce2a29, DBToken=1da58b4493174878be4ad05188ce2a29
+[2026-05-04 17:18:46.806110] AUTH CHECK: Serial=c_romergut_d1dfc6f0, IncomingToken=dda25dc48d37416aaaf7f8f5be734173, DBToken=dda25dc48d37416aaaf7f8f5be734173
+[2026-05-04 17:18:47.068063] AUTH CHECK: Serial=c_romergut_d1dfc6f0, IncomingToken=dda25dc48d37416aaaf7f8f5be734173, DBToken=dda25dc48d37416aaaf7f8f5be734173

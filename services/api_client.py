@@ -145,6 +145,7 @@ class APIClient:
             ("base_color", base_color), ("logo_url", logo_url),
             ("hero_image_url", hero_image_url), ("header", header),
             ("subheader", subheader), ("card_title", card_title),
+            ("event_name", event_name),
             ("venue_name", venue_name), ("venue_address", venue_address),
             ("event_start", event_start), ("program_name", program_name),
             ("transit_type", transit_type), ("transit_operator_name", transit_operator_name),

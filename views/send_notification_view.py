@@ -40,8 +40,8 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
                 ft.Container(
                     content=ft.Column([
                         ft.Icon("notifications_none", size=48, color="#d1d5db"),
-                        ft.Text("No notifications sent yet", size=13, color="#9ca3af", text_align=ft.TextAlign.CENTER),
-                        ft.Text("Send a notification to see the history here", size=11, color="#d1d5db", text_align=ft.TextAlign.CENTER),
+                        ft.Text(state.t("msg.no_notifications"), size=13, color="#9ca3af", text_align=ft.TextAlign.CENTER),
+                        ft.Text(state.t("msg.send_notification_history_hint"), size=11, color="#d1d5db", text_align=ft.TextAlign.CENTER),
                     ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=8),
                     expand=True, alignment=ft.alignment.center,
                 )
@@ -109,30 +109,30 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     # =======================================================
     mode_radio = ft.RadioGroup(
         content=ft.Row([
-            ft.Radio(value="single", label=state.t("mode.single") if hasattr(state, "t") else "Single Pass"),
-            ft.Radio(value="template", label=state.t("mode.template") if hasattr(state, "t") else "Template/Class"),
+            ft.Radio(value="single", label=state.t("mode.single")),
+            ft.Radio(value="template", label=state.t("mode.template")),
         ], spacing=20),
         value=ns.get("mode") or "single",
     )
 
     class_dropdown = ft.Dropdown(
-        label=state.t("label.select_template") if hasattr(state, "t") else "Select Template",
-        hint_text="Choose a template",
+        label=state.t("label.select_template"),
+        hint_text=state.t("placeholder.choose_template"),
         width=400, border_radius=8, text_size=13,
         options=[],
         visible=False,
     )
 
     search_holder_field = ft.TextField(
-        label=state.t("label.search_holder") if hasattr(state, "t") else "Search by Holder Name",
-        hint_text="e.g., Sleiman",
+        label=state.t("label.search_holder"),
+        hint_text="",
         width=400, border_radius=8, text_size=13,
         visible=True,
         prefix_icon="search",
     )
 
     find_passes_btn = ft.ElevatedButton(
-        state.t("btn.find_passes") if hasattr(state, "t") else "Find Passes",
+        state.t("btn.find_passes"),
         icon="search",
         width=400,
         visible=True,
@@ -143,16 +143,16 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     )
 
     pass_dropdown = ft.Dropdown(
-        label=state.t("label.select_pass") if hasattr(state, "t") else "Select Pass",
-        hint_text="Choose a pass",
+        label=state.t("label.select_pass"),
+        hint_text=state.t("placeholder.choose_pass"),
         width=400, border_radius=8, text_size=13,
         visible=True,
         options=[],
     )
 
     message_field = ft.TextField(
-        label=state.t("label.message") if hasattr(state, "t") else "Notification Message",
-        hint_text="Enter your message here...",
+        label=state.t("label.message"),
+        hint_text="",
         multiline=True,
         min_lines=3,
         max_lines=5,
@@ -160,7 +160,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     )
 
     send_btn = ft.ElevatedButton(
-        state.t("btn.send_notification") if hasattr(state, "t") else "Send Notification",
+        state.t("btn.send_notification"),
         icon="send",
         width=400, height=44,
         style=ft.ButtonStyle(
@@ -187,7 +187,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
                 
             page.update()
         except Exception as e:
-            _set_status(f"Error loading templates: {e}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(e))}", "red")
 
     def on_mode_change(e):
         mode = mode_radio.value
@@ -209,7 +209,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     def on_find_passes(e):
         search_query = search_holder_field.value.strip().lower()
         if not search_query:
-            _set_status("⚠️ Please enter a name to search", "orange")
+            _set_status(state.t("msg.enter_search_query"), "orange")
             page.update()
             return
 
@@ -224,7 +224,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             ]
 
             if not matching_passes:
-                _set_status(f"❌ No passes found matching '{search_query}'.", "orange")
+                _set_status(f"❌ {state.t('msg.no_passes_found')}", "orange")
                 pass_dropdown.options = []
                 pass_dropdown.value = None
             else:
@@ -236,7 +236,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
                     for p in matching_passes if p.get("object_id")
                 ]
                 pass_dropdown.value = str(matching_passes[0].get("object_id", ""))
-                _set_status(f"✅ Found {len(matching_passes)} pass(es).", "green")
+                _set_status(state.t("msg.found_passes_count", count=len(matching_passes)), "green")
             
             ns.update_multiple({
                 "passes_found": matching_passes,
@@ -244,7 +244,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             })
         except Exception as ex:
             import traceback; traceback.print_exc()
-            _set_status(f"❌ Error finding passes: {ex}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(ex))}", "red")
         
         page.update()
 
@@ -256,7 +256,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         message = message_field.value.strip()
         
         if not message:
-            _set_status("⚠️ Please enter a message to send", "red")
+            _set_status(state.t("msg.enter_message_err"), "red")
             return
 
         ns.update("is_loading", True)
@@ -266,7 +266,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             if mode == "single":
                 pass_id = pass_dropdown.value
                 if not pass_id:
-                    _set_status("❌ Please select a pass first", "red")
+                    _set_status(state.t("msg.select_pass_err"), "red")
                     ns.update("is_loading", False)
                     page.update()
                     return
@@ -278,7 +278,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             else:
                 class_id = class_dropdown.value
                 if not class_id:
-                    _set_status("❌ Please select a template first", "red")
+                    _set_status(state.t("msg.select_template_err"), "red")
                     ns.update("is_loading", False)
                     page.update()
                     return
@@ -289,7 +289,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
                 _add_history_entry("Google", f"Template: {class_id.split('.')[-1]}", message, result_msg, "#16a34a")
         except Exception as ex:
             error_msg = str(ex)
-            _set_status(f"❌ Error: {error_msg}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=error_msg)}", "red")
             target = pass_dropdown.value or class_dropdown.value or "Unknown"
             _add_history_entry("Google", target, message, f"Failed: {error_msg}", "#dc2626")
         
@@ -300,7 +300,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     google_tab_content = ft.Column([
         ft.Container(
             content=ft.Column([
-                ft.Text("Select Mode", size=13, weight=ft.FontWeight.W_600, color="#374151"),
+                ft.Text(state.t("header.select_mode"), size=13, weight=ft.FontWeight.W_600, color="#374151"),
                 mode_radio,
             ], spacing=6),
             padding=ft.padding.only(bottom=10),
@@ -308,7 +308,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         ft.Divider(height=1, color="#e5e7eb"),
         ft.Container(height=6),
         
-        ft.Text("Select Target", size=13, weight=ft.FontWeight.W_600, color="#374151"),
+        ft.Text(state.t("header.select_target"), size=13, weight=ft.FontWeight.W_600, color="#374151"),
         search_holder_field,
         find_passes_btn,
         pass_dropdown,
@@ -316,7 +316,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         ft.Divider(height=1, color="#e5e7eb"),
         ft.Container(height=6),
         
-        ft.Text("Compose Message", size=13, weight=ft.FontWeight.W_600, color="#374151"),
+        ft.Text(state.t("header.compose_message"), size=13, weight=ft.FontWeight.W_600, color="#374151"),
         message_field,
         ft.Container(height=6),
         
@@ -330,22 +330,22 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     
     apple_mode_radio = ft.RadioGroup(
         content=ft.Row([
-            ft.Radio(value="single", label="Single Pass"),
-            ft.Radio(value="template", label="Template (All Passes)"),
+            ft.Radio(value="single", label=state.t("mode.single")),
+            ft.Radio(value="template", label=state.t("mode.template")),
         ], spacing=20),
         value="single",
     )
 
     apple_search_field = ft.TextField(
-        label="Search by Holder Name",
-        hint_text="e.g., Sleiman",
+        label=state.t("label.search_holder"),
+        hint_text="",
         width=400, border_radius=8, text_size=13,
         prefix_icon="search",
         visible=True,
     )
 
     apple_find_btn = ft.ElevatedButton(
-        "Find Passes",
+        state.t("btn.find_passes"),
         icon="search",
         width=400,
         visible=True,
@@ -356,16 +356,16 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     )
 
     apple_pass_dropdown = ft.Dropdown(
-        label="Select Apple Pass",
-        hint_text="Choose a pass",
+        label=state.t("label.select_pass"),
+        hint_text=state.t("placeholder.choose_pass"),
         width=400, border_radius=8, text_size=13,
         options=[],
         visible=True,
     )
 
     apple_template_dropdown = ft.Dropdown(
-        label="Select Apple Template",
-        hint_text="Choose a template",
+        label=state.t("label.select_template"),
+        hint_text=state.t("placeholder.choose_template"),
         width=400, border_radius=8, text_size=13,
         options=[],
         visible=False,
@@ -374,7 +374,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     apple_device_count_text = ft.Container(
         content=ft.Row([
             ft.Icon("devices", size=14, color="#6b7280"),
-            ft.Text("Registered Devices: —", size=11, color="#6b7280"),
+            ft.Text(state.t("label.registered_devices", count="—"), size=11, color="#6b7280"),
         ], spacing=6),
         padding=ft.padding.symmetric(horizontal=12, vertical=6),
         border_radius=6,
@@ -387,7 +387,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         content=ft.Row([
             ft.Icon("info_outline", size=14, color="#3b82f6"),
             ft.Text(
-                "Apple Wallet uses silent push: the device fetches the latest pass automatically.",
+                state.t("msg.apple_silent_push_hint"),
                 size=11, color="#3b82f6", expand=True,
             ),
         ], spacing=8),
@@ -398,14 +398,14 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     )
 
     apple_message_field = ft.TextField(
-        label="Notification Message",
-        hint_text="Type message to trigger lock-screen update...",
+        label=state.t("header.compose_notification"),
+        hint_text=state.t("placeholder.apple_notification_hint"),
         width=400, border_radius=8, text_size=13,
         multiline=True, min_lines=2, max_lines=4,
     )
 
     apple_send_btn = ft.ElevatedButton(
-        "Send Lock-Screen Notification",
+        state.t("btn.send_lock_screen_notification"),
         icon=ft.Icons.NOTIFICATIONS_ACTIVE,
         width=400, height=44,
         style=ft.ButtonStyle(
@@ -432,7 +432,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
                 
             page.update()
         except Exception as e:
-            _set_status(f"Error loading Apple passes: {e}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(e))}", "red")
 
     def load_apple_templates():
         try:
@@ -452,7 +452,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
 
             page.update()
         except Exception as e:
-            _set_status(f"Error loading Apple templates: {e}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(e))}", "red")
 
     def on_apple_mode_change(e):
         mode = apple_mode_radio.value
@@ -474,7 +474,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     def on_apple_find(e):
         search_query = apple_search_field.value.strip().lower()
         if not search_query:
-            _set_status("⚠️ Please enter a name to search", "orange")
+            _set_status(state.t("msg.enter_search_query"), "orange")
             page.update()
             return
 
@@ -489,7 +489,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             ]
 
             if not matching:
-                _set_status(f"❌ No Apple passes found matching '{search_query}'.", "orange")
+                _set_status(f"❌ {state.t('msg.no_passes_found')}", "orange")
                 apple_pass_dropdown.options = []
                 apple_pass_dropdown.value = None
             else:
@@ -501,13 +501,13 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
                     for p in matching if p.get("serial_number")
                 ]
                 apple_pass_dropdown.value = str(matching[0].get("serial_number", ""))
-                _set_status(f"✅ Found {len(matching)} Apple pass(es).", "green")
+                _set_status(state.t("msg.found_passes_count", count=len(matching)), "green")
                 # Trigger device count for auto-selected pass
                 _update_device_count(apple_pass_dropdown.value)
 
             ns.update("is_loading", False)
         except Exception as ex:
-            _set_status(f"❌ Error searching Apple passes: {ex}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(ex))}", "red")
 
         page.update()
 
@@ -516,15 +516,15 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
 
     def _update_device_count(serial):
         if not serial:
-            apple_device_label.value = "Registered Devices: —"
+            apple_device_label.value = state.t("label.registered_devices", count="—")
             apple_device_label.color = "#6b7280"
             return
         try:
             count = api_client.get_apple_pass_devices_count(serial)
-            apple_device_label.value = f"Registered Devices: {count}"
+            apple_device_label.value = state.t("label.registered_devices", count=count)
             apple_device_label.color = "#16a34a" if count > 0 else "#ea580c"
         except Exception:
-            apple_device_label.value = "Registered Devices: Error"
+            apple_device_label.value = state.t("label.registered_devices", count="Error")
             apple_device_label.color = "#dc2626"
 
     def on_apple_pass_change(e):
@@ -539,7 +539,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         msg = apple_message_field.value.strip()
         
         if not msg:
-            _set_status("⚠️ Please enter a message for the notification", "orange")
+            _set_status(state.t("msg.enter_message_err"), "orange")
             page.update()
             return
 
@@ -550,7 +550,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             if mode == "single":
                 serial = apple_pass_dropdown.value
                 if not serial:
-                    _set_status("❌ Please select an Apple Pass first", "red")
+                    _set_status(state.t("msg.select_pass_err"), "red")
                     ns.update("is_loading", False)
                     page.update()
                     return
@@ -562,7 +562,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             else:
                 template_id = apple_template_dropdown.value
                 if not template_id:
-                    _set_status("❌ Please select a template first", "red")
+                    _set_status(state.t("msg.select_template_err"), "red")
                     ns.update("is_loading", False)
                     page.update()
                     return
@@ -576,7 +576,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             apple_message_field.value = ""
         except Exception as ex:
             error_msg = str(ex)
-            _set_status(f"❌ Error: {error_msg}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=error_msg)}", "red")
             target = apple_pass_dropdown.value or apple_template_dropdown.value or "Unknown"
             _add_history_entry("Apple", target, "Push update", f"Failed: {error_msg}", "#dc2626")
         
@@ -587,7 +587,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
     apple_tab_content = ft.Column([
         ft.Container(
             content=ft.Column([
-                ft.Text("Select Mode", size=13, weight=ft.FontWeight.W_600, color="#374151"),
+                ft.Text(state.t("header.select_mode"), size=13, weight=ft.FontWeight.W_600, color="#374151"),
                 apple_mode_radio,
             ], spacing=6),
             padding=ft.padding.only(bottom=10),
@@ -595,7 +595,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         ft.Divider(height=1, color="#e5e7eb"),
         ft.Container(height=6),
 
-        ft.Text("Select Target", size=13, weight=ft.FontWeight.W_600, color="#374151"),
+        ft.Text(state.t("header.select_target"), size=13, weight=ft.FontWeight.W_600, color="#374151"),
         apple_search_field,
         apple_find_btn,
         apple_pass_dropdown,
@@ -604,7 +604,7 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         ft.Divider(height=1, color="#e5e7eb"),
         ft.Container(height=6),
         
-        ft.Text("Compose Notification", size=13, weight=ft.FontWeight.W_600, color="#374151"),
+        ft.Text(state.t("header.compose_notification"), size=13, weight=ft.FontWeight.W_600, color="#374151"),
         apple_message_field,
         ft.Container(height=6),
         
@@ -625,12 +625,12 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         label_padding=ft.padding.symmetric(horizontal=16),
         tabs=[
             ft.Tab(
-                text="Google Wallet",
+                text=state.t("label.google_wallet"),
                 content=ft.Container(content=google_tab_content, padding=ft.padding.only(top=15)),
                 icon=ft.Icons.ANDROID
             ),
             ft.Tab(
-                text="Apple Wallet",
+                text=state.t("label.apple_wallet"),
                 content=ft.Container(content=apple_tab_content, padding=ft.padding.only(top=15)),
                 icon=ft.Icons.APPLE
             ),
@@ -644,12 +644,12 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
             ft.Row([
                 ft.Icon("notifications_active", size=24, color="#0052FF"),
                 ft.Text(
-                    state.t("header.send_notification") if hasattr(state, "t") else "Send Notification",
+                    state.t("header.send_notification"),
                     size=22, weight=ft.FontWeight.BOLD, color="#1a1a2e",
                 ),
             ], spacing=10),
             ft.Text(
-                state.t("subtitle.send_notification") if hasattr(state, "t") else "Broadcast messages to pass holders",
+                state.t("subtitle.send_notification"),
                 size=12, color="#9ca3af",
             ),
             ft.Divider(height=1, color="#e5e7eb"),
@@ -673,9 +673,9 @@ def build_send_notification_view(page: ft.Page, state, api_client) -> ft.Contain
         content=ft.Column([
             ft.Row([
                 ft.Icon("history", size=20, color="#0052FF"),
-                ft.Text("Notification History", size=16, weight=ft.FontWeight.W_700, color="#1a1a2e"),
+                ft.Text(state.t("header.notification_history"), size=16, weight=ft.FontWeight.W_700, color="#1a1a2e"),
             ], spacing=8),
-            ft.Text("Recent push notifications sent from this session", size=11, color="#9ca3af"),
+            ft.Text(state.t("subtitle.notification_history"), size=11, color="#9ca3af"),
             ft.Divider(height=1, color="#e5e7eb"),
             ft.Container(height=4),
             history_column,

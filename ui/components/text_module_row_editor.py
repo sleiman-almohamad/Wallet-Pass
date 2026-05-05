@@ -162,10 +162,14 @@ class TextModuleRowEditor(ft.Container):
             # Map labels based on type
             display_label = label_postfix
             if current_type == "link":
-                if label_postfix == "Header": display_label = "Button Label"
-                if label_postfix == "Body":   display_label = "Target URL"
+                if label_postfix == "Header": display_label = self.state.t("label.button_label")
+                if label_postfix == "Body":   display_label = self.state.t("label.target_url")
+            else:
+                if label_postfix == "Header": display_label = self.state.t("label.header_simple")
+                if label_postfix == "Body":   display_label = self.state.t("label.body_simple")
 
-            label = f"{col_prefix.capitalize()} {display_label}"
+            prefix_localized = self.state.t(f"label.{col_prefix}")
+            label = f"{prefix_localized} {display_label}"
             
             tf = ft.TextField(
                 label=label,
@@ -182,7 +186,7 @@ class TextModuleRowEditor(ft.Container):
             tf.suffix = ft.IconButton(
                 icon=ft.Icons.EMOJI_EMOTIONS,
                 icon_size=16,
-                tooltip="Add Emoji",
+                tooltip=self.state.t("tooltip.add_emoji"),
                 on_click=lambda e: self.emoji_picker.open(tf, lambda evt: self.update_field(index, field_name, tf.value)) if self.emoji_picker else None
             )
             return tf
@@ -192,8 +196,8 @@ class TextModuleRowEditor(ft.Container):
             type_picker = ft.Dropdown(
                 value=col_type,
                 options=[
-                    ft.dropdown.Option("text", "Text"),
-                    ft.dropdown.Option("link", "Link"),
+                    ft.dropdown.Option("text", self.state.t("option.text")),
+                    ft.dropdown.Option("link", self.state.t("option.link")),
                 ],
                 width=75,
                 text_size=10,
@@ -225,19 +229,19 @@ class TextModuleRowEditor(ft.Container):
             bgcolor="white",
             content=ft.Column([
                 ft.Row([
-                    ft.Text(f"ROW {index + 1}", weight=ft.FontWeight.W_600, size=12),
+                    ft.Text(self.state.t("label.row_number", number=index + 1), weight=ft.FontWeight.W_600, size=12),
                     ft.Row([
                         ft.IconButton(
                             icon=ft.Icons.ARROW_UPWARD,
                             icon_size=16,
-                            tooltip="Move Up",
+                            tooltip=self.state.t("tooltip.move_up"),
                             on_click=lambda e, i=index: self.move_row(i, -1),
                             disabled=(index == 0)
                         ),
                         ft.IconButton(
                             icon=ft.Icons.ARROW_DOWNWARD,
                             icon_size=16,
-                            tooltip="Move Down",
+                            tooltip=self.state.t("tooltip.move_down"),
                             on_click=lambda e, i=index: self.move_row(i, 1),
                             disabled=(index == len(self.rows) - 1)
                         ),
@@ -245,7 +249,7 @@ class TextModuleRowEditor(ft.Container):
                             icon=ft.Icons.DELETE_OUTLINE,
                             icon_color="red400",
                             icon_size=18,
-                            tooltip="Delete Row",
+                            tooltip=self.state.t("tooltip.delete_row"),
                             on_click=lambda e, i=index: self.remove_row(i)
                         )
                     ], spacing=0)
@@ -266,11 +270,11 @@ class TextModuleRowEditor(ft.Container):
 
         return ft.Column([
             ft.Row([
-                ft.Text("Information Fields", size=14, weight=ft.FontWeight.BOLD),
-                ft.ElevatedButton("Add Row", icon=ft.Icons.ADD, on_click=self.add_row, 
+                ft.Text(self.state.t("header.info_fields"), size=14, weight=ft.FontWeight.BOLD),
+                ft.ElevatedButton(self.state.t("btn.add_row"), icon=ft.Icons.ADD, on_click=self.add_row, 
                                  style=ft.ButtonStyle(padding=5, shape=ft.RoundedRectangleBorder(radius=8))),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ft.Text("Define text blocks or interactive link buttons.", size=11, color="grey"),
+            ft.Text(self.state.t("subtitle.info_fields"), size=11, color="grey"),
             ft.Container(height=5),
             rows_list
         ])

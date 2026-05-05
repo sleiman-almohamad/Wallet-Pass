@@ -15,14 +15,14 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
     editing_campaign = None
     
     # Editor Refs
-    campaign_name_tf = ft.TextField(label="Campaign Name", expand=1, border_radius=8, hint_text="e.g. Summer Special 2024")
-    slug_tf = ft.TextField(label="URL Slug", expand=1, border_radius=8, hint_text="e.g. summer24")
+    campaign_name_tf = ft.TextField(label=state.t("label.campaign_name"), expand=1, border_radius=8, hint_text="")
+    slug_tf = ft.TextField(label=state.t("label.url_slug"), expand=1, border_radius=8, hint_text="")
     
-    landing_title_tf = ft.TextField(label="Landing Page Title", expand=1, border_radius=8)
-    landing_subtitle_tf = ft.TextField(label="Landing Page Subtitle", expand=1, border_radius=8, multiline=True)
+    landing_title_tf = ft.TextField(label=state.t("label.landing_title"), expand=1, border_radius=8)
+    landing_subtitle_tf = ft.TextField(label=state.t("label.landing_subtitle"), expand=1, border_radius=8, multiline=True)
     
-    google_class_dd = ft.Dropdown(label="Google Wallet Class", expand=1, border_radius=8)
-    apple_template_dd = ft.Dropdown(label="Apple Wallet Template", expand=1, border_radius=8)
+    google_class_dd = ft.Dropdown(label=state.t("label.google_class"), expand=1, border_radius=8)
+    apple_template_dd = ft.Dropdown(label=state.t("label.apple_template"), expand=1, border_radius=8)
     
     # ── UI Containers ──
     campaigns_list_column = ft.Column(spacing=15, scroll=ft.ScrollMode.AUTO, expand=True)
@@ -35,14 +35,14 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
             campaigns = api_client.get_campaigns()
             if not campaigns:
                 campaigns_list_column.controls.append(
-                    ft.Text("No QR Campaigns found. Create one to start distributing passes.", 
+                    ft.Text(state.t("msg.no_campaigns"), 
                             color=TEXT_SECONDARY, size=13, italic=True)
                 )
             else:
                 for c in campaigns:
                     campaigns_list_column.controls.append(create_campaign_card(c))
         except Exception as e:
-            status_text.value = f"❌ Error: {str(e)}"
+            status_text.value = f"❌ {state.t('msg.api_error', detail=str(e))}"
             status_text.color = "red"
         render_view()
 
@@ -72,8 +72,8 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
         else:
             campaign_name_tf.value = ""
             slug_tf.value = ""
-            landing_title_tf.value = "Get Your Wallet Pass"
-            landing_subtitle_tf.value = "Enter your details below to receive your digital pass."
+            landing_title_tf.value = state.t("default.landing_title")
+            landing_subtitle_tf.value = state.t("default.landing_subtitle")
             google_class_dd.value = None
             apple_template_dd.value = None
             slug_tf.read_only = False
@@ -100,7 +100,7 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
             current_view = "list"
             load_campaigns()
         except Exception as ex:
-            status_text.value = f"❌ Save error: {ex}"
+            status_text.value = f"❌ {state.t('msg.api_error', detail=str(ex))}"
             status_text.color = "red"
             page.update()
 
@@ -109,7 +109,7 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
             api_client.delete_campaign(cid)
             load_campaigns()
         except Exception as e:
-            status_text.value = f"❌ Delete error: {str(e)}"
+            status_text.value = f"❌ {state.t('msg.api_error', detail=str(e))}"
             status_text.color = "red"
             page.update()
 
@@ -174,19 +174,19 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
                             width=80,
                             height=90,
                             fit=ft.ImageFit.CONTAIN,
-                            tooltip="Right click to save"
+                            tooltip=state.t("tooltip.download_qr")
                         ) if qr_b64 else ft.Icon(ft.Icons.QR_CODE_2, color=PRIMARY, size=32),
                         on_click=lambda _: page.launch_url(f"{getattr(configs, 'PUBLIC_URL', 'http://localhost:8100')}/api/campaigns/{c['id']}/qr"),
-                        tooltip="Download QR Code"
+                        tooltip=state.t("tooltip.download_qr")
                     ),
                     ft.Column([
                         ft.Text(c['campaign_name'], size=16, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
                         ft.Text(f"Slug: /{c['slug']}", size=12, color=PRIMARY, weight=ft.FontWeight.W_600),
                     ], spacing=2, expand=True),
                     ft.Row([
-                        ft.IconButton(ft.Icons.COPY_ALL, tooltip="Copy Link", on_click=lambda _: page.set_clipboard(campaign_url)),
-                        ft.IconButton(ft.Icons.OPEN_IN_NEW, tooltip="Open Landing Page", on_click=lambda _: page.launch_url(campaign_url)),
-                        ft.IconButton(ft.Icons.EDIT_OUTLINED, on_click=lambda _: show_editor(c), tooltip="Edit Campaign"),
+                        ft.IconButton(ft.Icons.COPY_ALL, tooltip=state.t("tooltip.copy_link"), on_click=lambda _: page.set_clipboard(campaign_url)),
+                        ft.IconButton(ft.Icons.OPEN_IN_NEW, tooltip=state.t("tooltip.open_landing"), on_click=lambda _: page.launch_url(campaign_url)),
+                        ft.IconButton(ft.Icons.EDIT_OUTLINED, on_click=lambda _: show_editor(c), tooltip=state.t("tooltip.edit_campaign")),
                         ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color="red700", on_click=lambda _: delete_campaign(c['id']))
                     ])
                 ]),
@@ -208,10 +208,10 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
             view_content.controls = [
                 ft.Row([
                     ft.Column([
-                        ft.Text("QR Campaigns", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-                        ft.Text("Distribute your passes via a single QR code that works on any device.", color=TEXT_SECONDARY, size=13),
+                        ft.Text(state.t("header.qr_campaigns"), size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+                        ft.Text(state.t("subtitle.qr_campaigns"), color=TEXT_SECONDARY, size=13),
                     ], expand=True),
-                    ft.ElevatedButton("Create Campaign", icon=ft.Icons.ADD, on_click=lambda _: show_editor(), bgcolor=PRIMARY, color="white")
+                    ft.ElevatedButton(state.t("btn.create_campaign"), icon=ft.Icons.ADD, on_click=lambda _: show_editor(), bgcolor=PRIMARY, color="white")
                 ]),
                 ft.Container(height=10),
                 status_text,
@@ -222,31 +222,31 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
             view_content.controls = [
                 ft.Row([
                     ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda _: back_to_list()),
-                    ft.Text("Campaign Designer", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+                    ft.Text(state.t("header.campaign_designer"), size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
                 ]),
                 ft.Container(height=10),
                 ft.Column([
                     card(ft.Column([
-                        section_title("Campaign Identity", ft.Icons.LABEL),
+                        section_title(state.t("header.campaign_identity"), ft.Icons.LABEL),
                         ft.Row([campaign_name_tf, slug_tf]),
                     ], spacing=15)),
                     
                     card(ft.Column([
-                        section_title("Wallet Routing", ft.Icons.ROUTE),
-                        ft.Text("Assign the templates that will be served to each OS:", size=12, color=TEXT_SECONDARY),
+                        section_title(state.t("header.wallet_routing"), ft.Icons.ROUTE),
+                        ft.Text(state.t("msg.assign_templates_hint"), size=12, color=TEXT_SECONDARY),
                         ft.Row([google_class_dd, apple_template_dd]),
                     ], spacing=15)),
 
                     card(ft.Column([
-                        section_title("Landing Page Design", ft.Icons.WEB),
+                        section_title(state.t("header.landing_page_design"), ft.Icons.WEB),
                         landing_title_tf,
                         landing_subtitle_tf,
                     ], spacing=15)),
 
                     # QR Code Preview & Download
                     card(ft.Column([
-                        section_title("Distribution QR Code", ft.Icons.QR_CODE_2),
-                        ft.Text("Download this branded QR code to distribute the campaign.", size=12, color=TEXT_SECONDARY),
+                        section_title(state.t("header.distribution_qr"), ft.Icons.QR_CODE_2),
+                        ft.Text(state.t("msg.download_qr_hint"), size=12, color=TEXT_SECONDARY),
                         ft.Row([
                             ft.Container(
                                 content=ft.Column([
@@ -256,10 +256,10 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
                                             campaign_name_tf.value or "Campaign"
                                         ),
                                         width=150, height=180, fit=ft.ImageFit.CONTAIN,
-                                        tooltip="Right click to save"
+                                        tooltip=state.t("tooltip.download_qr")
                                     ),
                                     ft.ElevatedButton(
-                                        "Download QR", icon=ft.Icons.DOWNLOAD,
+                                        state.t("btn.download_qr"), icon=ft.Icons.DOWNLOAD,
                                         on_click=lambda _: page.launch_url(f"{getattr(configs, 'PUBLIC_URL', 'http://localhost:8100')}/api/campaigns/{editing_campaign['id']}/qr")
                                     )
                                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
@@ -271,7 +271,7 @@ def build_campaign_management_view(page: ft.Page, state, api_client) -> ft.Conta
 
                     ft.Container(
                         content=ft.ElevatedButton(
-                            "Save Campaign", icon=ft.Icons.SAVE, on_click=save_campaign,
+                            state.t("btn.save_campaign"), icon=ft.Icons.SAVE, on_click=save_campaign,
                             bgcolor=PRIMARY, color="white", height=45, width=200
                         ),
                         alignment=ft.alignment.center_right

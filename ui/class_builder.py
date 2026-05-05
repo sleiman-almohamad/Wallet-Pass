@@ -150,10 +150,9 @@ def create_template_builder(page, state, api_client=None):
                     result = api_client.update_class(
                         class_id=class_id,
                         class_type=current_class_type,
-                        class_json=current_json,
                         **extras
                     )
-                    status_text_ref.current.value = "✅ Template updated"
+                    status_text_ref.current.value = "✅ " + state.t("label.template_updated")
                     msg = state.t("msg.template_updated", id=class_id)
                 else:
                     # Create new class
@@ -161,10 +160,9 @@ def create_template_builder(page, state, api_client=None):
                     result = api_client.create_class(
                         class_id=class_id,
                         class_type=current_class_type,
-                        class_json=current_json,
                         **extras
                     )
-                    status_text_ref.current.value = "✅ Template created"
+                    status_text_ref.current.value = "✅ " + state.t("label.template_created_simple")
                     msg = state.t("msg.template_created", id=class_id)
                 
                 # --- Success Dialog ---
@@ -176,11 +174,11 @@ def create_template_builder(page, state, api_client=None):
 
                 succ_dlg = ft.AlertDialog(
                     modal=False,
-                    title=ft.Text("✅ Success", weight=ft.FontWeight.BOLD),
+                    title=ft.Text(state.t("header.success"), weight=ft.FontWeight.BOLD),
                     content=ft.Text(msg, size=13),
                     on_dismiss=dialog_dismissed,
                     actions=[
-                        ft.TextButton("Close", on_click=close_dlg),
+                        ft.TextButton(state.t("btn.close"), on_click=close_dlg),
                     ],
                 )
                 page.open(succ_dlg)
@@ -229,36 +227,36 @@ def create_template_builder(page, state, api_client=None):
         padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
         bgcolor=BG_COLOR,
         content=ft.Column([
-            ft.Text("Create New Template", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-            ft.Text("Define a unique Class ID to begin crafting your digital wallet experience.", color=TEXT_SECONDARY, size=13),
+            ft.Text(state.t("header.create_template"), size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+            ft.Text(state.t("subtitle.create_template"), color=TEXT_SECONDARY, size=13),
             ft.Container(height=8),
             
             card(ft.Column([
-                section_title("Class Configuration", ft.Icons.STYLE),
+                section_title(state.t("header.class_config"), ft.Icons.STYLE),
                 ft.TextField(
                     ref=class_id_input_ref,
-                    label="Class ID *",
-                    hint_text="e.g., coffee_loyalty_2025",
+                    label=state.t("label.class_id_req_mark"),
+                    hint_text=state.t("hint.class_id_example"),
                     width=380, border_radius=8, text_size=13,
                     on_change=on_class_id_change
                 ),
                 ft.Dropdown(
                     ref=class_type_dropdown_ref,
-                    label="Pass Type",
+                    label=state.t("label.pass_type"),
                     value="Generic",
                     width=380, border_radius=8, text_size=13,
                     options=[
-                        ft.dropdown.Option("Generic"),
-                        ft.dropdown.Option("LoyaltyCard"),
-                        ft.dropdown.Option("GiftCard"),
-                        ft.dropdown.Option("EventTicket"),
-                        ft.dropdown.Option("TransitPass")
+                        ft.dropdown.Option("Generic", state.t("option.generic")),
+                        ft.dropdown.Option("LoyaltyCard", state.t("option.loyalty")),
+                        ft.dropdown.Option("GiftCard", state.t("option.gift")),
+                        ft.dropdown.Option("EventTicket", state.t("option.event")),
+                        ft.dropdown.Option("TransitPass", state.t("option.transit"))
                     ],
                     on_change=on_class_type_change
                 ),
                 ft.Container(height=8),
                 ft.ElevatedButton(
-                    "Create Template",
+                    state.t("btn.create_template"),
                     icon=ft.Icons.ADD_CIRCLE,
                     on_click=save_template,
                     bgcolor=PRIMARY, color="white", height=40, width=200,
@@ -270,8 +268,8 @@ def create_template_builder(page, state, api_client=None):
             ft.Container(height=8),
             
             card(ft.Column([
-                section_title("Template Fields", ft.Icons.TUNE),
-                ft.Text("Dynamic configuration fields based on pass type", size=11, color=TEXT_SECONDARY),
+                section_title(state.t("header.template_fields"), ft.Icons.TUNE),
+                ft.Text(state.t("subtitle.template_fields"), size=11, color=TEXT_SECONDARY),
                 ft.Column(
                     ref=form_container_ref,
                     controls=[],
@@ -281,13 +279,13 @@ def create_template_builder(page, state, api_client=None):
                 ft.Divider(height=15),
                 ft.Row([
                     ft.ElevatedButton(
-                        "Update & Sync Template",
+                        state.t("btn.update_sync"),
                         icon="sync",
                         on_click=save_template,
                         bgcolor="blue", color="white",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
                     ),
-                    ft.OutlinedButton("Reset Form", icon="refresh", on_click=reset_form,
+                    ft.OutlinedButton(state.t("btn.reset_form"), icon="refresh", on_click=reset_form,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
                     )
                 ], spacing=10),

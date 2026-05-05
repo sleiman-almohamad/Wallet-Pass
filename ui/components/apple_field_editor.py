@@ -2,8 +2,9 @@ import flet as ft
 from ui.theme import BORDER_COLOR, SECTION_HEADER, TEXT_MUTED
 
 class EmojiPicker:
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, state=None):
         self.page = page
+        self.state = state
         self.target_textfield = None
         self._build_dialog()
 
@@ -17,23 +18,23 @@ class EmojiPicker:
                 raw_cats = json.load(f)
              
             name_map = {
-                "Smileys & Emotion": "😀 Smileys",
-                "People & Body": "👋 People",
-                "Animals & Nature": "🐻 Nature",
-                "Food & Drink": "🍔 Food",
-                "Travel & Places": "🚗 Travel",
-                "Activities": "🎪 Activities",
-                "Objects": "🛠️ Objects",
-                "Symbols": "🚩 Symbols",
-                "Flags": "🏳️ Flags"
+                "Smileys & Emotion": self.state.t("emoji.smileys") if self.state else "😀 Smileys",
+                "People & Body": self.state.t("emoji.people") if self.state else "👋 People",
+                "Animals & Nature": self.state.t("emoji.nature") if self.state else "🐻 Nature",
+                "Food & Drink": self.state.t("emoji.food") if self.state else "🍔 Food",
+                "Travel & Places": self.state.t("emoji.travel") if self.state else "🚗 Travel",
+                "Activities": self.state.t("emoji.activities") if self.state else "🎪 Activities",
+                "Objects": self.state.t("emoji.objects") if self.state else "🛠️ Objects",
+                "Symbols": self.state.t("emoji.symbols") if self.state else "🚩 Symbols",
+                "Flags": self.state.t("emoji.flags") if self.state else "🏳️ Flags"
             }
             categories = {name_map.get(k, k): v for k, v in raw_cats.items()}
         except Exception:
             categories = {
-                "😀 Smileys": ["😀", "😁", "😂", "🤣", "😊", "😇", "😍", "🥰", "😋", "😎", "🤔", "🙄", "😴", "🤐", "🥵"],
-                "🎪 Activities": ["⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏉", "🎱", "🏓", "🏸", "🥊", "🥋", "🥅", "⛳", "⛸️"],
-                "🛠️ Objects": ["💻", "⌨️", "🖥️", "🖨️", "🖱️", "🖲️", "🕹️", "🗜️", "💽", "💾", "💿", "📀", "📼", "📷", "📸"],
-                "🚩 Symbols": ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗"]
+                self.state.t("emoji.smileys") if self.state else "😀 Smileys": ["😀", "😁", "😂", "🤣", "😊", "😇", "😍", "🥰", "😋", "😎", "🤔", "🙄", "😴", "🤐", "🥵"],
+                self.state.t("emoji.activities") if self.state else "🎪 Activities": ["⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏉", "🎱", "🏓", "🏸", "🥊", "🥋", "🥅", "⛳", "⛸️"],
+                self.state.t("emoji.objects") if self.state else "🛠️ Objects": ["💻", "⌨️", "🖥️", "🖨️", "🖱️", "🖲️", "🕹️", "🗜️", "💽", "💾", "💿", "📀", "📼", "📷", "📸"],
+                self.state.t("emoji.symbols") if self.state else "🚩 Symbols": ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗"]
             }
 
         tabs = []
@@ -65,13 +66,13 @@ class EmojiPicker:
         )
 
         self.dialog = ft.AlertDialog(
-            title=ft.Text("Select Emoji", size=16, weight=ft.FontWeight.BOLD),
+            title=ft.Text(self.state.t("header.select_emoji") if self.state else "Select Emoji", size=16, weight=ft.FontWeight.BOLD),
             content=ft.Container(
                 width=400,
                 height=300,
                 content=self.tabs_control
             ),
-            actions=[ft.TextButton("Close", on_click=lambda e: self.close())],
+            actions=[ft.TextButton(self.state.t("btn.close") if self.state else "Close", on_click=lambda e: self.close())],
             actions_alignment=ft.MainAxisAlignment.END,
         )
 
@@ -107,17 +108,18 @@ class AppleFieldEditor:
     }
 
     TITLES = {
-        "header": "Header Fields",
-        "primary": "Primary Field",
-        "secondary": "Secondary Fields",
-        "auxiliary": "Auxiliary Fields",
-        "back": "Back Fields",
+        "header": "label.header_fields",
+        "primary": "label.primary_field_single",
+        "secondary": "label.secondary_fields",
+        "auxiliary": "label.auxiliary_fields",
+        "back": "label.back_fields",
     }
 
-    def __init__(self, page=None, on_change=None):
+    def __init__(self, page=None, on_change=None, state=None):
         self.page = page
         self.on_change = on_change
-        self.emoji_picker = EmojiPicker(self.page) if self.page else None
+        self.state = state
+        self.emoji_picker = EmojiPicker(self.page, self.state) if self.page else None
         
         self.fields = {
             "header": [],
@@ -140,10 +142,10 @@ class AppleFieldEditor:
         main_column = ft.Column(spacing=15)
         
         for category in ["header", "primary", "secondary", "auxiliary", "back"]:
-            title_text = ft.Text(self.TITLES[category], size=12, weight=ft.FontWeight.W_600, color=SECTION_HEADER)
+            title_text = ft.Text(self.state.t(self.TITLES[category]) if self.state else self.TITLES[category], size=12, weight=ft.FontWeight.W_600, color=SECTION_HEADER)
             
             add_button = ft.TextButton(
-                "Add Field",
+                self.state.t("btn.add_field") if self.state else "Add Field",
                 icon=ft.Icons.ADD,
                 on_click=lambda e, cat=category: self._add_field(cat),
                 style=ft.ButtonStyle(color="blue")
@@ -195,14 +197,14 @@ class AppleFieldEditor:
             up_btn = ft.IconButton(
                 icon=ft.Icons.ARROW_UPWARD,
                 icon_size=16,
-                tooltip="Move Up",
+                tooltip=self.state.t("tooltip.move_up") if self.state else "Move Up",
                 on_click=lambda e, idx=index, cat=category: self._move_field(cat, idx, -1),
                 disabled=(index == 0)
             )
             down_btn = ft.IconButton(
                 icon=ft.Icons.ARROW_DOWNWARD,
                 icon_size=16,
-                tooltip="Move Down",
+                tooltip=self.state.t("tooltip.move_down") if self.state else "Move Down",
                 on_click=lambda e, idx=index, cat=category: self._move_field(cat, idx, 1),
                 disabled=(index == len(fields_list) - 1)
             )
@@ -210,7 +212,7 @@ class AppleFieldEditor:
             remove_btn = ft.IconButton(
                 icon=ft.Icons.DELETE_OUTLINE,
                 icon_color="red400",
-                tooltip="Remove Field",
+                tooltip=self.state.t("tooltip.remove_field") if self.state else "Remove Field",
                 on_click=lambda e, idx=index, cat=category: self._remove_field(cat, idx)
             )
             
@@ -248,25 +250,25 @@ class AppleFieldEditor:
             self._trigger_change()
 
         lbl_tf = ft.TextField(
-            label="Label", 
+            label=self.state.t("label.field_label") if self.state else "Label", 
             value=label_val, 
-            hint_text=f"{self.TITLES[category]} Label",
+            hint_text=f"{self.state.t(self.TITLES[category]) if self.state else self.TITLES[category]} {self.state.t('label.field_label') if self.state else 'Label'}",
             expand=1, border_radius=8, text_size=13,
             on_change=on_text_change,
         )
         lbl_tf.suffix = ft.IconButton(
             icon=ft.Icons.EMOJI_EMOTIONS,
             icon_size=16,
-            tooltip="Add Emoji",
+            tooltip=self.state.t("tooltip.add_emoji") if self.state else "Add Emoji",
             on_click=lambda e: self.emoji_picker.open(lbl_tf, on_text_change) if self.emoji_picker else None
         )
 
         is_back = (category == "back")
 
         val_tf = ft.TextField(
-            label="Value", 
+            label=self.state.t("label.field_value") if self.state else "Value", 
             value=value_val, 
-            hint_text=f"{self.TITLES[category]} Value",
+            hint_text=f"{self.state.t(self.TITLES[category]) if self.state else self.TITLES[category]} {self.state.t('label.field_value') if self.state else 'Value'}",
             expand=1, border_radius=8, text_size=13,
             on_change=on_text_change,
             multiline=is_back,
@@ -276,7 +278,7 @@ class AppleFieldEditor:
         val_tf.suffix = ft.IconButton(
             icon=ft.Icons.EMOJI_EMOTIONS,
             icon_size=16,
-            tooltip="Add Emoji",
+            tooltip=self.state.t("tooltip.add_emoji") if self.state else "Add Emoji",
             on_click=lambda e: self.emoji_picker.open(val_tf, on_text_change) if self.emoji_picker else None
         )
 
@@ -298,7 +300,7 @@ class AppleFieldEditor:
             self._trigger_change()
 
         lbl_tf = ft.TextField(
-            label="Label", 
+            label=self.state.t("label.field_label") if self.state else "Label", 
             value=label_val, 
             hint_text=f"{self.TITLES[category]} Label",
             expand=1, border_radius=8, text_size=13,
@@ -307,14 +309,14 @@ class AppleFieldEditor:
         lbl_tf.suffix = ft.IconButton(
             icon=ft.Icons.EMOJI_EMOTIONS,
             icon_size=16,
-            tooltip="Add Emoji",
+            tooltip=self.state.t("tooltip.add_emoji") if self.state else "Add Emoji",
             on_click=lambda e: self.emoji_picker.open(lbl_tf, on_text_change) if self.emoji_picker else None
         )
 
         is_back = (category == "back")
 
         val_tf = ft.TextField(
-            label="Value", 
+            label=self.state.t("label.field_value") if self.state else "Value", 
             value=value_val, 
             hint_text=f"{self.TITLES[category]} Value",
             expand=1, border_radius=8, text_size=13,
@@ -326,7 +328,7 @@ class AppleFieldEditor:
         val_tf.suffix = ft.IconButton(
             icon=ft.Icons.EMOJI_EMOTIONS,
             icon_size=16,
-            tooltip="Add Emoji",
+            tooltip=self.state.t("tooltip.add_emoji") if self.state else "Add Emoji",
             on_click=lambda e: self.emoji_picker.open(val_tf, on_text_change) if self.emoji_picker else None
         )
 

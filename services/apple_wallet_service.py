@@ -272,7 +272,7 @@ class AppleWalletService:
                 def _md_to_html(match):
                     text = match.group(1)
                     url = match.group(2)
-                    if not url.startswith(("http://", "https://")):
+                    if not url.startswith(("http://", "https://", "mailto:", "tel:")):
                         url = f"https://{url}"
                     return f"<a href='{url}'>{text}</a>"
                 

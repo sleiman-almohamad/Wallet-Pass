@@ -46,7 +46,7 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
     current_class_data = None
 
     # ── AppleFieldEditor ──
-    apple_field_editor = AppleFieldEditor(page=page, on_change=None)  # We will set on_change after _sync_preview is defined
+    apple_field_editor = AppleFieldEditor(page=page, on_change=None, state=state)  # We will set on_change after _sync_preview is defined
 
     # ── File Picker ──
     file_picker = ft.FilePicker()
@@ -187,13 +187,13 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
 
     color_state_obj = SimpleColorState(custom_color_state, _on_color)
     bg_color_picker_container.content = create_color_picker(
-        page, color_state_obj, _on_color, "background_color", "Background Color"
+        page, color_state_obj, _on_color, "background_color", state.t("label.background_color"), state=state
     )
     fg_color_picker_container.content = create_color_picker(
-        page, color_state_obj, _on_color, "foreground_color", "Foreground Color"
+        page, color_state_obj, _on_color, "foreground_color", state.t("label.foreground_text"), state=state
     )
     lbl_color_picker_container.content = create_color_picker(
-        page, color_state_obj, _on_color, "label_color", "Label Color"
+        page, color_state_obj, _on_color, "label_color", state.t("label.label_color"), state=state
     )
 
     # ── Helper: get field values ──
@@ -214,7 +214,7 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             status_ref.current.value = state.t("msg.pls_enter_email")
             status_ref.current.color = "red"; page.update(); return
 
-        status_ref.current.value = "⏳ Generating Apple Wallet pass..."
+        status_ref.current.value = state.t("msg.generating_apple_pass")
         status_ref.current.color = "blue"; page.update()
 
         try:
@@ -236,7 +236,7 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
             # Use selected template_id from dropdown
             template_id = template_dropdown.value
             if not template_id:
-                status_ref.current.value = "⚠️ Please select a template first."
+                status_ref.current.value = state.t("msg.pls_select_template")
                 status_ref.current.color = "orange"; page.update(); return
 
             from services.apple_wallet_service import AppleWalletService
@@ -312,14 +312,14 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
 
             success_dlg = ft.AlertDialog(
                 modal=False,
-                title=ft.Text("✅ Apple Pass Generated Successfully!", weight=ft.FontWeight.BOLD),
+                title=ft.Text(state.t("msg.apple_pass_gen_success"), weight=ft.FontWeight.BOLD),
                 content=ft.Column([
-                    ft.Text("Your Apple Wallet pass has been created and saved locally.", size=13),
+                    ft.Text(state.t("msg.apple_pass_created_local"), size=13),
                     ft.Container(height=10),
-                    ft.Text(f"Saved at: {apple_pass_path}", size=11, color="grey", selectable=True),
+                    ft.Text(f"{state.t('msg.saved_at')} {apple_pass_path}", size=11, color="grey", selectable=True),
                     ft.Container(height=10),
                     ft.ElevatedButton(
-                        text="Download .pkpass",
+                        text=state.t("btn.download_pkpass"),
                         icon=ft.Icons.DOWNLOAD,
                         on_click=lambda e: page.launch_url(f"{configs.PUBLIC_URL}/passes/apple/{object_id}/download"),
                         style=ft.ButtonStyle(bgcolor="blue", color="white"),
@@ -341,13 +341,13 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                 ], tight=True, width=350, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 on_dismiss=dialog_dismissed,
                 actions=[
-                    ft.TextButton("Close", on_click=close_dlg),
+                    ft.TextButton(state.t("btn.close"), on_click=close_dlg),
                 ],
             )
             
             page.open(success_dlg)
 
-            status_ref.current.value = "✅ Apple Wallet pass generated!"
+            status_ref.current.value = state.t("status.apple_pass_gen_success")
             status_ref.current.color = "green"
         except Exception as ex:
             import traceback; traceback.print_exc()
@@ -387,8 +387,8 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
 
     # ── Build UI ──
     template_dropdown = ft.Dropdown(
-        label="Select Template",
-        hint_text="Choose a template...",
+        label=state.t("label.select_template"),
+        hint_text=state.t("placeholder.choose_template"),
         width=380, border_radius=8, text_size=13,
         options=[]
     )
@@ -403,11 +403,11 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                 ]
             else:
                 template_dropdown.options = []
-                template_dropdown.hint_text = "No Apple templates found."
+                template_dropdown.hint_text = state.t("msg.no_apple_templates")
         except Exception as e:
             print(f"Error loading Apple templates: {e}")
             template_dropdown.options = []
-            template_dropdown.hint_text = "Error loading templates."
+            template_dropdown.hint_text = state.t("msg.error_loading_templates")
         if template_dropdown.page:
             template_dropdown.update()
 
@@ -421,10 +421,10 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
         controls=[
             # Pass Title
             card(ft.Column([
-                section_title("Pass Identifier"),
+                section_title(state.t("header.pass_identifier")),
                 ft.TextField(
-                    ref=title_ref, label="Pass Title / ID",
-                    hint_text="e.g. store_card_vip",
+                    ref=title_ref, label=state.t("label.pass_title_id"),
+                    hint_text=state.t("placeholder.pass_id_hint"),
                     width=380, border_radius=8, text_size=13,
                 ),
             ], spacing=8)),
@@ -480,13 +480,13 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                     ),
                     ft.IconButton(
                         icon=ft.Icons.FOLDER_OPEN,
-                        tooltip="Browse local file",
+                        tooltip=state.t("tooltip.browse_file"),
                         on_click=lambda e: _open_file_picker("apple_logo_url")
                     ),
                 ], spacing=12),
                 
                 ft.Divider(height=1, color=BORDER_COLOR),
-                section_title("Event Ticket Layout", ft.Icons.LAYERS),
+                section_title(state.t("header.event_ticket_layout"), ft.Icons.LAYERS),
                 ft.Row([
                     ft.TextField(
                         ref=dynamic_field_refs["apple_strip_url"],
@@ -495,19 +495,19 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                     ),
                     ft.IconButton(
                         icon=ft.Icons.FOLDER_OPEN,
-                        tooltip="Browse local file",
+                        tooltip=state.t("tooltip.browse_file"),
                         on_click=lambda e: _open_file_picker("apple_strip_url")
                     ),
                 ]),
                 ft.Row([
                     ft.TextField(
                         ref=dynamic_field_refs["apple_background_image_url"],
-                        label="Background Image URL", hint_text="URL for background",
+                        label=state.t("label.background_image_url"), hint_text=state.t("placeholder.bg_image_hint"),
                         expand=1, border_radius=8, text_size=13, on_change=check_image_fields_logic,
                     ),
                     ft.TextField(
                         ref=dynamic_field_refs["apple_thumbnail_url"],
-                        label="Thumbnail URL", hint_text="URL for thumbnail",
+                        label=state.t("label.thumbnail_url"), hint_text=state.t("placeholder.thumb_image_hint"),
                         expand=1, border_radius=8, text_size=13, on_change=check_image_fields_logic,
                     ),
                 ], spacing=12)
@@ -515,13 +515,13 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
 
             # StoreCard sections
             card(ft.Column([
-                section_title("Card Fields", ft.Icons.VIEW_AGENDA),
+                section_title(state.t("header.card_fields"), ft.Icons.VIEW_AGENDA),
                 apple_field_editor.build(),
             ], spacing=8)),
 
             ft.Container(height=8),
             ft.ElevatedButton(
-                "Generate Apple Pass", icon=ft.Icons.PHONE_IPHONE,
+                state.t("btn.generate_apple_pass"), icon=ft.Icons.PHONE_IPHONE,
                 on_click=generate_pass,
                 bgcolor="#1a1a2e", color="white", height=48, width=240,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
@@ -560,13 +560,13 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
                     
                     # Rebuild color pickers to reflect new colors
                     bg_color_picker_container.content = create_color_picker(
-                        page, color_state_obj, _on_color, "background_color", "Background Color"
+                        page, color_state_obj, _on_color, "background_color", state.t("label.background_color"), state=state
                     )
                     fg_color_picker_container.content = create_color_picker(
-                        page, color_state_obj, _on_color, "foreground_color", "Foreground Color"
+                        page, color_state_obj, _on_color, "foreground_color", state.t("label.foreground_text"), state=state
                     )
                     lbl_color_picker_container.content = create_color_picker(
-                        page, color_state_obj, _on_color, "label_color", "Label Color"
+                        page, color_state_obj, _on_color, "label_color", state.t("label.label_color"), state=state
                     )
                     
                     # Dynamic fields
@@ -596,8 +596,8 @@ def build_apple_generator_view(page: ft.Page, state, api_client, preview: Mobile
         expand=True,
         padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
         content=ft.Column([
-            ft.Text("Apple Pass Generator", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-            ft.Text("Create a StoreCard pass for Apple Wallet.", color=TEXT_SECONDARY, size=13),
+            ft.Text(state.t("header.apple_generator"), size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+            ft.Text(state.t("subtitle.apple_generator"), color=TEXT_SECONDARY, size=13),
             ft.Container(height=8),
             template_dropdown,
             form_controls_column

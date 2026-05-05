@@ -24,7 +24,7 @@ import configs
 PASS_TYPE_FIELDS = {
     "Generic": [
         {"name": "logo_url",        "label": "label.logo_url",        "type": "text", "hint": "e.g., https://example.com/logo.png", "section": "Header"},
-        {"name": "hero_image_url",   "label": "Hero Image URL",       "type": "text", "hint": "e.g., https://example.com/hero.png",  "section": "Header"},
+        {"name": "hero_image_url",   "label": "label.hero_image_url", "type": "text", "hint": "e.g., https://example.com/hero.png",  "section": "Header"},
         {"name": "card_title",       "label": "label.issuer_name",    "type": "text", "hint": "e.g., Your Business Name",            "section": "Header"},
         {"name": "subheader_value",  "label": "label.subheader_value","type": "text", "hint": "e.g., VIP Level",                     "section": "Top Row"},
         {"name": "header_value",     "label": "label.header_value",   "type": "text", "hint": "e.g., VIP Member",                    "section": "Top Row"},
@@ -177,40 +177,40 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
         
         # Holder info section
         holder_info_section = card(ft.Column([
-            section_title("Pass Holder Information", ft.Icons.PERSON),
+            section_title(state.t("label.pass_holder_info"), ft.Icons.PERSON),
             ft.Row([
                 ft.TextField(
                     ref=holder_name_ref,
-                    label="Holder Name",
-                    hint_text="e.g., John Doe", expand=1, border_radius=8, text_size=13,
+                    label=state.t("label.holder_name"),
+                    hint_text=state.t("hint.john_doe"), expand=1, border_radius=8, text_size=13,
                     on_change=lambda e: _sync_preview(),
                 ),
                 ft.TextField(
                     ref=holder_email_ref,
-                    label="Holder Email",
-                    hint_text="e.g., john@example.com", expand=1, border_radius=8, text_size=13,
+                    label=state.t("label.holder_email"),
+                    hint_text=state.t("hint.john_email"), expand=1, border_radius=8, text_size=13,
                 ),
             ], spacing=12),
             ft.Dropdown(
                 ref=message_type_ref,
-                label="Notification Type",
+                label=state.t("label.notification_type"),
                 width=380, value="TEXT_AND_NOTIFY", border_radius=8, text_size=13,
                 options=[
-                    ft.dropdown.Option(key="TEXT", text="No Notification"),
-                    ft.dropdown.Option(key="TEXT_AND_NOTIFY", text="Send Push Notification"),
+                    ft.dropdown.Option(key="TEXT", text=state.t("option.notification_none")),
+                    ft.dropdown.Option(key="TEXT_AND_NOTIFY", text=state.t("option.notification_push")),
                 ],
             ),
         ], spacing=8))
 
         # Color picker section
         colors_section = card(ft.Column([
-            section_title("Customize Color", ft.Icons.PALETTE),
+            section_title(state.t("label.customize_color"), ft.Icons.PALETTE),
             bg_color_picker_container,
         ], spacing=8))
 
         # Pass details section
         details_controls = [
-            section_title("Pass Details", ft.Icons.DESCRIPTION),
+            section_title(state.t("label.pass_details"), ft.Icons.DESCRIPTION),
         ]
 
         fields_config = PASS_TYPE_FIELDS.get(class_type, [])
@@ -218,9 +218,10 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
         for field_config in fields_config:
             if "section" in field_config and field_config["section"] != current_section:
                 current_section = field_config["section"]
+                section_key = f"label.section_{current_section.replace(' ', '_').lower()}"
                 details_controls.append(
                     ft.Container(
-                        content=ft.Text(current_section, size=14, weight=ft.FontWeight.W_600, color=PRIMARY),
+                        content=ft.Text(state.t(section_key) if state.t(section_key) != section_key else current_section, size=14, weight=ft.FontWeight.W_600, color=PRIMARY),
                         padding=ft.padding.only(top=8, bottom=4),
                     )
                 )
@@ -268,7 +269,7 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                     tf,
                     ft.IconButton(
                         icon=ft.Icons.IMAGE_SEARCH_ROUNDED,
-                        tooltip=f"Select {field_config['label']}",
+                        tooltip=state.t("tooltip.select_field", field=state.t(field_config['label'])),
                         on_click=lambda e, target=tf: pick_image_for(target)
                     )
                 ], spacing=5))
@@ -282,7 +283,7 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
         if class_type == "Generic":
             template_rows = current_class_data.get("text_module_rows", [])
             if template_rows:
-                info_controls = [section_title("Information Fields", ft.Icons.TABLE_ROWS)]
+                info_controls = [section_title(state.t("label.text_module_rows"), ft.Icons.TABLE_ROWS)]
                 for row in template_rows:
                     row_idx = row.get("row_index", 0)
                     fields_row = ft.Row(spacing=8, alignment=ft.MainAxisAlignment.START)
@@ -295,9 +296,9 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                             fref = ft.Ref[ft.TextField]()
                             dynamic_field_refs[fid] = fref
                             
-                            hint = f"Enter {header_text}"
+                            hint = state.t("placeholder.enter_field", field=header_text)
                             if m_type == "link":
-                                hint = f"Enter URL for {header_text}"
+                                hint = state.t("placeholder.enter_url_for", field=header_text)
                                 
                             parent_row.controls.append(
                                 ft.TextField(
@@ -408,7 +409,7 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                         self.on_change()
 
             color_state_obj = SimpleColorState(custom_color_state, _on_color)
-            bg_color_picker_container.content = create_color_picker(page, color_state_obj, _on_color, "background_color", "Background Color")
+            bg_color_picker_container.content = create_color_picker(page, color_state_obj, _on_color, "background_color", state.t("label.background_color"), state=state)
 
             build_form_fields()
             if status_ref.current:
@@ -493,7 +494,7 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                  card_title.current.update()
 
         if status_ref.current:
-            status_ref.current.value = "⏳ Generating pass..."
+            status_ref.current.value = state.t("msg.generating_pass")
             status_ref.current.color = "blue"
         page.update()
 
@@ -526,8 +527,8 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
             if class_type == "Generic":
                 msg_id = f"create_msg_{timestamp}"
                 pass_data["messages"] = [{
-                    "id": msg_id, "header": "Welcome",
-                    "body": "Your pass has been created", "messageType": message_type,
+                    "id": msg_id, "header": state.t("msg.welcome"),
+                    "body": state.t("msg.pass_created"), "messageType": message_type,
                 }]
 
             if status_ref.current:
@@ -591,9 +592,9 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
 
             success_dlg = ft.AlertDialog(
                 modal=False,
-                title=ft.Text("✅ Pass Generated Successfully!", weight=ft.FontWeight.BOLD),
+                title=ft.Text(state.t("msg.pass_gen_success"), weight=ft.FontWeight.BOLD),
                 content=ft.Column([
-                    ft.Text("Scan the QR code or click the link below to add the pass to Google Wallet.", size=13),
+                    ft.Text(state.t("msg.scan_or_click"), size=13),
                     ft.Container(height=10),
                     ft.Container(
                         content=ft.Image(src=public_qr_url, width=200, height=200, fit=ft.ImageFit.CONTAIN),
@@ -601,18 +602,18 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
                     ),
                     ft.Container(height=10),
                     ft.ElevatedButton(
-                        "Add to Google Wallet",
+                        state.t("btn.add_google_wallet"),
                         icon=ft.Icons.ADD_CARD,
                         on_click=lambda e: page.launch_url(save_link),
                         bgcolor="blue", color="white",
                         width=250,
                     ),
                     ft.Container(height=5),
-                    ft.Text(f"Object ID: {object_id}", size=10, color="grey"),
+                    ft.Text(f"{state.t('label.object_id')}: {object_id}", size=10, color="grey"),
                 ], tight=True, width=300, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 on_dismiss=dialog_dismissed,
                 actions=[
-                    ft.TextButton("Close", on_click=close_dlg),
+                    ft.TextButton(state.t("btn.close"), on_click=close_dlg),
                 ],
             )
             
@@ -635,8 +636,8 @@ def build_google_generator_view(page: ft.Page, state, api_client, wallet_client,
         expand=True,
         padding=ft.padding.only(left=36, right=20, top=20, bottom=20),
         content=ft.Column([
-            ft.Text("Google Pass Generator", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-            ft.Text("Fill in the fields below to generate a Google Wallet pass.", color=TEXT_SECONDARY, size=13),
+            ft.Text(state.t("header.google_generator"), size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+            ft.Text(state.t("subtitle.google_generator"), color=TEXT_SECONDARY, size=13),
             ft.Container(height=8),
 
             ft.Dropdown(

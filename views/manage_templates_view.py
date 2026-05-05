@@ -21,23 +21,23 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
     manage_row_editor = None
     
     # Branding Refs
-    issuer_name_tf = ft.TextField(label="Issuer Name (Card Title)", expand=1, border_radius=8, text_size=13)
-    header_text_tf = ft.TextField(label="Top Row: Header Value", expand=1, border_radius=8, text_size=13)
-    subheader_text_tf = ft.TextField(label="Top Row: Subheader Value", expand=1, border_radius=8, text_size=13)
-    logo_url_tf = ft.TextField(label="Logo URL", expand=1, border_radius=8, text_size=13)
-    hero_url_tf = ft.TextField(label="Hero Image URL", expand=1, border_radius=8, text_size=13)
+    issuer_name_tf = ft.TextField(label=state.t("label.issuer_name"), expand=1, border_radius=8, text_size=13)
+    header_text_tf = ft.TextField(label=state.t("label.upper_header"), expand=1, border_radius=8, text_size=13)
+    subheader_text_tf = ft.TextField(label=state.t("label.lower_header"), expand=1, border_radius=8, text_size=13)
+    logo_url_tf = ft.TextField(label=state.t("label.logo_url"), expand=1, border_radius=8, text_size=13)
+    hero_url_tf = ft.TextField(label=state.t("label.hero_image_url"), expand=1, border_radius=8, text_size=13)
     
     # QR Code Branding
     barcode_link_tf = ft.TextField(
-        label="QR Code Link / Payload", 
+        label=state.t("label.qr_code_link"), 
         expand=1, border_radius=8, text_size=13,
-        hint_text="https://your-link.com",
+        hint_text=state.t("hint.qr_code_link"),
         prefix_icon=ft.Icons.LINK
     )
     barcode_text_tf = ft.TextField(
-        label="QR Code Subtext (Flexible Text)", 
+        label=state.t("label.qr_code_subtext"), 
         expand=1, border_radius=8, text_size=13,
-        hint_text="e.g. Scan for more info",
+        hint_text=state.t("hint.qr_code_subtext"),
         prefix_icon=ft.Icons.SHORT_TEXT
     )
     
@@ -69,9 +69,9 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                     current_picker_target.value = uploaded_url
                     current_picker_target.update()
                 else:
-                    _set_status(f"❌ Upload failed: {response.text}", "red")
+                    _set_status(f"❌ {state.t('msg.upload_failed', detail=response.text)}", "red")
             except Exception as ex:
-                _set_status(f"❌ File picker error: {ex}", "red")
+                _set_status(f"❌ {state.t('msg.file_picker_error', detail=str(ex))}", "red")
         current_picker_target = None
         page.update()
 
@@ -92,7 +92,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
 
     # ── UI Controls ──
     manage_templates_dropdown = ft.Dropdown(
-        label="Select Class ID",
+        label=state.t("label.select_template_id"),
         width=380, border_radius=8, text_size=13,
         options=[],
         on_change=lambda e: show_template(e)
@@ -101,7 +101,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
     manage_status = ft.Text("", size=12)
 
     manage_form_container = ft.Column(
-        controls=[ft.Text("Select a Class ID above to load details.", color=TEXT_SECONDARY, size=11)],
+        controls=[ft.Text(state.t("msg.select_class_hint"), color=TEXT_SECONDARY, size=11)],
         spacing=8,
         scroll="auto",
     )
@@ -135,7 +135,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 _set_status(state.t("msg.no_templates"), "blue")
             page.update()
         except Exception as e:
-            _set_status(f"❌ Error loading classes: {e}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(e))}", "red")
 
     state.register_refresh_callback("manage_templates_list", load_template_classes)
 
@@ -151,7 +151,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             class_id = manage_templates_dropdown.value
             class_data = api_client.get_class(class_id)
             if not class_data:
-                _set_status("❌ Template not found", "red"); return
+                _set_status(state.t("msg.template_not_found_err"), "red"); return
 
             class_type = class_data.get("class_type", "Generic")
             manage_current_class_type = class_type
@@ -176,7 +176,9 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
                 page, 
                 color_state, 
                 on_change_callback=on_color_change,
-                color_key="bg_color"
+                color_key="bg_color",
+                label_text=state.t("label.background_color"),
+                state=state
             )
             branding_container.visible = True
 
@@ -211,7 +213,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             
         except Exception as ex:
             import traceback; traceback.print_exc()
-            _set_status(f"❌ Error: {ex}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(ex))}", "red")
         page.update()
 
     def update_and_sync_handler(e):
@@ -220,7 +222,7 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
         if not manage_templates_dropdown.value:
             return
 
-        _set_status("⏳ Saving and Syncing...", "blue")
+        _set_status(state.t("msg.saving_syncing"), "blue")
         try:
             class_id = manage_templates_dropdown.value
             
@@ -251,21 +253,21 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             )
             
             save_dlg = ft.AlertDialog(
-                title=ft.Text("✅ Template Saved"),
-                content=ft.Text("Successfully updated locally and pushed to Google."),
-                actions=[ft.TextButton("Perfect", on_click=lambda _: page.close(save_dlg))]
+                title=ft.Text(state.t("msg.template_saved_title")),
+                content=ft.Text(state.t("msg.template_saved_body")),
+                actions=[ft.TextButton(state.t("btn.perfect"), on_click=lambda _: page.close(save_dlg))]
             )
             page.open(save_dlg)
             load_template_classes()
             
         except Exception as ex:
-            _set_status(f"❌ Error: {ex}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(ex))}", "red")
 
     # ── Startup ──
     load_template_classes()
 
     branding_section = card(ft.Column([
-        section_title("Visual Branding & Layout", ft.Icons.PALETTE),
+        section_title(state.t("label.visual_branding"), ft.Icons.PALETTE),
         ft.Row([
             issuer_name_tf,
             ft.Container(width=10),
@@ -283,28 +285,28 @@ def build_manage_templates_view(page: ft.Page, state, api_client) -> ft.Containe
             ], expand=1),
             color_picker_container
         ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START),
-        ft.Text("The QR code will be displayed on a white square with the subtext below it.", size=11, color=TEXT_SECONDARY, italic=True)
+        ft.Text(state.t("msg.qr_hint"), size=11, color=TEXT_SECONDARY, italic=True)
     ], spacing=15))
 
     # Assemble final layout
     branding_container.controls = [
         branding_section,
         card(ft.Column([
-            section_title("Face Layout (Text Modules)", ft.Icons.DASHBOARD_CUSTOMIZE),
+            section_title(state.t("label.face_layout"), ft.Icons.DASHBOARD_CUSTOMIZE),
             manage_form_container,
         ], spacing=12)),
     ]
 
     main_panel.content = ft.Column([
-        ft.Text("Template Editor (Google Wallet)", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-        ft.Text("Design the appearance and layout of your passes.", color=TEXT_SECONDARY, size=13),
+        ft.Text(state.t("header.template_editor"), size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+        ft.Text(state.t("subtitle.template_editor"), color=TEXT_SECONDARY, size=13),
         ft.Container(height=8),
         manage_templates_dropdown,
         branding_container,
 
         ft.Container(
             content=ft.ElevatedButton(
-                "Save & Push Changes",
+                state.t("btn.save_push"),
                 icon=ft.Icons.CLOUD_UPLOAD,
                 on_click=update_and_sync_handler,
                 bgcolor=PRIMARY, color="white", height=45, width=220,

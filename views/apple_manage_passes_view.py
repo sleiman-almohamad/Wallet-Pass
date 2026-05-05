@@ -96,23 +96,23 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         else:
             page.update()
 
-    apple_field_editor = AppleFieldEditor(page=page, on_change=on_form_change)
+    apple_field_editor = AppleFieldEditor(page=page, on_change=on_form_change, state=state)
     color_state_obj = SimpleColorState(custom_color_state, on_form_change)
-    bg_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "background_color", "Background Color")
-    fg_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "foreground_color", "Foreground Color")
-    lbl_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "label_color", "Label Color")
+    bg_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "background_color", state.t("label.background_color"))
+    fg_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "foreground_color", state.t("label.foreground_color"))
+    lbl_color_picker_container.content = create_color_picker(page, color_state_obj, on_form_change, "label_color", state.t("label.label_color"))
     
     # ── UI Controls ──
     template_dropdown = ft.Dropdown(
-        label="Select Template",
-        hint_text="Loading templates...",
+        label=state.t("label.select_template"),
+        hint_text=state.t("placeholder.loading_templates"),
         width=380, border_radius=8, text_size=13,
         options=[]
     )
 
     pass_dropdown = ft.Dropdown(
-        label="Select Pass",
-        hint_text="Choose a pass...",
+        label=state.t("label.select_pass"),
+        hint_text=state.t("placeholder.choose_pass"),
         width=380, border_radius=8, text_size=13,
         options=[],
         visible=False
@@ -128,14 +128,14 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                     ft.dropdown.Option(str(t["template_id"]), f"{t.get('template_name', 'Unnamed')} ({t.get('pass_style', 'unknown')})")
                     for t in templates
                 ]
-                template_dropdown.hint_text = "Choose a template..."
+                template_dropdown.hint_text = state.t("placeholder.choose_template")
             else:
                 template_dropdown.options = []
-                template_dropdown.hint_text = "No Apple templates found."
+                template_dropdown.hint_text = state.t("msg.no_apple_templates")
         except Exception as e:
             print(f"Error loading Apple templates: {e}")
             template_dropdown.options = []
-            template_dropdown.hint_text = "Error loading templates."
+            template_dropdown.hint_text = state.t("msg.error_loading_templates")
         if template_dropdown.page:
             template_dropdown.update()
 
@@ -157,14 +157,14 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                     )
                     for p in template_passes
                 ]
-                pass_dropdown.hint_text = f"Found {len(template_passes)} passes. Select one."
+                pass_dropdown.hint_text = state.t("placeholder.choose_pass")
             else:
                 pass_dropdown.options = []
-                pass_dropdown.hint_text = "No passes found for this template."
+                pass_dropdown.hint_text = state.t("msg.no_passes_found")
         except Exception as e:
             print(f"Error loading Apple passes: {e}")
             pass_dropdown.options = []
-            pass_dropdown.hint_text = "Error loading passes."
+            pass_dropdown.hint_text = state.t("msg.error_loading_passes")
         
         pass_dropdown.value = None
         if pass_dropdown.page:
@@ -332,15 +332,15 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
 
                 upd_dlg = ft.AlertDialog(
                     modal=False,
-                    title=ft.Text("✅ Pass Updated & Push Sent", weight=ft.FontWeight.BOLD),
+                    title=ft.Text(state.t("header.pass_updated_push"), weight=ft.FontWeight.BOLD),
                     content=ft.Column([
-                        ft.Text(f"Pass {serial_number} has been:", size=13),
-                        ft.Text("  1. Updated in the database", size=12, color="green"),
-                        ft.Text("  2. .pkpass file regenerated", size=12, color="green"),
-                        ft.Text("  3. Push notification sent to device", size=12, color="green"),
+                        ft.Text(state.t("msg.pass_serial_has_been", serial=serial_number), size=13),
+                        ft.Text(f"  1. {state.t('msg.updated_in_db')}", size=12, color="green"),
+                        ft.Text(f"  2. {state.t('msg.pkpass_regenerated')}", size=12, color="green"),
+                        ft.Text(f"  3. {state.t('msg.push_sent_to_device')}", size=12, color="green"),
                         ft.Container(height=10),
                         ft.ElevatedButton(
-                            text="Download .pkpass",
+                            text=state.t("btn.download_pkpass"),
                             icon=ft.Icons.DOWNLOAD,
                             on_click=lambda e: page.launch_url(f"{configs.PUBLIC_URL}/passes/apple/{serial_number}/download"),
                             style=ft.ButtonStyle(bgcolor="blue", color="white"),
@@ -351,7 +351,7 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
                     ], tight=True, spacing=4),
                     on_dismiss=dialog_dismissed,
                     actions=[
-                        ft.TextButton("Close", on_click=close_dlg),
+                        ft.TextButton(state.t("btn.close"), on_click=close_dlg),
                     ],
                 )
                 page.open(upd_dlg)
@@ -367,7 +367,7 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         page.update()
 
     save_btn = ft.ElevatedButton(
-        "Save Pass Updates",
+        state.t("btn.save_pass_updates"),
         icon=ft.Icons.SAVE,
         on_click=save_pass,
         bgcolor="#1a1a2e", color="white"
@@ -375,31 +375,31 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
 
     # Build internal form structure
     edit_form.controls = [
-        ft.Text("Edit Pass Details", size=18, weight=ft.FontWeight.BOLD),
-        ft.TextField(ref=holder_name_ref, label="Holder Name", on_change=on_form_change),
-        ft.TextField(ref=holder_email_ref, label="Holder Email", on_change=on_form_change),
+        ft.Text(state.t("header.edit_pass_details"), size=18, weight=ft.FontWeight.BOLD),
+        ft.TextField(ref=holder_name_ref, label=state.t("label.holder_name"), on_change=on_form_change),
+        ft.TextField(ref=holder_email_ref, label=state.t("label.holder_email"), on_change=on_form_change),
         ft.Divider(),
         
-        ft.Text("Visual Branding", size=18, weight=ft.FontWeight.BOLD),
+        ft.Text(state.t("header.visual_branding"), size=18, weight=ft.FontWeight.BOLD),
         ft.Row([
             bg_color_picker_container,
             fg_color_picker_container,
             lbl_color_picker_container,
         ], spacing=15, scroll=ft.ScrollMode.AUTO),
-        ft.TextField(ref=org_name_ref, label="Organization Name", on_change=on_form_change),
-        ft.TextField(ref=logo_text_ref, label="Logo Text", on_change=on_form_change),
-        ft.TextField(ref=logo_url_ref, label="Logo URL", on_change=on_form_change),
+        ft.TextField(ref=org_name_ref, label=state.t("label.organization_name"), on_change=on_form_change),
+        ft.TextField(ref=logo_text_ref, label=state.t("label.logo_text"), on_change=on_form_change),
+        ft.TextField(ref=logo_url_ref, label=state.t("label.logo_url"), on_change=on_form_change),
         
         ft.Divider(),
-        ft.Text("Event Ticket Layout", size=18, weight=ft.FontWeight.BOLD),
-        ft.TextField(ref=strip_url_ref, label="Strip Image URL", on_change=check_image_fields_logic),
+        ft.Text(state.t("header.event_ticket_layout"), size=18, weight=ft.FontWeight.BOLD),
+        ft.TextField(ref=strip_url_ref, label=state.t("label.strip_image_url"), on_change=check_image_fields_logic),
         ft.Row([
-            ft.TextField(ref=background_image_url_ref, label="Background Image URL", on_change=check_image_fields_logic, expand=1),
-            ft.TextField(ref=thumbnail_url_ref, label="Thumbnail URL", on_change=check_image_fields_logic, expand=1),
+            ft.TextField(ref=background_image_url_ref, label=state.t("label.background_image_url"), on_change=check_image_fields_logic, expand=1),
+            ft.TextField(ref=thumbnail_url_ref, label=state.t("label.thumbnail_url"), on_change=check_image_fields_logic, expand=1),
         ], spacing=10),
         ft.Divider(),
         
-        ft.Text("Card Fields", size=18, weight=ft.FontWeight.BOLD),
+        ft.Text(state.t("header.card_fields"), size=18, weight=ft.FontWeight.BOLD),
         apple_field_editor.build(),
         
         ft.Container(height=10),
@@ -411,7 +411,7 @@ def build_apple_manage_passes_view(page: ft.Page, state, api_client, preview: Mo
         expand=1,
         padding=20,
         content=ft.Column([
-            ft.Text("Manage Apple Passes", size=22, weight=ft.FontWeight.BOLD),
+            ft.Text(state.t("header.manage_apple_passes"), size=22, weight=ft.FontWeight.BOLD),
             template_dropdown,
             pass_dropdown,
             edit_form

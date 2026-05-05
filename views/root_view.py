@@ -149,8 +149,8 @@ def build_root_view(page: ft.Page, state) -> list:
             expand=True,
             padding=ft.padding.only(left=36, right=36, top=28, bottom=20),
             content=ft.Column([
-                ft.Text("Settings & Backup", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-                ft.Text("Application configuration, language, and database management.",
+                ft.Text(state.t("header.settings_backup"), size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+                ft.Text(state.t("subtitle.settings_backup"),
                          color=TEXT_MUTED, size=13),
                 ft.Container(height=16),
 
@@ -158,18 +158,18 @@ def build_root_view(page: ft.Page, state) -> list:
                 ft.Card(
                     content=ft.Container(
                         content=ft.Column([
-                            ft.Text("Connection Status", size=16, weight=ft.FontWeight.W_700, color=TEXT_PRIMARY),
+                            ft.Text(state.t("header.connection_status"), size=16, weight=ft.FontWeight.W_700, color=TEXT_PRIMARY),
                             ft.Container(height=8),
                             ft.Row([
                                 ft.Container(width=8, height=8, border_radius=4,
                                              bgcolor="#00c853" if state.api_connected else "#ef4444"),
-                                ft.Text(f"FastAPI: {'Connected' if state.api_connected else 'Disconnected'}",
+                                ft.Text(f"{state.t('label.fastapi')}: {state.t('status.connected_simple') if state.api_connected else state.t('status.disconnected_simple')}",
                                          size=13, color=TEXT_PRIMARY),
                             ], spacing=8),
                             ft.Row([
                                 ft.Container(width=8, height=8, border_radius=4,
                                              bgcolor="#00c853" if state.wallet_connected else "#ef4444"),
-                                ft.Text(f"Google Wallet: {'Connected' if state.wallet_connected else 'Disconnected'}",
+                                ft.Text(f"{state.t('label.google_wallet')}: {state.t('status.connected_simple') if state.wallet_connected else state.t('status.disconnected_simple')}",
                                          size=13, color=TEXT_PRIMARY),
                             ], spacing=8),
                         ], spacing=4),
@@ -183,7 +183,7 @@ def build_root_view(page: ft.Page, state) -> list:
                 ft.Card(
                     content=ft.Container(
                         content=ft.Column([
-                            ft.Text("Language / Sprache", size=16, weight=ft.FontWeight.W_700, color=TEXT_PRIMARY),
+                            ft.Text(state.t("header.language_sprache"), size=16, weight=ft.FontWeight.W_700, color=TEXT_PRIMARY),
                             ft.Container(height=8),
                             lang_dropdown,
                         ], spacing=4),
@@ -197,21 +197,21 @@ def build_root_view(page: ft.Page, state) -> list:
                 ft.Card(
                     content=ft.Container(
                         content=ft.Column([
-                            ft.Text("Database Backup & Restore", size=16, weight=ft.FontWeight.W_700, color=TEXT_PRIMARY),
+                            ft.Text(state.t("header.db_backup_restore"), size=16, weight=ft.FontWeight.W_700, color=TEXT_PRIMARY),
                             ft.Container(height=8),
-                            ft.Text("Export all pass and template data as JSON, or restore from a backup file.",
+                            ft.Text(state.t("subtitle.db_backup_restore"),
                                      size=12, color=TEXT_MUTED),
                             ft.Container(height=12),
                             ft.Row([
                                 ft.ElevatedButton(
-                                    "Backup Database", icon=ft.Icons.DOWNLOAD,
+                                    state.t("btn.backup_db"), icon=ft.Icons.DOWNLOAD,
                                     bgcolor=PRIMARY, color="white", height=40,
                                     on_click=lambda _: backup_picker.save_file(
                                         allowed_extensions=["json"], file_name="wallet_backup.json",
                                     ),
                                 ),
                                 ft.OutlinedButton(
-                                    "Restore Database", icon=ft.Icons.UPLOAD, height=40,
+                                    state.t("btn.restore_db"), icon=ft.Icons.UPLOAD, height=40,
                                     on_click=lambda _: restore_picker.pick_files(
                                         allowed_extensions=["json"],
                                     ),
@@ -231,7 +231,7 @@ def build_root_view(page: ft.Page, state) -> list:
         border=ft.border.only(bottom=ft.BorderSide(1, BORDER_COLOR)),
         padding=ft.padding.symmetric(horizontal=20),
         content=ft.Row([
-            ft.Text("WalletPass Dashboard", size=14, weight=ft.FontWeight.W_600, color=TEXT_PRIMARY),
+            ft.Text(state.t("header.dashboard_title"), size=14, weight=ft.FontWeight.W_600, color=TEXT_PRIMARY),
             ft.Container(expand=True),
             ft.Row([
                 ft.Container(width=8, height=8, border_radius=4,

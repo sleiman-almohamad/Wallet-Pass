@@ -7,23 +7,25 @@ import flet as ft
 
 
 # Material Design color palette
-PRESET_COLORS = [
-    {"name": "Google Blue", "hex": "#4285f4"},
-    {"name": "Red", "hex": "#EA4335"},
-    {"name": "Yellow", "hex": "#FBBC04"},
-    {"name": "Green", "hex": "#34A853"},
-    {"name": "Purple", "hex": "#9C27B0"},
-    {"name": "Orange", "hex": "#FF6F00"},
-    {"name": "Cyan", "hex": "#00BCD4"},
-    {"name": "Blue Grey", "hex": "#607D8B"},
-    {"name": "Teal", "hex": "#009688"},
-    {"name": "Indigo", "hex": "#3F51B5"},
-    {"name": "Pink", "hex": "#E91E63"},
-    {"name": "Deep Orange", "hex": "#FF5722"},
-]
+def get_preset_colors(state=None):
+    t = state.t if state else lambda x: x.split(".")[-1].replace("_", " ").title()
+    return [
+        {"name": t("color.google_blue"), "hex": "#4285f4"},
+        {"name": t("color.red"), "hex": "#EA4335"},
+        {"name": "Yellow", "hex": "#FBBC04"} if not state else {"name": t("color.yellow"), "hex": "#FBBC04"},
+        {"name": "Green", "hex": "#34A853"} if not state else {"name": t("color.green"), "hex": "#34A853"},
+        {"name": "Purple", "hex": "#9C27B0"} if not state else {"name": t("color.purple"), "hex": "#9C27B0"},
+        {"name": "Orange", "hex": "#FF6F00"} if not state else {"name": t("color.orange"), "hex": "#FF6F00"},
+        {"name": "Cyan", "hex": "#00BCD4"} if not state else {"name": t("color.cyan"), "hex": "#00BCD4"},
+        {"name": "Blue Grey", "hex": "#607D8B"} if not state else {"name": t("color.blue_grey"), "hex": "#607D8B"},
+        {"name": "Teal", "hex": "#009688"} if not state else {"name": t("color.teal"), "hex": "#009688"},
+        {"name": "Indigo", "hex": "#3F51B5"} if not state else {"name": t("color.indigo"), "hex": "#3F51B5"},
+        {"name": "Pink", "hex": "#E91E63"} if not state else {"name": t("color.pink"), "hex": "#E91E63"},
+        {"name": "Deep Orange", "hex": "#FF5722"} if not state else {"name": t("color.deep_orange"), "hex": "#FF5722"},
+    ]
 
 
-def create_color_picker(page, color_state, on_change_callback, color_key="background_color", label_text="Background Color"):
+def create_color_picker(page, color_state, on_change_callback, color_key="background_color", label_text="Background Color", state=None):
     """
     Create a color picker component
     
@@ -49,6 +51,8 @@ def create_color_picker(page, color_state, on_change_callback, color_key="backgr
     hex_input_ref = ft.Ref[ft.TextField]()
     current_preview_ref = ft.Ref[ft.Container]()
     swatch_container_ref = ft.Ref[ft.Container]()
+    
+    PRESET_COLORS = get_preset_colors(state)
     
     def on_hex_change(e):
         """Handle custom hex input"""
@@ -154,7 +158,7 @@ def create_color_picker(page, color_state, on_change_callback, color_key="backgr
     # Hex input field
     hex_input = ft.TextField(
         ref=hex_input_ref,
-        label="Custom Hex Color",
+        label=state.t("label.custom_hex") if state else "Custom Hex Color",
         value=current_color.replace("#", ""),
         width=200,
         on_change=on_hex_change,
@@ -206,7 +210,7 @@ def create_color_picker(page, color_state, on_change_callback, color_key="backgr
             
             # Current color preview
             ft.Row([
-                ft.Text("Current:", size=12, color="grey"),
+                ft.Text(state.t("label.current_color") if state else "Current:", size=12, color="grey"),
                 current_preview
             ], alignment=ft.MainAxisAlignment.START)
             

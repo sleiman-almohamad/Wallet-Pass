@@ -33,6 +33,10 @@ class AppState:
 
         # Localization
         self.language = "en"
+        if self.page:
+            saved_lang = self.page.client_storage.get("app_language")
+            if saved_lang in TRANSLATIONS:
+                self.language = saved_lang
 
         # UI Refresh Registry (callback functions for cross-view updates)
         self.ui_refresh_registry = {}
@@ -73,6 +77,7 @@ class AppState:
         if lang in TRANSLATIONS:
             self.language = lang
             if self.page:
+                self.page.client_storage.set("app_language", lang)
                 self.page.update()
 
     def t(self, key: str, **kwargs) -> str:

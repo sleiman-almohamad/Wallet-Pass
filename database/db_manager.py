@@ -255,6 +255,7 @@ class DatabaseManager:
             # 3. Update / upsert child table
             if class_type == 'Generic':
                 child_vals = {
+                    'header': kwargs.get('header'),
                     'subheader': kwargs.get('subheader'),
                     'card_title': kwargs.get('card_title'),
                     'barcode_value': kwargs.get('barcode_value'),
@@ -454,10 +455,14 @@ class DatabaseManager:
             return None
 
     def _construct_pass_dictionary(self, p: PassesTable, session: Session) -> dict:
-        """Helper to build the combined pass dict from ORM relationships."""
+        # Determine class type
+        parent_cls = p.parent_class
+        class_type = parent_cls.class_type if parent_cls else 'Generic'
+
         core: Dict[str, Any] = {
             "object_id": p.object_id,
             "class_id": p.class_id,
+            "class_type": class_type,
             "holder_name": p.holder_name,
             "holder_email": p.holder_email,
             "status": p.status,
@@ -466,10 +471,6 @@ class DatabaseManager:
             "created_at": p.created_at,
             "updated_at": p.updated_at,
         }
-
-        # Determine class type
-        parent_cls = p.parent_class
-        class_type = parent_cls.class_type if parent_cls else 'Generic'
 
         # Type-specific fields
         if class_type == "EventTicket" and p.event_ticket_fields:

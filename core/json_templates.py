@@ -442,109 +442,147 @@ class JSONTemplateManager:
         
         if class_type == "LoyaltyCard":
             return {
-                **common_fields,
+                "hexBackgroundColor": {
+                    "label": "label.background_color",
+                    "type": "color",
+                    "hint": "#72461d",
+                    "section": "branding"
+                },
                 "localizedIssuerName.defaultValue.value": {
                     "label": "label.issuer_name",
                     "type": "text",
-                    "hint": "Your Business Name"
+                    "hint": "Your Business Name",
+                    "section": "branding"
                 },
                 "localizedProgramName.defaultValue.value": {
                     "label": "label.program_name",
                     "type": "text",
-                    "hint": "Loyalty Program"
+                    "hint": "Loyalty Program",
+                    "section": "branding"
                 },
                 "programLogo.sourceUri.uri": {
                     "label": "label.program_logo_url",
                     "type": "url",
-                    "hint": "https://example.com/logo.png"
+                    "hint": "https://example.com/logo.png",
+                    "section": "assets"
                 },
                 "heroImage.sourceUri.uri": {
                     "label": "label.hero_image_url",
                     "type": "url",
-                    "hint": "https://example.com/hero.jpg"
+                    "hint": "https://example.com/hero.jpg",
+                    "section": "assets"
                 }
             }
         elif class_type == "GiftCard":
             return {
-                **common_fields,
+                "hexBackgroundColor": {
+                    "label": "label.background_color",
+                    "type": "color",
+                    "hint": "#358b1d",
+                    "section": "branding"
+                },
                 "localizedIssuerName.defaultValue.value": {
                     "label": "label.issuer_name",
                     "type": "text",
-                    "hint": "Your Business Name"
+                    "hint": "Your Business Name",
+                    "section": "branding"
                 },
                 "programLogo.sourceUri.uri": {
                     "label": "label.card_logo_url",
                     "type": "url",
-                    "hint": "https://example.com/logo.png"
+                    "hint": "https://example.com/logo.png",
+                    "section": "assets"
                 },
                 "heroImage.sourceUri.uri": {
                     "label": "label.hero_image_url",
                     "type": "url",
-                    "hint": "https://example.com/hero.jpg"
+                    "hint": "https://example.com/hero.jpg",
+                    "section": "assets"
                 }
             }
         elif class_type == "EventTicket":
             return {
-                **common_fields,
+                "hexBackgroundColor": {
+                    "label": "label.background_color",
+                    "type": "color",
+                    "hint": "#4285f4",
+                    "section": "branding"
+                },
                 "issuerName": {
                     "label": "label.issuer_name",
                     "type": "text",
-                    "hint": "Your Business"
+                    "hint": "Your Business",
+                    "section": "branding"
                 },
                 "eventName.defaultValue.value": {
                     "label": "label.event_name",
                     "type": "text",
-                    "hint": "Event Name"
+                    "hint": "Event Name",
+                    "section": "event_details"
                 },
                 "venue.name.defaultValue.value": {
                     "label": "label.venue_name",
                     "type": "text",
-                    "hint": "Venue Name"
+                    "hint": "Venue Name",
+                    "section": "event_details"
                 },
                 "venue.address.defaultValue.value": {
                     "label": "label.venue_address",
                     "type": "text",
-                    "hint": "123 Main St, City"
+                    "hint": "123 Main St, City",
+                    "section": "event_details"
                 },
                 "dateTime.start": {
                     "label": "label.event_start_time",
                     "type": "datetime",
-                    "hint": "2025-12-31T19:00:00"
+                    "hint": "2025-12-31T19:00:00",
+                    "section": "event_details"
                 },
                 "logo.sourceUri.uri": {
                     "label": "label.logo_url",
                     "type": "url",
-                    "hint": "https://example.com/logo.png"
+                    "hint": "https://example.com/logo.png",
+                    "section": "assets"
                 },
                 "heroImage.sourceUri.uri": {
                     "label": "label.hero_image_url",
                     "type": "url",
-                    "hint": "https://example.com/hero.jpg (1032x336px recommended)"
+                    "hint": "https://example.com/hero.jpg",
+                    "section": "assets"
                 }
             }
         elif class_type == "TransitPass":
             return {
-                **common_fields,
+                "hexBackgroundColor": {
+                    "label": "label.background_color",
+                    "type": "color",
+                    "hint": "#1a73e8",
+                    "section": "branding"
+                },
                 "issuerName": {
                     "label": "label.issuer_name",
                     "type": "text",
-                    "hint": "Transit Authority"
+                    "hint": "Transit Authority",
+                    "section": "branding"
                 },
                 "transitType": {
                     "label": "label.transit_type",
                     "type": "select",
                     "hint": "TRANSIT_TYPE_BUS",
-                    "options": ["TRANSIT_TYPE_BUS", "TRANSIT_TYPE_RAIL", "TRANSIT_TYPE_TRAM", "TRANSIT_TYPE_FERRY"]
+                    "options": ["TRANSIT_TYPE_BUS", "TRANSIT_TYPE_RAIL", "TRANSIT_TYPE_TRAM", "TRANSIT_TYPE_FERRY"],
+                    "section": "transit_details"
                 },
                 "logo.sourceUri.uri": {
                     "label": "label.logo_url",
                     "type": "url",
-                    "hint": "https://example.com/logo.png"
+                    "hint": "https://example.com/logo.png",
+                    "section": "assets"
                 },
                 "heroImage.sourceUri.uri": {
                     "label": "label.hero_image_url",
                     "type": "url",
-                    "hint": "https://example.com/hero.jpg (1032x336px recommended)"
+                    "hint": "https://example.com/hero.jpg",
+                    "section": "assets"
                 }
             }
         else:  # Generic — rules-only (branding is per-pass)

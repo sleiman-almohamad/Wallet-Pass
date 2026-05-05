@@ -15,44 +15,44 @@ from ui.theme import (
 # ─────────────────────────────────────────────────────────
 NAV_STRUCTURE = [
     {
-        "category": "GOOGLE WALLET",
+        "category_key": "cat.google_wallet",
         "icon": ft.Icons.ACCOUNT_BALANCE_WALLET,
         "items": [
-            {"key": "g_template_builder",  "label": "Template Builder",  "icon": ft.Icons.EDIT_DOCUMENT},
-            {"key": "g_manage_templates",  "label": "Manage Templates",  "icon": ft.Icons.STYLE},
-            {"key": "g_pass_generator",    "label": "Pass Generator",    "icon": ft.Icons.DYNAMIC_FORM},
-            {"key": "g_manage_passes",     "label": "Manage Passes",     "icon": ft.Icons.CREDIT_CARD},
+            {"key": "g_template_builder",  "label_key": "nav.template_builder",  "icon": ft.Icons.EDIT_DOCUMENT},
+            {"key": "g_manage_templates",  "label_key": "nav.manage_templates",  "icon": ft.Icons.STYLE},
+            {"key": "g_pass_generator",    "label_key": "nav.pass_generator",    "icon": ft.Icons.DYNAMIC_FORM},
+            {"key": "g_manage_passes",     "label_key": "nav.manage_passes",     "icon": ft.Icons.CREDIT_CARD},
         ],
     },
     {
-        "category": "APPLE WALLET",
+        "category_key": "cat.apple_wallet",
         "icon": ft.Icons.PHONE_IPHONE,
         "items": [
-            {"key": "a_template_builder", "label": "Template Builder", "icon": ft.Icons.EDIT_DOCUMENT},
-            {"key": "a_manage_templates", "label": "Manage Templates", "icon": ft.Icons.STYLE},
-            {"key": "a_pass_generator",    "label": "Pass Generator",    "icon": ft.Icons.DYNAMIC_FORM},
-            {"key": "a_manage_passes",     "label": "Manage Passes",     "icon": ft.Icons.CREDIT_CARD},
+            {"key": "a_template_builder", "label_key": "nav.template_builder", "icon": ft.Icons.EDIT_DOCUMENT},
+            {"key": "a_manage_templates", "label_key": "nav.manage_templates", "icon": ft.Icons.STYLE},
+            {"key": "a_pass_generator",    "label_key": "nav.pass_generator",    "icon": ft.Icons.DYNAMIC_FORM},
+            {"key": "a_manage_passes",     "label_key": "nav.manage_passes",     "icon": ft.Icons.CREDIT_CARD},
         ],
     },
     {
-        "category": "DISTRIBUTION",
+        "category_key": "cat.distribution",
         "icon": ft.Icons.QR_CODE_SCANNER,
         "items": [
-            {"key": "qr_campaigns", "label": "QR Campaigns", "icon": ft.Icons.QR_CODE_2},
+            {"key": "qr_campaigns", "label_key": "nav.qr_campaigns", "icon": ft.Icons.QR_CODE_2},
         ],
     },
     {
-        "category": "NOTIFICATIONS",
+        "category_key": "cat.notifications",
         "icon": ft.Icons.MARK_EMAIL_UNREAD_OUTLINED,
         "items": [
-            {"key": "notifications", "label": "Notification Center", "icon": ft.Icons.NOTIFICATIONS_ACTIVE},
+            {"key": "notifications", "label_key": "nav.notification_center", "icon": ft.Icons.NOTIFICATIONS_ACTIVE},
         ],
     },
     {
-        "category": "SYSTEM",
+        "category_key": "cat.system",
         "icon": ft.Icons.SETTINGS,
         "items": [
-            {"key": "settings", "label": "Settings & Backup", "icon": ft.Icons.TUNE},
+            {"key": "settings", "label_key": "nav.settings_backup", "icon": ft.Icons.TUNE},
         ],
     },
 ]
@@ -90,7 +90,7 @@ def build_sidebar(active_key: str, on_navigate, state=None):
                     ),
                     ft.Column([
                         ft.Text("WalletPass", size=17, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-                        ft.Text("Management Suite", size=10, color=TEXT_MUTED),
+                        ft.Text(state.t("label.mgmt_suite") if state else "Management Suite", size=10, color=TEXT_MUTED),
                     ], spacing=0),
                 ], spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER),
             ]),
@@ -104,7 +104,7 @@ def build_sidebar(active_key: str, on_navigate, state=None):
             ft.Container(
                 content=ft.Row([
                     ft.Icon(group["icon"], size=14, color=TEXT_MUTED),
-                    ft.Text(group["category"], size=10, weight=ft.FontWeight.W_700,
+                    ft.Text(state.t(group["category_key"]) if state else group.get("category", "CATEGORY"), size=10, weight=ft.FontWeight.W_700,
                             color=TEXT_MUTED, style=ft.TextStyle(letter_spacing=1.2)),
                 ], spacing=6),
                 padding=ft.padding.only(left=22, top=18, bottom=6),
@@ -118,7 +118,7 @@ def build_sidebar(active_key: str, on_navigate, state=None):
                     content=ft.Row([
                         ft.Icon(item["icon"], size=18,
                                 color=PRIMARY if is_active else TEXT_SECONDARY),
-                        ft.Text(item["label"], size=13,
+                        ft.Text(state.t(item["label_key"]) if state else item.get("label", "Label"), size=13,
                                 color=TEXT_PRIMARY if is_active else TEXT_SECONDARY,
                                 weight=ft.FontWeight.W_600 if is_active else ft.FontWeight.NORMAL),
                     ], spacing=12),
@@ -155,21 +155,21 @@ def build_sidebar(active_key: str, on_navigate, state=None):
             )
         )
 
-    controls.append(
-        ft.Container(
-            content=ft.Row([
-                ft.CircleAvatar(
-                    content=ft.Text("SM", size=12, weight=ft.FontWeight.BOLD),
-                    bgcolor=PRIMARY, color="white", radius=16,
-                ),
-                ft.Column([
-                    ft.Text("Admin User", size=12, weight=ft.FontWeight.W_600, color=TEXT_PRIMARY),
-                    ft.Text("admin@walletpass.io", size=10, color=TEXT_MUTED),
-                ], spacing=0),
-            ], spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER),
-            padding=ft.padding.only(left=22, right=22, top=12, bottom=4),
+        controls.append(
+            ft.Container(
+                content=ft.Row([
+                    ft.CircleAvatar(
+                        content=ft.Text("SM", size=12, weight=ft.FontWeight.BOLD),
+                        bgcolor=PRIMARY, color="white", radius=16,
+                    ),
+                    ft.Column([
+                        ft.Text(state.t("label.admin_user") if state else "Admin User", size=12, weight=ft.FontWeight.W_600, color=TEXT_PRIMARY),
+                        ft.Text("admin@walletpass.io", size=10, color=TEXT_MUTED),
+                    ], spacing=0),
+                ], spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                padding=ft.padding.only(left=22, right=22, top=12, bottom=4),
+            )
         )
-    )
 
     # Company Logo at the very bottom
     controls.append(

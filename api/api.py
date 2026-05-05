@@ -2157,8 +2157,16 @@ async def generate_campaign_pass(request: Request, slug: str):
     holder_name = form_data.get("name")
     holder_email = form_data.get("email")
     
-    if not holder_name or not holder_email:
-        raise HTTPException(status_code=400, detail="Name and Email are required")
+    if not holder_name:
+        raise HTTPException(status_code=400, detail="Name is required")
+        
+    # If email is missing (removed from UI), generate a unique placeholder
+    if not holder_email:
+        import hashlib
+        # Create a deterministic but unique-ish ID for this scan if we can't get an email
+        # We'll use a random component so every scan is technically a new pass for now
+        # unless we want to try and find by name.
+        holder_email = f"pass_{uuid.uuid4().hex[:12]}@b2f.de"
         
     campaign = get_cached_campaign(slug)
     if not campaign:
@@ -2228,10 +2236,14 @@ async def generate_campaign_pass(request: Request, slug: str):
 
 async def _generate_google_link(campaign, name, email):
     if not campaign.get('google_class_id'):
+        logger.error(f"Campaign '{campaign.get('slug')}' has no Google Class ID linked")
         raise HTTPException(status_code=500, detail="No Google Class linked to this campaign")
         
     import uuid
-    object_id = f"{configs.ISSUER_ID}.g_{campaign['slug']}_{uuid.uuid4().hex[:8]}"
+    import traceback
+    # Ensure ID doesn't have double prefixing if ISSUER_ID already in slug (unlikely but safe)
+    object_id_suffix = f"g_{campaign['slug']}_{uuid.uuid4().hex[:8]}"
+    object_id = f"{configs.ISSUER_ID}.{object_id_suffix}"
     
     # Create in DB
     try:
@@ -2246,45 +2258,81 @@ async def _generate_google_link(campaign, name, email):
     except Exception as e:
         # Check if it's a duplicate
         if "Duplicate entry" in str(e) or "already exists" in str(e).lower():
+            logger.info(f"Duplicate pass detected for {email} in class {campaign['google_class_id']}. Fetching existing.")
             existing = db.find_pass_by_email(campaign['google_class_id'], email)
             if existing:
                 object_id = existing['object_id']
                 success = True
             else:
-                raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+                logger.error(f"Duplicate error but could not find existing pass: {e}")
+                raise HTTPException(status_code=500, detail=f"Database integrity error: {str(e)}")
         else:
+            logger.error(f"Failed to create pass in DB: {e}\n{traceback.format_exc()}")
             raise HTTPException(status_code=500, detail=f"Failed to create pass: {str(e)}")
     
     if success:
         if wallet_client:
-             # Fetch the synthesized pass data from DB
-             pass_data_raw = db.get_pass(object_id)
-             
-             # Prepare the full object payload for the JWT
-             # This ensures all required fields (like card_title) are included in the link
-             object_payload = None
-             c_type = pass_data_raw.get('class_type', 'Generic')
-             
-             if c_type == 'Generic':
-                 object_payload = wallet_client.build_generic_object(
+             try:
+                 # Fetch the synthesized pass data from DB to get class_type and pass_data
+                 pass_data_raw = db.get_pass(object_id)
+                 if not pass_data_raw:
+                     logger.error(f"Pass {object_id} created but not found in DB immediately after")
+                     raise HTTPException(status_code=500, detail="Database sync error: pass not found after creation")
+
+                 # Prepare the full object payload for the JWT
+                 object_payload = None
+                 c_type = pass_data_raw.get('class_type', 'Generic')
+                 p_data = pass_data_raw.get('pass_data', {})
+                 p_status = pass_data_raw.get('status')
+                 
+                 logger.info(f"Building Google Wallet object for type: {c_type}")
+                 
+                 if c_type == 'Generic':
+                     object_payload = wallet_client.build_generic_object(
+                         object_id=object_id,
+                         class_id=campaign['google_class_id'],
+                         holder_name=name,
+                         holder_email=email,
+                         pass_data=p_data,
+                         status=p_status
+                     )
+                 elif c_type == 'EventTicket':
+                     object_payload = wallet_client.build_event_ticket_object(
+                         object_id=object_id,
+                         class_id=campaign['google_class_id'],
+                         holder_name=name,
+                         holder_email=email,
+                         pass_data=p_data,
+                         status=p_status
+                     )
+                 elif c_type == 'LoyaltyCard':
+                     object_payload = wallet_client.build_loyalty_object(
+                         object_id=object_id,
+                         class_id=campaign['google_class_id'],
+                         holder_name=name,
+                         holder_email=email,
+                         pass_data=p_data,
+                         status=p_status
+                     )
+                 
+                 # Use the correct arguments for generate_save_link
+                 google_link = wallet_client.generate_save_link(
                      object_id=object_id,
                      class_id=campaign['google_class_id'],
-                     holder_name=name,
-                     holder_email=email,
-                     pass_data=pass_data_raw.get('pass_data', {}),
-                     status=pass_data_raw.get('status')
+                     class_type=c_type,
+                     object_payload=object_payload
                  )
-             
-             # Use the correct arguments for generate_save_link
-             google_link = wallet_client.generate_save_link(
-                 object_id=object_id,
-                 class_id=campaign['google_class_id'],
-                 class_type=c_type,
-                 object_payload=object_payload
-             )
-             return Response(headers={"Location": google_link}, status_code=303)
+                 logger.info(f"Generated Google Save link for {object_id}")
+                 return Response(headers={"Location": google_link}, status_code=303)
+             except Exception as e:
+                 logger.error(f"Error generating Google link for {object_id}: {e}\n{traceback.format_exc()}")
+                 raise HTTPException(status_code=500, detail=f"Link generation failed: {str(e)}")
+        else:
+             logger.error("WalletClient not initialized")
+             raise HTTPException(status_code=500, detail="Google Wallet service is not configured")
     
-    raise HTTPException(status_code=500, detail="Failed to generate Google Wallet link")
+    logger.error(f"Failed to create pass for {email} in campaign {campaign.get('slug')}")
+    raise HTTPException(status_code=500, detail="Failed to generate Google Wallet link - database rejection")
 
 @app.get("/api/campaigns/{slug_or_id}/qr", tags=["Campaigns"])
 async def get_campaign_qr(slug_or_id: str):

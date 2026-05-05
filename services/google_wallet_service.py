@@ -558,6 +558,10 @@ class WalletClient:
             algorithm='RS256'
         )
         
+        # Ensure token is string (PyJWT < 2.0 returns bytes)
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
+            
         # Return the Save to Wallet URL
         return f"https://pay.google.com/gp/v/save/{token}"
     
@@ -1377,20 +1381,23 @@ class WalletClient:
         }
 
         # header_text → Google "header"
-        if isinstance(header_text, str) and header_text.strip():
+        fallback_header = header_text or pd.get("header") or pd.get("issuer_name") or holder_name or "Pass"
+        if fallback_header:
             obj["header"] = {
                 "defaultValue": {
                     "language": "en-US",
-                    "value": header_text
+                    "value": str(fallback_header)
                 }
             }
 
         # card_title → Google "cardTitle" (large text on card)
-        if isinstance(card_title, str) and card_title.strip():
+        # Google Wallet requires cardTitle to be set for Generic passes
+        fallback_title = card_title or pd.get("cardTitle") or pd.get("issuer_name") or header_text or holder_name or "Pass"
+        if fallback_title:
             obj["cardTitle"] = {
                 "defaultValue": {
                     "language": "en-US",
-                    "value": card_title
+                    "value": str(fallback_title)
                 }
             }
         

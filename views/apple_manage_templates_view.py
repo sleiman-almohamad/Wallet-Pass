@@ -14,27 +14,27 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
     editing_template = None
     
     # Editor Refs
-    template_name_tf = ft.TextField(label="Template Name", expand=1, border_radius=8, text_size=13)
+    template_name_tf = ft.TextField(label=state.t("label.template_name"), expand=1, border_radius=8, text_size=13)
     pass_style_dd = ft.Dropdown(
-        label="Pass Style",
+        label=state.t("label.pass_style"),
         options=[
-            ft.dropdown.Option("generic", "Generic"),
-            ft.dropdown.Option("storecard", "Store Card"),
-            ft.dropdown.Option("coupon", "Coupon"),
-            ft.dropdown.Option("eventticket", "Event Ticket"),
-            ft.dropdown.Option("boardingpass", "Boarding Pass"),
+            ft.dropdown.Option("generic", state.t("option.generic")),
+            ft.dropdown.Option("storecard", state.t("option.storecard")),
+            ft.dropdown.Option("coupon", state.t("option.coupon")),
+            ft.dropdown.Option("eventticket", state.t("option.event")),
+            ft.dropdown.Option("boardingpass", state.t("option.boardingpass")),
         ],
         expand=1, border_radius=8, text_size=13
     )
-    org_name_tf = ft.TextField(label="Organization Name", expand=1, border_radius=8, text_size=13)
-    logo_text_tf = ft.TextField(label="Logo Text", expand=1, border_radius=8, text_size=13)
-    pass_type_id_tf = ft.TextField(label="Pass Type ID", expand=1, border_radius=8, text_size=13, value=configs.APPLE_PASS_TYPE_ID)
-    team_id_tf = ft.TextField(label="Team ID", expand=1, border_radius=8, text_size=13, value=configs.APPLE_TEAM_ID)
+    org_name_tf = ft.TextField(label=state.t("label.organization_name"), expand=1, border_radius=8, text_size=13)
+    logo_text_tf = ft.TextField(label=state.t("label.logo_text"), expand=1, border_radius=8, text_size=13)
+    pass_type_id_tf = ft.TextField(label=state.t("label.pass_type_id"), expand=1, border_radius=8, text_size=13, value=configs.APPLE_PASS_TYPE_ID)
+    team_id_tf = ft.TextField(label=state.t("label.team_id"), expand=1, border_radius=8, text_size=13, value=configs.APPLE_TEAM_ID)
     
-    logo_icon_url_tf = ft.TextField(label="Logo & Icon URL", expand=1, border_radius=8, text_size=13)
-    strip_url_tf = ft.TextField(label="Strip (Hero) URL", expand=1, border_radius=8, text_size=13)
-    barcode_link_tf = ft.TextField(label="QR Code Link / Payload", expand=1, border_radius=8, text_size=13, hint_text="https://...")
-    barcode_text_tf = ft.TextField(label="QR Code Subtext", expand=1, border_radius=8, text_size=13, hint_text="Flexible text")
+    logo_icon_url_tf = ft.TextField(label=state.t("label.logo_icon_url"), expand=1, border_radius=8, text_size=13)
+    strip_url_tf = ft.TextField(label=state.t("label.strip_hero_image_url"), expand=1, border_radius=8, text_size=13)
+    barcode_link_tf = ft.TextField(label=state.t("label.qr_payload"), expand=1, border_radius=8, text_size=13, hint_text="https://...")
+    barcode_text_tf = ft.TextField(label=state.t("label.qr_code_subtext"), expand=1, border_radius=8, text_size=13, hint_text="")
     
     colors = {
         "bg": "#FFFFFF",
@@ -46,7 +46,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
     color_picker_container_fg = ft.Container()
     color_picker_container_lbl = ft.Container()
     
-    field_editor = AppleFieldEditor(page=page)
+    field_editor = AppleFieldEditor(page=page, state=state)
     
     # ── File Picker Logic ──
     current_picker_target = None
@@ -65,9 +65,9 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                     current_picker_target.value = uploaded_url
                     current_picker_target.update()
                 else:
-                    _set_status(f"❌ Upload failed: {response.text}", "red")
+                    _set_status(f"❌ {state.t('msg.upload_failed', detail=response.text)}", "red")
             except Exception as ex:
-                _set_status(f"❌ File picker error: {ex}", "red")
+                _set_status(f"❌ {state.t('msg.file_picker_error', detail=str(ex))}", "red")
         current_picker_target = None
         page.update()
 
@@ -81,7 +81,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
 
     # ── UI Controls ──
     apple_templates_dropdown = ft.Dropdown(
-        label="Select Template ID",
+        label=state.t("label.select_template_id"),
         width=380, border_radius=8, text_size=13,
         options=[],
         on_change=lambda e: show_template(e)
@@ -108,17 +108,17 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                     apple_templates_dropdown.value = templates[0]["template_id"]
                 
                 apple_templates_dropdown.hint_text = ""
-                _set_status(f"Loaded {len(templates)} templates")
+                _set_status(state.t("msg.loaded_templates", count=len(templates)))
                 show_template(None)
             else:
                 apple_templates_dropdown.options = []
                 apple_templates_dropdown.value = None
-                apple_templates_dropdown.hint_text = "No Apple templates found"
-                _set_status("No Apple templates found", "blue")
+                apple_templates_dropdown.hint_text = state.t("msg.no_apple_templates")
+                _set_status(state.t("msg.no_apple_templates"), "blue")
                 branding_container.visible = False
             page.update()
         except Exception as e:
-            _set_status(f"❌ Error loading templates: {e}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(e))}", "red")
 
     state.register_refresh_callback("apple_manage_templates_list", load_templates)
 
@@ -128,7 +128,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
         if not apple_templates_dropdown.value:
             return
 
-        _set_status("Loading template blueprint...", "blue")
+        _set_status(state.t("msg.loading_blueprint"), "blue")
 
         try:
             tid = apple_templates_dropdown.value
@@ -136,7 +136,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             template = next((t for t in templates if t["template_id"] == tid), None)
             
             if not template:
-                _set_status("❌ Template blueprint not found", "red"); return
+                _set_status(f"❌ {state.t('msg.blueprint_not_found')}", "red"); return
 
             editing_template = template
             
@@ -159,22 +159,22 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             field_editor.load_fields(template.get("fields", []))
 
             # Rebuild color pickers
-            color_picker_container_bg.content = create_color_picker(page, colors, lambda: None, "bg", "Background")
-            color_picker_container_fg.content = create_color_picker(page, colors, lambda: None, "fg", "Foreground (Text)")
-            color_picker_container_lbl.content = create_color_picker(page, colors, lambda: None, "label", "Label Color")
+            color_picker_container_bg.content = create_color_picker(page, colors, lambda: None, "bg", state.t("label.background_color"), state=state)
+            color_picker_container_fg.content = create_color_picker(page, colors, lambda: None, "fg", state.t("label.foreground_text"), state=state)
+            color_picker_container_lbl.content = create_color_picker(page, colors, lambda: None, "label", state.t("label.label_color"), state=state)
             
             branding_container.visible = True
-            _set_status("Template loaded")
+            _set_status(state.t("msg.template_loaded"))
             
         except Exception as ex:
-            _set_status(f"❌ Error: {ex}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(ex))}", "red")
         page.update()
 
     def update_and_sync_handler(e):
         if not apple_templates_dropdown.value:
             return
 
-        _set_status("⏳ Saving Blueprint Changes...", "blue")
+        _set_status(state.t("msg.saving_blueprint"), "blue")
         try:
             tid = apple_templates_dropdown.value
             
@@ -199,15 +199,15 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
             api_client.update_apple_template(tid, **data)
             
             save_dlg = ft.AlertDialog(
-                title=ft.Text("✅ Template Blueprint Saved"),
-                content=ft.Text("Successfully updated the Apple template locally."),
-                actions=[ft.TextButton("Perfect", on_click=lambda _: page.close(save_dlg))]
+                title=ft.Text(state.t("header.blueprint_saved")),
+                content=ft.Text(state.t("msg.blueprint_saved_success")),
+                actions=[ft.TextButton(state.t("btn.perfect"), on_click=lambda _: page.close(save_dlg))]
             )
             page.open(save_dlg)
             load_templates()
             
         except Exception as ex:
-            _set_status(f"❌ Error: {ex}", "red")
+            _set_status(f"❌ {state.t('msg.api_error', detail=str(ex))}", "red")
 
     def delete_template_handler(e):
         if not apple_templates_dropdown.value:
@@ -221,14 +221,14 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
                 apple_templates_dropdown.value = None
                 load_templates()
             except Exception as ex:
-                _set_status(f"❌ Delete error: {ex}", "red")
+                _set_status(f"❌ {state.t('msg.api_error', detail=str(ex))}", "red")
         
         confirm_dlg = ft.AlertDialog(
-            title=ft.Text("⚠️ Confirm Deletion"),
-            content=ft.Text(f"Are you sure you want to delete template '{apple_templates_dropdown.value}'? This cannot be undone."),
+            title=ft.Text(state.t("header.confirm_deletion")),
+            content=ft.Text(state.t("msg.confirm_delete_template", tid=apple_templates_dropdown.value)),
             actions=[
-                ft.TextButton("Yes, Delete", icon=ft.Icons.DELETE, icon_color="red", on_click=confirm_delete),
-                ft.TextButton("Cancel", on_click=lambda _: page.close(confirm_dlg))
+                ft.TextButton(state.t("btn.yes_delete"), icon=ft.Icons.DELETE, icon_color="red", on_click=confirm_delete),
+                ft.TextButton(state.t("btn.close"), on_click=lambda _: page.close(confirm_dlg))
             ]
         )
         page.open(confirm_dlg)
@@ -238,7 +238,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
 
     # Layout assembling
     branding_section = card(ft.Column([
-        section_title("Base & Visual Configuration", ft.Icons.PALETTE),
+        section_title(state.t("header.visual_config"), ft.Icons.PALETTE),
         ft.Row([template_name_tf, pass_style_dd]),
         ft.Row([org_name_tf, logo_text_tf, pass_type_id_tf, team_id_tf]),
         ft.Row([
@@ -258,7 +258,7 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
     branding_container.controls = [
         branding_section,
         card(ft.Column([
-            section_title("Card Fields (Template Defaults)", ft.Icons.DASHBOARD_CUSTOMIZE),
+            section_title(state.t("header.card_fields_defaults"), ft.Icons.DASHBOARD_CUSTOMIZE),
             field_editor.build()
         ], spacing=10)),
     ]
@@ -270,18 +270,18 @@ def build_apple_manage_templates_view(page: ft.Page, state, api_client) -> ft.Co
     )
 
     main_panel.content = ft.Column([
-        ft.Text("Template Editor (Apple Wallet)", size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
-        ft.Text("Design the appearance and layout of your passes.", color=TEXT_SECONDARY, size=13),
+        ft.Text(state.t("header.template_editor_apple"), size=26, weight=ft.FontWeight.W_800, color=TEXT_PRIMARY),
+        ft.Text(state.t("subtitle.template_editor"), color=TEXT_SECONDARY, size=13),
         ft.Container(height=8),
         ft.Row([
             apple_templates_dropdown,
-            ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color="red700", tooltip="Delete Template", on_click=delete_template_handler)
+            ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color="red700", tooltip=state.t("btn.yes_delete"), on_click=delete_template_handler)
         ], alignment=ft.MainAxisAlignment.START),
         branding_container,
 
         ft.Container(
             content=ft.ElevatedButton(
-                "Save Blueprint",
+                state.t("btn.save_blueprint"),
                 icon=ft.Icons.SAVE,
                 on_click=update_and_sync_handler,
                 bgcolor=PRIMARY, color="white", height=45, width=220,
